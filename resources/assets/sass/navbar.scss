@@ -1,0 +1,70 @@
+.navbar {
+    border-radius: 0;
+    border-bottom: 1px solid #d1d4d7;
+    background-color:#fff;
+    box-shadow: 0 0 5px rgba(0,0,0,.1);
+    margin:0;
+    padding:0;
+}
+
+.navbar.transparent {
+	border-bottom: transparent;
+   	background:transparent;
+}
+
+
+.navbar.transparent .navbar-nav>li>a:not(.btn) {
+    color: #FFF;
+}
+
+.navbar.transparent .navbar-brand {
+	color:#FFF;
+	background-image: url(../img/logo-white.png);
+}
+
+
+.navbar.transparent .navbar-nav > li > a:hover,.navbar-nav > li > a:focus{
+	color:$brand-green;
+}
+
+.navbar.transparent .navbar-nav .btn-dark {
+	color: #FFF;
+    border: 1px solid #FFF;
+    background-color: transparent;
+}
+
+.navbar-nav > li > a {
+	color:$brand-dark;
+	font-size:$font-size-base+2;
+	font-weight:800;
+}
+
+.navbar-nav > li > a:hover,.navbar-nav > li > a:focus{
+	color:$brand-green;
+}
+
+.navbar-nav > .active > a, .navbar-nav > .active > a:hover, .navbar-nav > .active > a:focus {
+	color:$brand-green;
+}
+
+.navbar-nav>li>a.navbar-btn{
+	padding-top:5px;
+	padding-bottom:5px;
+}
+
+
+.navbar-brand, .navbar-brand:hover, .navbar-brand:focus {
+	color:$brand-green;
+}
+
+
+
+.navbar .navbar-brand {
+	width:150px;
+	padding-top:10px;
+	padding-bottom:10px;
+	background-image: url(../img/logo-dark.png);
+	background-repeat: no-repeat;
+    background-position: left center;
+
+}

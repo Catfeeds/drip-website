@@ -1,0 +1,9 @@
+{
+  "name": "kd-web",
+  "dependencies": {
+    "bootstrap": "~3.3.7",
+    "datatables": "~1.10.12",
+    "font-awesome": "fontawesome#~4.6.3",
+    "jquery": "~3.1.1"
+  }
+}

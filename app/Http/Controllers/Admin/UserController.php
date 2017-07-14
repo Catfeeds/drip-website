@@ -1,0 +1,263 @@
+<?php
+
+/**
+ * 用户管理控制器
+ */
+
+namespace App\Http\Controllers\Admin;
+
+use Illuminate\Http\Request;
+use DB;
+
+use App\User;
+use App\Models\Feedback as Feedback;
+use App\Models\Message as Message;
+use App\Models\Energy as Energy;
+use App\Libs\MyJpush as MyJpush;
+use App\Event;
+
+use Yajra\Datatables\Datatables;
+
+
+use App\Http\Requests;
+use App\Http\Controllers\Controller;
+
+class UserController extends Controller
+{
+    //
+    public function index()
+    {
+        $users = User::paginate(15);;
+        return view('admin.user.index', ['users' => $users]);
+    }
+
+    public function ajax_users()
+    {
+        return Datatables::of(User::query())
+            ->addColumn('action', function ($user) {
+                return '<a href="#edit-'.$user->user_id.'" class="btn btn-xs btn-primary"><i class="glyphicon glyphicon-edit"></i> 编辑</a>';
+            })
+            ->editColumn('reg_time', function ($user) {
+                return date("Y-m-d H:i:s",$user->reg_time);
+            })
+            ->editColumn('last_login_time', function ($user) {
+                return date("Y-m-d H:i:s",$user->last_login_time);
+            })
+            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
+            ->make(true);
+    }
+
+    /**
+     * 取出用户反馈
+     */
+    public function feedbacks()
+    {
+        $feedbacks = Feedback::paginate(20);;
+        return view('admin.user.feedbacks', ['feedbacks' => $feedbacks]);
+    }
+
+    public function ajax_feedbacks()
+    {
+        $feedbacks = DB::table('feedback')
+            ->select(['feedback.*',
+                'users.user_avatar',
+                'users.email',
+                'attachs.attach_name',
+                'attachs.attach_path'])
+            ->join('users','users.user_id','=','feedback.user_id')
+            ->leftJoin('attachs', function ($join) {
+                $join->on('attachs.attachable_id', '=', 'feedback.id')
+                    ->where('attachs.attachable_type', '=', 'feedback');
+            })
+            ->orderBy('feedback.create_time','desc');
+
+        return Datatables::of($feedbacks)
+            ->addColumn('action', function ($feedback) {
+               if($feedback->status == 0) {
+                   return '<button data-id="'.$feedback->id.'" class="btn btn-xs btn-primary btn-feedback-deal"><i class="glyphicon glyphicon-edit"></i>处理</button>';
+               } else {
+                   return '';
+               }
+            })
+            ->editColumn('status', function ($feedback) {
+               switch ($feedback->status) {
+                   case 0:
+                       return '<span class="label">未处理</span>';
+                       break;
+                   case 1:
+                       return '<span class="label label-success">已处理（有效）</span>';
+                       break;
+                   case 2:
+                       return '<span class="label label-warning">未处理（无效）</span>';
+                       break;
+                   default;
+                       return '';
+                       break;
+               }
+            })
+            ->editColumn('create_time', function ($feedback) {
+                return date("Y-m-d H:i:s",$feedback->create_time);
+            })
+//            ->editColumn('device', function ($feedback) {
+//                return unserialize($feedback->device);
+//            })
+            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
+            ->make(true);
+    }
+
+    /**
+     * 处理用户反馈
+     */
+    public function deal_feedback(Request $request) {
+        $id = $request->id;
+        $content = $request->content;
+        $status = $request->status;
+        $reward = $request->reward;
+
+
+        // 查询反馈信息
+        $feedback = Feedback::find($id);
+
+        if(!$feedback) {
+            return ['status'=>false,'message'=>'反馈记录不存在'];
+        }
+
+        $feedback->status = $status;
+        $feedback->reward = $reward;
+        $feedback->deal_time = time();
+        $feedback->save();
+
+        // 发送奖励
+        $user = User::find($feedback->user_id);
+        $user->energy_count += $reward;
+        $user->save();
+
+        //发送消息
+        $message = new Message();
+        $message->from_user = 0;
+        $message->to_user = $feedback->user_id;
+        $message->type = 6 ;
+        $message->title = '反馈回复通知' ;
+        $message->content = $content ;
+        $message->msgable_id = $id;
+        $message->msgable_type = 'App\Models\Feedback';
+        $message->create_time  = time();
+        $message->save();
+
+        // 推送
+        $content = '你的反馈已收到回复';
+
+        $push = new MyJpush();
+        $push->pushToSingleUser($feedback->user_id,$content);
+
+        return ['status'=>true,'message'=>'操作成功'];
+    }
+
+    /**
+     * 处理用户反馈
+     */
+    public function hot_event(Request $request) {
+        $id = $request->id;
+
+        // 查询反馈信息
+        $event = Event::find($id);
+
+        if(!$event) {
+            return ['status'=>false,'message'=>'动态不存在'];
+        }
+
+        if($event->is_hot == 1) {
+            return ['status'=>false,'message'=>'已经是精选动态'];
+        }
+
+        $event->is_hot = 1;
+        $event->save();
+
+        // 发送奖励
+        $user = User::find($event->user_id);
+        $user->energy_count += 5;
+        $user->save();
+
+        $energy = new Energy();
+        $energy->user_id = $event->user_id;
+        $energy->change = +5;
+        $energy->obj_type = 'hot';
+        $energy->obj_id = $event->event_id;
+        $energy->create_time = time();
+        $energy->save();
+
+        //发送消息
+        $message = new Message();
+        $message->from_user = 0;
+        $message->to_user = $event->user_id;
+        $message->type = 6 ;
+        $message->title = '精选动态入选通知' ;
+        $message->content = '恭喜,你的打卡动态被评选为精选动态,并奖励能量点+5,请继续努力吧~<a href="#/event/'.$id.'">点击查看</a>' ;
+        $message->msgable_id = $id;
+        $message->msgable_type = 'App\Event';
+        $message->create_time  = time();
+        $message->save();
+
+        // 推送
+        $content = '精选动态入选通知';
+
+        $push = new MyJpush();
+        $push->pushToSingleUser($event->user_id,$content);
+
+        return ['status'=>true,'message'=>'操作成功'];
+    }
+
+
+    /**
+     * 取出用户反馈
+     */
+    public function events()
+    {
+        $events = Event::paginate(20);;
+        return view('admin.user.events', ['events' => $events]);
+    }
+
+    public function ajax_events()
+    {
+        $events = DB::table('events')
+            ->select(['events.*',
+                'users.user_avatar',
+                'users.email',
+                'users.nickname',
+                'checkin.checkin_content',
+                'attachs.attach_id',
+                'attachs.attach_name',
+                'attachs.attach_path'])
+            ->join('users','users.user_id','=','events.user_id')
+            ->join('checkin','checkin.checkin_id','=','events.event_value')
+            ->leftJoin('attachs', function ($join) {
+                $join->on('attachs.attachable_id', '=', 'events.event_value')
+                    ->where('attachs.attachable_type', '=', 'checkin');
+            })
+            ->orderBy('events.create_time','desc')
+            ;
+
+        return Datatables::of($events)
+            ->addColumn('action', function ($event) {
+                return '<button data-id="'.$event->event_id.'" class="btn btn-xs btn-primary btn-event-hot"><i class="glyphicon glyphicon-edit"></i>设为精选</button>';
+            })
+            ->addColumn('attach', function ($event) {
+                if($event->attach_id) {
+                    return '<img src="http://www.keepdays.com/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" width="100" height="100">';
+                }
+                return '无';
+            })
+            ->editColumn('is_public', function ($event) {
+                return $event->is_public==1?'是':'否';
+            })
+            ->editColumn('is_hot', function ($event) {
+                return $event->is_hot==1?'是':'否';
+            })
+            ->editColumn('create_time', function ($event) {
+                return date("Y-m-d H:i:s",$event->create_time);
+            })
+            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
+            ->make(true);
+    }
+
+}
