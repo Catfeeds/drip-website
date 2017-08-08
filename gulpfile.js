@@ -52,5 +52,17 @@ gulp.task("copyfiles", function() {
 });
 
 elixir(function(mix) {
+    mix.copy('resources/assets/img', 'public/img');
+});
+
+elixir(function(mix) {
+    mix.copy('resources/assets/fonts', 'public/fonts');
+});
+
+elixir(function(mix) {
+    mix.copy('resources/assets/css', 'public/css');
+});
+
+elixir(function(mix) {
     mix.sass('app.scss');
 });

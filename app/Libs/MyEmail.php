@@ -47,8 +47,8 @@ class MyEmail
         $param = array(
             'apiUser' => $this->API_USER, # 使用api_user和api_key进行验证
             'apiKey' => $this->API_KEY,
-            'from' => 'hi@keepdays.com', # 发信人，用正确邮件地址替代
-            'fromName' => '坚持每一天',
+            'from' => 'drip@growu.me', # 发信人，用正确邮件地址替代
+            'fromName' => '水滴打卡',
             'xsmtpapi' => $vars,
             'templateInvokeName' => $template_name,
             'subject' => $subject,

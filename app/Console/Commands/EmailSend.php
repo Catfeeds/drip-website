@@ -77,11 +77,11 @@ class EmailSend extends Command
             $param = array(
                 'apiUser' => $API_USER, # 使用api_user和api_key进行验证
                 'apiKey' => $API_KEY,
-                'from' => 'welcome@keepdays.com', # 发信人，用正确邮件地址替代
-                'fromName' => '坚持每一天',
+                'from' => 'drip@growu.me', # 发信人，用正确邮件地址替代
+                'fromName' => '水滴打卡',
                 'xsmtpapi' => $vars,
                 'templateInvokeName' => 'app_register_template',
-                'subject' => '欢迎来到坚持每一天',
+                'subject' => '欢迎来到水滴打卡',
                 'respEmailId' => 'true'
             );
             

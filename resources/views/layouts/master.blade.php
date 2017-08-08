@@ -1,11 +1,13 @@
 <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>keepdays - @yield('title')</title>
+        <title>一款习惯养成和目标管理工具 - @yield('title')</title>
         @section('css')
             <link rel="stylesheet" href="{{asset('plugins/bootstrap/dist/css/bootstrap.min.css')}}">
-            <link rel="stylesheet" href="{{asset('plugins/font-awesome/css/font-awesome.min.css')}}">
-            <link rel="stylesheet" href="{{asset('css/app.css')}}">
+            {{--<link rel="stylesheet" href="{{asset('plugins/font-awesome/css/font-awesome.min.css')}}">--}}
+            <link rel="stylesheet" href="{{asset('css/style.css')}}">
+            <link rel="stylesheet" href="{{asset('css/iconfont.css')}}">
+
         @show
     </head>
     <body>
@@ -15,83 +17,67 @@
          </div>
         <div class="wrapper">
           @section('header')
-              @if(Request::url() === '/')
-                <header class="navbar navbar-fixed-top transparent" id="header">
-              @else
-                <header class="navbar" id="header">
-              @endif
-                <div class="container">
-                  <!-- Brand and toggle get grouped for better mobile display -->
-                  <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                      <span class="sr-only">展开</span>
-                      <span class="icon-bar"></span>
-                      <span class="icon-bar"></span>
-                      <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="#"></a>
-                  </div>
+                <nav class="navbar bg-color3">
+                    <div class="container">
+                        <a class="navbar-brand goto" href="#"><img src="{{asset('img/logo.png')}}" height="" alt="水滴打卡"></a>
+                        {{--<button class="round-toggle navbar-toggle menu-collapse-btn collapsed" data-toggle="collapse" data-target=".navMenuCollapse"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>--}}
+                        {{--<div class="collapse navbar-collapse navMenuCollapse">--}}
+                            {{--<ul class="nav">--}}
+                                {{--<li><a href="#">关于</a></li>--}}
+                                {{--<li><a href="#">下载</a></li>--}}
+                                {{--<li><a href="#">帮助</a></li>--}}
+                            {{--</ul>--}}
+                        {{--</div>--}}
+                    </div>
+                </nav>
+              @show
 
-                  <!-- Collect the nav links, forms, and other content for toggling -->
-                  <div class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav">
-                      <li class=""><a href="goal">目标 <span class="sr-only">(current)</span></a></li>
-                      <!-- <li><a href="#">计划</a></li>
-                       <li><a href="#">小组</a></li> -->
-                    </ul>
-                    <!-- <form class="navbar-form navbar-left" role="search">
-                      <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Search">
-                      </div>
-                      <button type="submit" class="btn btn-default">Submit</button>
-                    </form> -->
-                    <ul class="nav navbar-nav navbar-right">
-                      <li>
-                      {{--<a href="{{ url('account/login') }}" class="btn btn-sm btn-green btn-outline navbar-btn">登录</a></li>--}}
-                      {{--<li><a href="{{ url('account/register') }}" class="btn btn-sm btn-dark btn-outline ml-sm navbar-btn">注册</a></li>--}}
-
-                      <!-- <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><img src="assets/img"> <span class="caret"></span></a>
-                        <ul class="dropdown-menu">
-                          <li><a href="#">控制台</a></li>
-                          <li><a href="#">账号设置</a></li>
-                          <li role="separator" class="divider"></li>
-                          <li><a href="#">注销</a></li>
-                        </ul>
-                      </li> -->
-                    </ul>
-                  </div><!-- /.navbar-collapse -->
-                </div><!-- /.container-fluid -->
-              </header>
-          @show
-
-          <section id="content">
+          <div>
             @yield('content')
-          </section>
+          </div>
           @section('footer')
-              <footer class="text-center p-xl">
-                  <div class="container">
-                      <div class="row">
-                          <div class="copyright">
-                            © keepdays Inc, 2016 <br>浙ICP备 13046642
+              <!-- FOOTER -->
+                  <footer id="footer" class="bg-color3">
+                      <div class="container">
+                          <div class="row">
+                              <div class="col-md-6 col-md-push-6 text-right">
+                                  <ul class="soc-list">
+                                      <li><a href="https://www.weibo.com/growu" target="_blank"><i class="icon icon-weibo"></i></a></li>
+                                      <li><a  target="_blank" id="wechat" style="background-image:url({{asset('img/wechat.jpg')}})" class="btn" data-toggle="popover" data-placement="top" ><i class="icon icon-weixin"></i></a></li>
+                                      {{--<li><a href="#" target="_blank"><i class="icon icon-qq"></i></a></li>--}}
+                                  </ul>
+                              </div>
+                              <div class="col-md-6 col-md-pull-6">
+                                  <img class="logo" src="img/icon.png" alt="">
+                                  <span class="editContent">© 2015 格吾社区<br>浙ICP备 1234567</span>
+                              </div>
                           </div>
-                        </div>
-                  </div>
-              </footer>
-          @show
+                      </div>
+                  </footer>
+              @show
           @section('js')
-          <script>
-              var _hmt = _hmt || [];
-              (function() {
-                  var hm = document.createElement("script");
-                  hm.src = "https://hm.baidu.com/hm.js?2eddaff584dff6d6ddd51602807fc4d7";
-                  var s = document.getElementsByTagName("script")[0];
-                  s.parentNode.insertBefore(hm, s);
-              })();
-          </script>
+
             <script type="text/javascript" src="{{asset('plugins/jquery/dist/jquery.min.js')}}"></script>
-            <script type="text/javascript" src="{{asset('js/app.js')}}"></script>
-          @show
+            <script type="text/javascript" src="{{asset('plugins/bootstrap/dist/js/bootstrap.min.js')}}"></script>
+                  <script>
+                      var _hmt = _hmt || [];
+                      (function() {
+                          var hm = document.createElement("script");
+                          hm.src = "https://hm.baidu.com/hm.js?2eddaff584dff6d6ddd51602807fc4d7";
+                          var s = document.getElementsByTagName("script")[0];
+                          s.parentNode.insertBefore(hm, s);
+                      })();
+
+                      $(document).ready(function(){
+                          $('#wechat').popover({
+                              trigger : 'hover',//鼠标以上时触发弹出提示框
+                              html:true,//开启html 为true的话，data-content里就能放html代码了
+                              content:"<img src='{{asset('img/wechat.jpg')}}' height='100'>"
+                          });
+                      });
+
+                  </script>
+              @show
         </div>
     </body>
 </html>

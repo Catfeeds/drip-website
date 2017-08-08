@@ -348,8 +348,8 @@ class GoalController extends BaseController
 
         DB::table('user_goal')->where('id', '=', $user_goal->pivot->id)
             ->update([
-                'is_public' => $request->is_public ? (int)($request->is_public) : 1,
-                'is_push' => $request->is_push ? (int)($request->is_push) : 0,
+                'is_public' =>(int)($request->is_public),
+                'is_push' => (int)($request->is_push),
                 'remind_time' => $request->is_push == true ? $request->remind_time : ''
             ]);
 

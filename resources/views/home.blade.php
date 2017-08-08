@@ -1,6 +1,6 @@
 @extends('layouts/master')
  
-@section('title', '坚持每一天')
+@section('title', '水滴打卡')
 
 @section('css')
 	@parent
@@ -8,57 +8,56 @@
 @stop
 
 @section('content')
-
-		<div class="intro-header bg-dark bg-cover text-center" style="background-color: #000000;padding-top:200px;padding-bottom: 150px;">
-	        <div class="container">
-	            <div class="row">
-	                <div class="col-lg-12">
-	                    <div class="intro-message">
-	                        <h1 class="p-xl m-xl text-white text-xs">坚持每一天<br><br>帮助你成就目标和梦想</h1>
-	                        <ul class="list-inline intro-social-buttons p-xl">
-	                            {{--<li>--}}
-	                                {{--<a href="" class="btn btn-danger btn-lg"><span class="network-name">下载App</span></a>--}}
-	                            {{--</li>--}}
-	                            {{--<li>--}}
-	                                {{--<a href="" class="btn btn-green btn-lg"> <span class="network-name">进入控制台</span></a>--}}
-	                            {{--</li>--}}
-	                        </ul>
-	                    </div>
-	                </div>
-	            </div>
-	        </div>
-	        <!-- /.container -->
-	    </div>
-		<!-- COUNTER 4 COL BLOCK -->
-		<section class="bg-gray-dark text-center p-xl">
+		<!-- INTRO RIGHT IMG BLOCK -->
+		<header id="intro-right-img" class="intro-block bg-color1 dark-bg cover-bg" style="background-image:url({{asset('img/bg19.jpg')}})" data-selector="header">
 			<div class="container">
 				<div class="row">
-					<div class="col-md-3">
-						<i class="icon icon-download"></i>
-						<h3 class="timer text-xxl">353</h3>
-						<h4>目标</h4>
+					<div class="col-md-6 col-md-push-6">
+						{{--<div class="logo">--}}
+							{{--<img src="{{asset('img/icon.png')}}" alt="水滴打卡" height="120" data-selector="img">--}}
+						{{--</div>--}}
+						<div class="slogan">
+							<h2 data-selector="h2">水滴打卡</h2>
+							<p data-selector="p">一款<strong>习惯养成</strong>和<strong>目标管理</strong>工具</p>
+						</div>
+
+						<div class="">
+							<img src="{{asset('img/qrcode.png')}}" alt="水滴打卡" height="120" data-selector="img">
+						</div>
+						{{--<a class="download-btn" href="https://itunes.apple.com/cn/app/id1255579223" data-selector="a.btn, a.download-btn, button.btn, a.goto"> <i class="icon icon-apple" data-selector=".icon"></i><b>App Store</b>下载</a>--}}
+						{{--<a class="download-btn" href="#" data-selector="a.btn, a.download-btn, button.btn, a.goto"><i class="icon icon-android" data-selector=".icon"></i><b>Google play</b>下载</a>--}}
 					</div>
-					<div class="col-md-3">
-						<i class="icon icon-wallet2"></i>
-						<h3 class="timer text-xxl">834</h3>
-						<h4>计划</h4>
-					</div>
-					<div class="col-md-3">
-						<i class="icon icon-target2"></i>
-						<h3 class="timer text-xxl">45</h3>
-						<h4>小组</h4>
-					</div>
-					<div class="col-md-3">
-						<i class="icon icon-heart2"></i>
-						<h3 class="timer text-xxl">20,340</h3>
-						<h4>梦想家</h4>
+					<div class="col-md-4 col-md-pull-6">
+						<img src="{{asset('img/screen-3.png')}}" class="screen" alt="" data-selector="img">
 					</div>
 				</div>
 			</div>
-		</section>
+		</header>
+
+		<!-- COUNTER 4 COL BLOCK -->
+		{{--<section class="facts-block bg-color2 dark-bg text-center">--}}
+			{{--<div class="container">--}}
+				{{--<div class="row">--}}
+					{{--<div class="col-md-4">--}}
+						{{--<i class="icon icon-download"></i>--}}
+						{{--<h3 class="timer text-xxl">11,470</h3>--}}
+						{{--<h4>成员</h4>--}}
+					{{--</div>--}}
+					{{--<div class="col-md-4">--}}
+						{{--<i class="icon icon-wallet2"></i>--}}
+						{{--<h3 class="timer text-xxl">22,443</h3>--}}
+						{{--<h4>目标</h4>--}}
+					{{--</div>--}}
+					{{--<div class="col-md-4">--}}
+						{{--<i class="icon icon-heart2"></i>--}}
+						{{--<h3 class="timer text-xxl">30,759</h3>--}}
+						{{--<h4>打卡</h4>--}}
+					{{--</div>--}}
+				{{--</div>--}}
+			{{--</div>--}}
+		{{--</section>--}}
 @stop
 
 @section('js')
 	@parent
-	<script type="text/javascript" src="{{asset('js/home.js')}}"></script>
 @stop
