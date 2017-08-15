@@ -59,10 +59,8 @@ class AuthController extends BaseController {
 
        $user = Auth::user();
 
-       if($request->input('device')) {
-       		$this->_insert_device($user->user_id,$request->input('device'));
-       }
-      
+		$this->_insert_device($user->user_id,$request->input('device'),$request);
+
        // 处理设备信息
        return $this->response->array(array('status'=>true,'message'=>'登录成功','token'=>$token,'user'=>$user));
 
@@ -111,7 +109,7 @@ class AuthController extends BaseController {
 				$user->sex = $params['sex'];
 				$user->city = $params['city'];
 				$user->reg_time = time();
-				$user->reg_ip =  $request->ip();
+				$user->reg_ip = $request->ip();
 
 				$user->save();
 
@@ -132,10 +130,7 @@ class AuthController extends BaseController {
 			}
 
 			// 插入设备
-			if($request->input('device')) {
-				$this->_insert_device($user->user_id,$request->input('device'));
-			}
-
+			$this->_insert_device($user->user_id,$request->input('device'),$request);
 
 			// token
 			$token = $user['email']?JWTAuth::fromUser($user):'';
@@ -272,9 +267,7 @@ class AuthController extends BaseController {
 
 		$user->save();
 
-	    if($request->input('device')) {
-       		$this->_insert_device($user->user_id,$request->input('device'));
-        }
+		$this->_insert_device($user->user_id,$request->input('device'),$request);
 
 	   	$token = JWTAuth::fromUser($user);
 
@@ -307,37 +300,43 @@ class AuthController extends BaseController {
 	 * @param $user_id  用户ID
 	 * @param $device_info 设备信息
 	 */
-    private function _insert_device($user_id,$device_info)
+    private function _insert_device($user_id,$device_info,$request)
     {
 //    	Log::info('设备信息');
 //    	Log::info($device_info);
-
-		if(isset($device_info['platform'])) {
-			if($device_info['platform'] != 'Android' && $device_info['platform'] != 'iOS') {
-				return;
+		if($device_info) {
+			if(isset($device_info['platform'])) {
+				if($device_info['platform'] != 'Android' && $device_info['platform'] != 'iOS') {
+					return;
+				}
 			}
+
+			$device = Device::where('uuid','=',$device_info['uuid'])->first();
+
+			if(!$device) {
+				$device = new Device();
+				$device->create_time = time();
+			}
+
+			$device->user_id = $user_id;
+			$device->uuid = $device_info['uuid'];
+			$device->device_version = $device_info['version'];
+			$device->device_platform = $device_info['platform'];
+			$device->device_model = $device_info['model'];
+			$device->device_cordova = $device_info['cordova'];
+			$device->push_id = isset($device_info['push_id'])?$device_info['push_id']:'';
+
+			// 修改最后登录时间
+			$device->update_time = time();
+			$device->save();
 		}
 
-    	$device = Device::where('uuid','=',$device_info['uuid'])->first();
+		$user = User::find($user_id);
+		$user->last_login_ip = $request->ip();
+		$user->last_login_time = time();
+		$user->save();
 
-    	if(!$device) {
-	    	$device = new Device();
- 			$device->create_time = time();
-    	}
-    	
-    	$device->user_id = $user_id;
-		$device->uuid = $device_info['uuid'];
-    	$device->device_version = $device_info['version']; 
-    	$device->device_platform = $device_info['platform']; 
-    	$device->device_model = $device_info['model']; 
-    	$device->device_cordova = $device_info['cordova']; 
-	    $device->push_id = isset($device_info['push_id'])?$device_info['push_id']:'';
-
-    	// 修改最后登录时间
-    	$device->update_time = time();
-    	$device->save();
-		
-    }
+	}
 
 	/**
 	 * 解析QQ参数
