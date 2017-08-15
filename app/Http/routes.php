@@ -22,12 +22,14 @@ Route::get('account/reset', 'AccountController@reset');
 
 Route::get('goal/view/{id}','GoalController@view');
 
-Route::group(['namespace' => 'Admin'], function () {
+Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 //	Route::controller('user', 'UserController', [
 //		'ajax_users'  => 'user.ajax_users',
 //		'index' => 'user',
 //	]);
-	Route::get('admin/user', 'UserController@index');
+	Route::get('admin/auth/login', 'AuthController@getLogin');
+	Route::post('admin/auth/login', 'AuthController@postLogin');
+	Route::get('admin/user/users', 'UserController@users');
 	Route::get('admin/user/ajax_users', 'UserController@ajax_users')->name('admin.user.ajax_users');
 	Route::get('admin/user/feedbacks', 'UserController@feedbacks');
 	Route::get('admin/user/ajax_feedbacks', 'UserController@ajax_feedbacks')->name('admin.user.ajax_feedbacks');

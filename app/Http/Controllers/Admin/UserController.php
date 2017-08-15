@@ -25,10 +25,10 @@ use App\Http\Controllers\Controller;
 class UserController extends Controller
 {
     //
-    public function index()
+    public function users()
     {
-        $users = User::paginate(15);;
-        return view('admin.user.index', ['users' => $users]);
+
+        return view('admin.user.users', []);
     }
 
     public function ajax_users()
@@ -38,12 +38,14 @@ class UserController extends Controller
                 return '<a href="#edit-'.$user->user_id.'" class="btn btn-xs btn-primary"><i class="glyphicon glyphicon-edit"></i> 编辑</a>';
             })
             ->editColumn('reg_time', function ($user) {
-                return date("Y-m-d H:i:s",$user->reg_time);
+                return $user->reg_time>0?date("Y-m-d H:i:s",$user->reg_time):'';
             })
             ->editColumn('last_login_time', function ($user) {
-                return date("Y-m-d H:i:s",$user->last_login_time);
+                return $user->last_login_time>0?date("Y-m-d H:i:s",$user->last_login_time):'';
             })
-            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
+            ->editColumn('nickname',  function ($user) {
+                return '<img src="'.$user->user_avatar.'" class="img-circle" width="24" height="24"> '.$user->nickname;
+            })
             ->make(true);
     }
 
@@ -52,7 +54,7 @@ class UserController extends Controller
      */
     public function feedbacks()
     {
-        $feedbacks = Feedback::paginate(20);;
+        $feedbacks = Feedback::paginate(100);;
         return view('admin.user.feedbacks', ['feedbacks' => $feedbacks]);
     }
 
@@ -213,8 +215,8 @@ class UserController extends Controller
      */
     public function events()
     {
-        $events = Event::paginate(20);;
-        return view('admin.user.events', ['events' => $events]);
+
+        return view('admin.user.events', []);
     }
 
     public function ajax_events()
@@ -243,7 +245,7 @@ class UserController extends Controller
             })
             ->addColumn('attach', function ($event) {
                 if($event->attach_id) {
-                    return '<img src="http://www.keepdays.com/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" width="100" height="100">';
+                    return '<img src="http://drip.growu.me/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" class="user-image img-circle" width="64" height="64">';
                 }
                 return '无';
             })

@@ -24,31 +24,16 @@ gulp.task("copyfiles", function() {
         // datatables
         "./bower_components/datatables/media/css/dataTables.bootstrap.min.css",
         "./bower_components/datatables/media/js/dataTables.bootstrap.min.js",
-        "./bower_components/datatables/media/js/jquery.dataTables.min.js"
+        "./bower_components/datatables/media/js/jquery.dataTables.min.js",
+        // adminlte
+        "./bower_components/AdminLTE/dist/css/AdminLTE.min.css",
+        "./bower_components/AdminLTE/dist/css/skins/skin-blue.min.css",
+        "./bower_components/AdminLTE/dist/js/app.min.js",
+        // font-awesome
+        "./bower_components/font-awesome/css/font-awesome.min.css",
+        "./bower_components/font-awesome/fonts/**.*",
     ], {base: './bower_components/'})
         .   pipe(gulp.dest("./public/plugins/"));
-    // gulp.src("bower_componets/datatables/media/css/jquery.dataTables.min.css")
-    //     .pipe(gulp.dest("public/plugins/datatables/"));
-    // gulp.src("bower_componets/datatables/media/js/jquery.dataTables.min.js")
-    //     .pipe(gulp.dest("public/plugins/datatables/"));
-    // gulp.src("bower_componets/bootstrap/css/**")
-    //     .pipe(gulp.dest("public/plugins/bootstrap"));
-    // gulp.src("bower_componets/bootstrap/dist/js/bootstrap.js")
-    //     .pipe(gulp.dest("resources/assets/js/"));
-    // gulp.src("vendor/bower_dl/bootstrap/dist/fonts/**")
-    //     .pipe(gulp.dest("public/assets/fonts"));
-    // gulp.src("vendor/bower_dl/fontawesome/less/**")
-    //     .pipe(gulp.dest("resources/assets/less/fontawesome"));
-    // gulp.src("vendor/bower_dl/fontawesome/fonts/**")
-    //     .pipe(gulp.dest("public/assets/fonts"));
-    // // Copy datatables  var dtDir = 'vendor/bower_dl/datatables-plugins/integration/';
-    // gulp.src("vendor/bower_dl/datatables/media/js/jquery.dataTables.js")
-    //     .pipe(gulp.dest('resources/assets/js/'));
-    // gulp.src(dtDir + 'bootstrap/3/dataTables.bootstrap.css')
-    //     .pipe(rename('dataTables.bootstrap.less'))
-    //     .pipe(gulp.dest('resources/assets/less/others/'));
-    // gulp.src(dtDir + 'bootstrap/3/dataTables.bootstrap.js')
-    //     .pipe(gulp.dest('resources/assets/js/'));
 });
 
 elixir(function(mix) {
@@ -64,5 +49,9 @@ elixir(function(mix) {
 });
 
 elixir(function(mix) {
-    mix.sass('app.scss');
+    mix.copy('resources/assets/js', 'public/js');
 });
+
+// elixir(function(mix) {
+//     mix.sass('app.scss');
+// });

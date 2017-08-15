@@ -11,6 +11,9 @@ namespace  App\Libs;
 use App\User;
 use App\Models\Device as Device;
 use JPush;
+use AWS;
+
+
 /**
  * 主要对 email 封装
  * User: Jason.z
@@ -22,18 +25,18 @@ class MyEmail
     private $API_URL = 'http://api.sendcloud.net/apiv2/mail/sendtemplate';
     private $API_USER = 'keepdays';
     private $API_KEY = 'zDIdjyKEUSqdyESA';
+    private $SEND_TYPE = 'sendcloud';
+
+    public function __construct($send_type='sendcloud')
+    {
+        $this->SEND_TYPE = $send_type;
+    }
 
     public function sendToSingleUser($email,$subject,$template_name,$params=[])
     {
-        $vars['to'] = [$email];
+        $emails = [$email];
 
-        if($params) {
-            $vars['sub'] = $params;
-        }
-
-        $vars = json_encode($vars);
-
-        return $this->_send($vars,$subject,$template_name);
+        return $this->_send($emails,$subject,$params,$template_name);
     }
 
     public function sendToUserList()
@@ -41,33 +44,67 @@ class MyEmail
         
     }
 
-
-    private function _send($vars,$subject,$template_name)
+    private function _send($emails,$subject,$params,$template_name)
     {
-        $param = array(
-            'apiUser' => $this->API_USER, # 使用api_user和api_key进行验证
-            'apiKey' => $this->API_KEY,
-            'from' => 'drip@growu.me', # 发信人，用正确邮件地址替代
-            'fromName' => '水滴打卡',
-            'xsmtpapi' => $vars,
-            'templateInvokeName' => $template_name,
-            'subject' => $subject,
-            'respEmailId' => 'true'
-        );
+        if($this->SEND_TYPE == 'sendcloud') {
 
+            $vars = [];
 
-        $data = http_build_query($param);
+            $vars['to'] = $emails;
 
-        $options = array(
-            'http' => array(
-                'method' => 'POST',
-                'header' => 'Content-Type: application/x-www-form-urlencoded',
-                'content' => $data
-            ));
-        $context  = stream_context_create($options);
-        $result = file_get_contents($this->API_URL, FILE_TEXT, $context);
+            if($params) {
+                $vars['sub'] = $params;
+            }
+
+            $vars = json_encode($vars);
+
+            $param = array(
+                'apiUser' => $this->API_USER, # 使用api_user和api_key进行验证
+                'apiKey' => $this->API_KEY,
+                'from' => 'drip@growu.me', # 发信人，用正确邮件地址替代
+                'fromName' => '水滴打卡',
+                'xsmtpapi' => $vars,
+                'templateInvokeName' => $template_name,
+                'subject' => $subject,
+                'respEmailId' => 'true'
+            );
+
+            $data = http_build_query($param);
+
+            $options = array(
+                'http' => array(
+                    'method' => 'POST',
+                    'header' => 'Content-Type: application/x-www-form-urlencoded',
+                    'content' => $data
+                ));
+            $context  = stream_context_create($options);
+            $result = file_get_contents($this->API_URL, FILE_TEXT, $context);
 //        echo $result;
-        return $result;
+            return $result;
+        } elseif ($this->SEND_TYPE == 'ses') {
+            $client = AWS::createClient('ses');
+            $client->sendEmail([
+                'ConfigurationSetName' => '<string>',
+                'Destination' => [ // REQUIRED
+                    'ToAddresses' => $emails,
+                    ],
+                'Message' => [ // REQUIRED
+                    'Body' => [
+                        'Html' => [
+                            'Data' => '', // REQUIRED
+                        ],
+                        'Text' => [
+                            'Data' => '', // REQUIRED
+                        ],
+                    ],
+                    'Subject' => [ // REQUIRED
+                        'Data' => $subject, // REQUIRED
+                    ],
+                ],
+            ]);
+        }
+
+
     }
 
 }

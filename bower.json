@@ -1,5 +1,5 @@
 {
-  "name": "kd-web",
+  "name": "drip-website",
   "dependencies": {
     "bootstrap": "~3.3.7",
     "datatables": "~1.10.12",

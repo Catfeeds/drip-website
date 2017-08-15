@@ -6,6 +6,52 @@
 @stop
 
 @section('content')
+
+    <section class="content-header">
+        <h1>
+            Data Tables
+            <small>advanced tables</small>
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
+            <li><a href="#">Tables</a></li>
+            <li class="active">Data tables</li>
+        </ol>
+    </section>
+
+    <section class="content">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">Hover Data Table</h3>
+                    </div>
+                    <!-- /.box-header -->
+                    <div class="box-body">
+                        <div id="example2_wrapper" class="dataTables_wrapper form-inline dt-bootstrap">
+                            <div class="row">
+                                <div class="col-sm-6"></div>
+                                <div class="col-sm-6"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.box-body -->
+                </div>
+                <!-- /.box -->
+
+
+            </div>
+            <!-- /.col -->
+        </div>
+        <!-- /.row -->
+        <div>
+    </section>
+
     <div class="container-fluid">
         <div class="row page-title-row">
             <div class="col-md-6">
@@ -65,7 +111,7 @@
                         <div class="form-group">
                             <label class="col-sm-2 control-label">处理意见:</label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" rows="3" name="content"  id="textarea-content">你的反馈意见已经确认,我们将会根据你的建议在未来的版本内做调整,敬请期待,为表示对你的感谢,我们特别奖励你 5 点能量作为奖励,期待你的继续反馈。</textarea>
+                                <textarea class="form-control" rows="3" name="content" id="textarea-content">你的反馈意见已经确认,我们将会根据你的建议在未来的版本内做调整,敬请期待,为表示对你的感谢,我们特别奖励你 5 点能量作为奖励,期待你的继续反馈。</textarea>
                             </div>
                         </div>
                         <div class="form-group">
@@ -96,7 +142,7 @@
             var table = $('#events-table').DataTable({
                 processing: true,
                 serverSide: true,
-                iDisplayLength:100,
+                iDisplayLength: 20,
                 ajax: '{!! route('admin.user.ajax_events') !!}',
                 type: 'POST',
                 columns: [
@@ -112,9 +158,9 @@
             });
 
             // 反馈处理提交
-            $(document).on('click','.btn-event-hot',function(){
+            $(document).on('click', '.btn-event-hot', function () {
                 var id = $(this).attr('data-id');
-                if(!id) {
+                if (!id) {
                     // TODO 提示
                     toastr.error("ID获取失败");
                     return;
@@ -124,13 +170,13 @@
                     type: "POST",
                     url: '{!! route('admin.user.hot_event') !!}',
                     data: {
-                        id:id
+                        id: id
                     },
                     dataType: "json",
-                    success: function(response){
-                        if(response.status) {
+                    success: function (response) {
+                        if (response.status) {
                             toastr.success("处理成功");
-                            if(table) {
+                            if (table) {
                                 table.clear();
                                 table.draw();
                             }
@@ -138,7 +184,7 @@
                             toastr.error(response.message);
                         }
                     },
-                    error:function(error) {
+                    error: function (error) {
                         toastr.error("请求接口错误");
                     }
                 });
@@ -146,7 +192,7 @@
             });
 
             // radio 切换事件
-            $(".radio-status").change(function() {
+            $(".radio-status").change(function () {
                 var $selectedvalue = $(".radio-status:checked").val();
                 if ($selectedvalue == 1) {
                     $('#textarea-content').val('你的反馈意见已经确认,我们将会根据你的建议在未来的版本内做调整,敬请期待,为表示对你的感谢,我们特别奖励你 5 点能量作为奖励,期待你的继续反馈。');
@@ -163,22 +209,22 @@
             })
 
             // 反馈处理提交
-            $(document).on('click','#btn_feedback_submit',function(){
+            $(document).on('click', '#btn_feedback_submit', function () {
                 $.ajax({
                     type: "POST",
                     url: '{!! route('admin.user.deal_feedback') !!}',
                     data: {
-                        id:$("#input-id").val(),
-                        status:$(".radio-status:checked").val(),
-                        content:$("#textarea-content").val(),
-                        reward:$("#input-reward").val()
+                        id: $("#input-id").val(),
+                        status: $(".radio-status:checked").val(),
+                        content: $("#textarea-content").val(),
+                        reward: $("#input-reward").val()
                     },
                     dataType: "json",
-                    success: function(response){
-                        if(response.status) {
+                    success: function (response) {
+                        if (response.status) {
                             toastr.success("处理成功");
                             $('#feedback-modal').modal('hide');
-                            if(table) {
+                            if (table) {
                                 table.clear();
                                 table.draw();
                             }
@@ -186,7 +232,7 @@
                             toastr.error(response.message);
                         }
                     },
-                    error:function(error) {
+                    error: function (error) {
                         toastr.error("请求接口错误");
                     }
                 });

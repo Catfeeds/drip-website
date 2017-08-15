@@ -6,36 +6,44 @@
 @stop
 
 @section('content')
-    <div class="container-fluid">
-        <div class="row page-title-row">
-            <div class="col-md-6">
-                <h3>用户管理
-                    <small>» 反馈列表</small>
-                </h3>
-            </div>
-        </div>
+    <section class="content-header">
+        <h1>
+            用户管理
+            <small>用户列表</small>
+        </h1>
+        <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i>首页</a></li>
+            <li><a href="#">用户管理</a></li>
+            <li class="active">反馈列表</li>
+        </ol>
+    </section>
 
+    <section class="content">
         <div class="row">
-            <div class="col-sm-12">
-
-                {{--@include('admin.partials.errors')--}}
-
-                <table id="feedbacks-table" class="table table-striped table-bordered">
-                    <thead>
-                    <tr>
-                        <th>#ID</th>
-                        <th>用户</th>
-                        <th>版本号</th>
-                        <th>反馈内容</th>
-                        <th>反馈时间</th>
-                        <th>状态</th>
-                        <th data-sortable="false">操作</th>
-                    </tr>
-                    </thead>
-                </table>
+            <div class="col-xs-12">
+                <div class="box">
+                    <div class="box-header">
+                        <h3 class="box-title">全部用户</h3>
+                    </div>
+                    <div class="box-body">
+                        <table id="feedbacks-table" class="table table-striped table-bordered">
+                            <thead>
+                            <tr>
+                                <th>#ID</th>
+                                <th>用户</th>
+                                <th>版本号</th>
+                                <th>反馈内容</th>
+                                <th>反馈时间</th>
+                                <th>状态</th>
+                                <th data-sortable="false">操作</th>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 
     <!-- Modal -->
     <div class="modal fade" id="feedback-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"

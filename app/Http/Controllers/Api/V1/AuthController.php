@@ -299,7 +299,7 @@ class AuthController extends BaseController {
 	private function _send_register_email($email)
 	{
 		$myEmail = new MyEmail();
-		$myEmail->sendToSingleUser($email,'欢迎来到坚持每一天','app_register_template');
+		$myEmail->sendToSingleUser($email,'欢迎来到水滴打卡','app_register_template');
 	}
 
 	/**
