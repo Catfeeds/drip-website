@@ -30,7 +30,9 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 	Route::get('admin/auth/login', 'AuthController@getLogin');
 	Route::post('admin/auth/login', 'AuthController@postLogin');
 	Route::get('admin/user/users', 'UserController@users');
+	Route::get('admin/user/user_view/{id}', 'UserController@user_view');
 	Route::get('admin/user/ajax_users', 'UserController@ajax_users')->name('admin.user.ajax_users');
+	Route::get('admin/user/ajax_user_goals', 'UserController@ajax_user_goals')->name('admin.user.ajax_user_goals');
 	Route::get('admin/user/feedbacks', 'UserController@feedbacks');
 	Route::get('admin/user/ajax_feedbacks', 'UserController@ajax_feedbacks')->name('admin.user.ajax_feedbacks');
 	Route::post('admin/user/deal_feedback', 'UserController@deal_feedback')->name('admin.user.deal_feedback');

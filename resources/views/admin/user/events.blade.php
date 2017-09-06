@@ -2,20 +2,19 @@
 
 @section('css')
     @parent
-    <link rel="stylesheet" href="{{asset('plugins/datatables/media/css/dataTables.bootstrap.min.css')}}">
 @stop
 
 @section('content')
 
     <section class="content-header">
         <h1>
-            Data Tables
-            <small>advanced tables</small>
+            用户管理
+            <small>用户列表</small>
         </h1>
         <ol class="breadcrumb">
-            <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
-            <li><a href="#">Tables</a></li>
-            <li class="active">Data tables</li>
+            <li><a href="#"><i class="fa fa-dashboard"></i> 首页</a></li>
+            <li><a href="#">用户管理</a></li>
+            <li class="active">动态列表</li>
         </ol>
     </section>
 
@@ -24,65 +23,29 @@
             <div class="col-xs-12">
                 <div class="box">
                     <div class="box-header">
-                        <h3 class="box-title">Hover Data Table</h3>
+                        <h3 class="box-title">全部动态</h3>
                     </div>
-                    <!-- /.box-header -->
                     <div class="box-body">
-                        <div id="example2_wrapper" class="dataTables_wrapper form-inline dt-bootstrap">
-                            <div class="row">
-                                <div class="col-sm-6"></div>
-                                <div class="col-sm-6"></div>
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-12">
-
-                                </div>
-                            </div>
+                        <div class="table-responsive">
+                            <table id="events-table" class="table table-striped table-bordered">
+                                <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>用户</th>
+                                    <th>内容</th>
+                                    <th>是否公开</th>
+                                    <th>是否精选</th>
+                                    <th>时间</th>
+                                    <th data-sortable="false">操作</th>
+                                </tr>
+                                </thead>
+                            </table>
                         </div>
                     </div>
-                    <!-- /.box-body -->
                 </div>
-                <!-- /.box -->
-
-
             </div>
-            <!-- /.col -->
         </div>
-        <!-- /.row -->
-        <div>
     </section>
-
-    <div class="container-fluid">
-        <div class="row page-title-row">
-            <div class="col-md-6">
-                <h3>用户管理
-                    <small>» 动态列表</small>
-                </h3>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-sm-12">
-
-                {{--@include('admin.partials.errors')--}}
-
-                <table id="events-table" class="table table-striped table-bordered">
-                    <thead>
-                    <tr>
-                        <th>#ID</th>
-                        <th>用户</th>
-                        <th>内容</th>
-                        <th>附件</th>
-                        <th>是否公开</th>
-                        <th>是否精选</th>
-                        <th>时间</th>
-                        <th data-sortable="false">操作</th>
-                    </tr>
-                    </thead>
-                </table>
-            </div>
-        </div>
-    </div>
 
     <!-- Modal -->
     <div class="modal fade" id="feedback-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
@@ -135,6 +98,7 @@
     <!-- DataTables -->
     <script type="text/javascript" src="{{asset('plugins/datatables/media/js/jquery.dataTables.min.js')}}"></script>
     <script type="text/javascript" src="{{asset('plugins/datatables/media/js/dataTables.bootstrap.min.js')}}"></script>
+    <script type="text/javascript" src="{{asset('js/app.js')}}"></script>
 
     <script>
         $(function () {
@@ -149,7 +113,7 @@
                     {data: 'event_id', name: 'event_id'},
                     {data: 'nickname', name: 'nickname'},
                     {data: 'checkin_content', name: 'checkin_content'},
-                    {data: 'attach', name: 'attach'},
+//                    {data: 'attach', name: 'attach'},
                     {data: 'is_public', name: 'is_public'},
                     {data: 'is_hot', name: 'is_hot'},
                     {data: 'create_time', name: 'create_time'},

@@ -58,29 +58,19 @@
                 <div class="modal-body">
                     <form class="form-horizontal" role="form">
                         <input type="hidden" name="id" value="" id="input-id">
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">有效性:</label>
-                            <div class="col-sm-10">
-                                <label class="radio-inline">
-                                    <input type="radio" name="status" value="1" class="radio-status" checked> 有效
-                                </label>
-                                <label class="radio-inline">
-                                    <input type="radio" name="status" value="2" class="radio-status"> 无效
-                                </label>
-                            </div>
-                        </div>
+
                         <div class="form-group">
                             <label class="col-sm-2 control-label">处理意见:</label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" rows="3" name="content"  id="textarea-content">你的反馈意见已经确认,我们将会根据你的建议在未来的版本内做调整,敬请期待,为表示对你的感谢,我们特别奖励你 5 点能量作为奖励,期待你的继续反馈。</textarea>
+                                <textarea class="form-control" rows="3" name="content"  id="textarea-content">
+                                    你好：
+                                        我是「水滴打卡」的负责人刚哥，很荣幸在后台收到你对我们产品的反馈。
+
+                                        如果你有很多的想法或者意见
+                                </textarea>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="col-sm-2 control-label">奖励:</label>
-                            <div class="col-sm-4">
-                                <input type="text" class="form-control" value="5" name="reward" id="input-reward"/>
-                            </div>
-                        </div>
+
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -129,17 +119,6 @@
                 $('#feedback-modal').modal('show');
             });
 
-            // radio 切换事件
-            $(".radio-status").change(function() {
-                var $selectedvalue = $(".radio-status:checked").val();
-                if ($selectedvalue == 1) {
-                    $('#textarea-content').val('你的反馈意见已经确认,我们将会根据你的建议在未来的版本内做调整,敬请期待,为表示对你的感谢,我们特别奖励你 5 点能量作为奖励,期待你的继续反馈。');
-                    $('#input-reward').val(5);
-                } else {
-                    $('#textarea-content').val('你的反馈意见已经确认,由于版本设计和其他原因,我们暂时将不会对此做调整,还请谅解,期待你的继续反馈!');
-                    $('#input-reward').val(0);
-                }
-            });
 
             // 清空值
             $('#feedback-modal').on('hidden.bs.modal', function (e) {

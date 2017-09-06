@@ -15,7 +15,7 @@
         <ol class="breadcrumb">
             <li><a href="#"><i class="fa fa-dashboard"></i> 首页</a></li>
             <li><a href="#">用户管理</a></li>
-            <li class="active">用户列表</li>
+            <li class="active">列表</li>
         </ol>
     </section>
 
@@ -29,14 +29,14 @@
                     <div class="box-body">
                         <table id="users-table" class="table table-striped table-bordered">
                             <thead>
-                                <tr>
-                                    <th>#ID</th>
-                                    <th>昵称</th>
-                                    <th>邮箱</th>
-                                    <th>注册时间</th>
-                                    <th>最后登录时间</th>
-                                    <th data-sortable="false">操作</th>
-                                </tr>
+                            <tr>
+                                <th>#ID</th>
+                                <th>昵称</th>
+                                <th>邮箱</th>
+                                <th>注册时间</th>
+                                <th>最后登录时间</th>
+                                <th data-sortable="false">操作</th>
+                            </tr>
                             </thead>
                         </table>
                     </div>
@@ -55,11 +55,11 @@
 
 @stop
 @section('scripts')
-<!-- DataTables -->
-<script type="text/javascript" src="{{asset('plugins/datatables/media/js/jquery.dataTables.min.js')}}"></script>
-<script type="text/javascript" src="{{asset('plugins/datatables/media/js/dataTables.bootstrap.min.js')}}"></script>
+    <!-- DataTables -->
+    <script type="text/javascript" src="{{asset('plugins/datatables/media/js/jquery.dataTables.min.js')}}"></script>
+    <script type="text/javascript" src="{{asset('plugins/datatables/media/js/dataTables.bootstrap.min.js')}}"></script>
 
-<script>
+    <script>
         $(function() {
             $('#users-table').DataTable({
                 processing: true,

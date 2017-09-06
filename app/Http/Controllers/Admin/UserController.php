@@ -44,9 +44,51 @@ class UserController extends Controller
                 return $user->last_login_time>0?date("Y-m-d H:i:s",$user->last_login_time):'';
             })
             ->editColumn('nickname',  function ($user) {
-                return '<img src="'.$user->user_avatar.'" class="img-circle" width="24" height="24"> '.$user->nickname;
+                return '<a href="user_view/'.$user->user_id.'" data-toggle="modal" data-target="#user-view-modal"><img src="'.$user->user_avatar.'" class="img-circle" width="24" height="24"> '.$user->nickname."</a>";
             })
             ->make(true);
+    }
+
+    public function user_view(Request $request)
+    {
+        $user = User::find($request->id);;
+
+        return view('admin.user.user_view', ['user'=> $user]);
+    }
+
+    public function ajax_user_goals(Request $request)
+    {
+
+        $goals = DB::table('user_goal')
+            ->select(['user_goal.*',
+                'goal.goal_name'])
+            ->join('goal','goal.goal_id','=','user_goal.goal_id')
+            ->orderBy('user_goal.create_time','desc');
+
+
+        $datatables =  Datatables::of($goals)
+            ->addColumn('action', function ($goal) {
+                return '<a href="#edit-'.$goal->goal_id.'" class="btn btn-xs btn-primary"><i class="glyphicon glyphicon-edit"></i> 编辑</a>';
+            })
+            ->editColumn('create_time', function ($goal) {
+                return $goal->create_time>0?date("Y-m-d H:i:s",$goal->create_time):'';
+            })
+            ->editColumn('last_checkin_time', function ($goal) {
+                return $goal->last_checkin_time>0?date("Y-m-d H:i:s",$goal->last_checkin_time):'';
+            })
+            ->editColumn('is_public', function ($goal) {
+                return $goal->is_public == 0?'私密':'公开';
+            })
+            ->editColumn('status', function ($goal) {
+                return $goal->status == 0?'进行中':'已结束';
+            });
+
+            // additional users.name search
+            if ($user_id = $datatables->request->get('user_id')) {
+                $datatables->where('user_goal.user_id', '=',$user_id);
+            }
+
+            return $datatables->make(true);
     }
 
     /**
@@ -227,28 +269,28 @@ class UserController extends Controller
                 'users.email',
                 'users.nickname',
                 'checkin.checkin_content',
-                'attachs.attach_id',
-                'attachs.attach_name',
-                'attachs.attach_path'])
+//                'attachs.attach_id',
+//                'attachs.attach_name',
+//                'attachs.attach_path'
+            ])
             ->join('users','users.user_id','=','events.user_id')
             ->join('checkin','checkin.checkin_id','=','events.event_value')
-            ->leftJoin('attachs', function ($join) {
-                $join->on('attachs.attachable_id', '=', 'events.event_value')
-                    ->where('attachs.attachable_type', '=', 'checkin');
-            })
-            ->orderBy('events.create_time','desc')
-            ;
+//            ->leftJoin('attachs', function ($join) {
+//                $join->on('attachs.attachable_id', '=', 'events.event_value')
+//                    ->where('attachs.attachable_type', '=', 'checkin');
+//            })
+            ->orderBy('events.create_time','desc');
 
         return Datatables::of($events)
             ->addColumn('action', function ($event) {
                 return '<button data-id="'.$event->event_id.'" class="btn btn-xs btn-primary btn-event-hot"><i class="glyphicon glyphicon-edit"></i>设为精选</button>';
             })
-            ->addColumn('attach', function ($event) {
-                if($event->attach_id) {
-                    return '<img src="http://drip.growu.me/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" class="user-image img-circle" width="64" height="64">';
-                }
-                return '无';
-            })
+//            ->addColumn('attach', function ($event) {
+//                if($event->attach_id) {
+//                    return '<img src="http://drip.growu.me/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" class="user-image img-circle" width="64" height="64">';
+//                }
+//                return '无';
+//            })
             ->editColumn('is_public', function ($event) {
                 return $event->is_public==1?'是':'否';
             })
@@ -258,7 +300,7 @@ class UserController extends Controller
             ->editColumn('create_time', function ($event) {
                 return date("Y-m-d H:i:s",$event->create_time);
             })
-            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
+            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" class="img-circle" width="48" height="48">')
             ->make(true);
     }
 
