@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use JWTAuth;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -13,9 +14,9 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        'App\Events\SomeEvent' => [
-            'App\Listeners\EventListener',
-        ],
+//        'tymon.jwt.valid' => [
+//            'App\Listeners\JwtValidListener',
+//        ],
     ];
 
     /**
@@ -28,6 +29,10 @@ class EventServiceProvider extends ServiceProvider
     {
         parent::boot($events);
 
-        //
+        $events->listen('tymon.jwt.valid', function () {
+            $user = JWTAuth::parseToken()->toUser();
+            $user->last_login_time = time();
+            $user->save();
+        });
     }
 }
