@@ -59,6 +59,19 @@ $api->version('v1',['middleware'=>'cors'],function ($api) {
 	$api->post('auth/find', 'App\Http\Controllers\Api\V1\AuthController@find');
 });
 
+$api->version('v2',['middleware'=>'cors'],function ($api) {
+	$api->post('auth/login', 'App\Http\Controllers\Api\V2\AuthController@login');
+//	$api->post('auth/register', 'App\Http\Controllers\Api\V2\AuthController@register');
+//	$api->post('auth/oauth', 'App\Http\Controllers\Api\V2\AuthController@oauth');
+//	$api->post('auth/bind', 'App\Http\Controllers\Api\V2\AuthController@bind');
+//	$api->post('auth/get_verify_code', 'App\Http\Controllers\Api\V2\AuthController@get_verify_code');
+//	$api->post('auth/find', 'App\Http\Controllers\Api\V2\AuthController@find');
+});
+
+$api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
+	$api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@goals');
+});
+
 $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {
 
 	$api->get('event/all', 'App\Http\Controllers\Api\V1\EventController@all');

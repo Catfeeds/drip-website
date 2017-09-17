@@ -21,7 +21,7 @@ class MyJpush
     {
         if($appKey) $this->appKey = $appKey;
         if($masterSecret) $this->masterSecret = $masterSecret;
-        $this->client = new JPush($this->appKey,$this->masterSecret);
+        $this->client = new JPush($this->appKey,$this->masterSecret,storage_path().'/logs/jpush.log');
     }
 
     /**

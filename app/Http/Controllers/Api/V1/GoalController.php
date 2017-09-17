@@ -173,7 +173,10 @@ class GoalController extends BaseController
 
         $validation = Validator::make(Input::all(), [
             'name' => 'required|max:100',     // 名称
-            'days' => 'required|numeric|min:0|max:9999',  // 天数           // 天数
+            'days' => 'required|numeric|min:0',  // 天数
+            // TODO 增加字段判断
+//            'start_date' => 'required|date|date_format:Y-m-d|before:end_date|after:today',    //开始日期
+//            'end_date' => 'required|date|date_format:Y-m-d|after:start_date',      //结束日期
             'desc' => 'max:255',             // 描述
         ], $messages);
 
@@ -186,26 +189,23 @@ class GoalController extends BaseController
         $user_id = $user->user_id;
         $days = Input::get('days') ? Input::get('days') : 0;
 
-
-        $count = User::find($user_id)
-            ->goals()
-            ->wherePivot('is_del','=',0)
-            ->wherePivot('status','=',0)
-            ->count();
+//        $count = User::find($user_id)
+//            ->goals()
+//            ->wherePivot('is_del','=',0)
+//            ->wherePivot('status','=',0)
+//            ->count();
 
         // 判断用户等级和数量
-        if($count>=($user->level+1)) {
-            return API::response()->array(['status' => false, 'code' => 'failed', 'message' =>'达到目标上限']);
-        }
+//        if($count>=($user->level+1)) {
+//            return API::response()->array(['status' => false, 'code' => 'failed', 'message' =>'达到目标上限']);
+//        }
 
-        $need_energy = $days==0?1000:$days;
-
-        // 判断用户是否充足
-        if($user->energy_count<$need_energy) {
-            return API::response()->array(['status' => false, 'code' => 'failed', 'message' =>'能量值不足']);
-        }
-
-
+//        $need_energy = $days==0?1000:$days;
+//
+//        // 判断用户是否充足
+//        if($user->energy_count<$need_energy) {
+//            return API::response()->array(['status' => false, 'code' => 'failed', 'message' =>'能量值不足']);
+//        }
 
         $goal_name = Input::get('name');
 
@@ -234,11 +234,12 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'code' => '5100', 'message' => "你已经制定过该目标了"]);
         } else {
             $user->goals()->attach($goal->goal_id, [
-                'goal_desc' => trim(Input::get('name')),
-                // TODO 删除start_time字段
+                'goal_name' => trim(Input::get('name')),
+                'goal_desc' => trim(Input::get('desc')),
+                // TODO 修改start_time为create_time
                 'start_time' => time(),
-                'start_date' => date('Y-m-d'),
-                'end_date' => $days > 0 ? date('Y-m-d', strtotime('+' . ($days - 1) . ' days')) : '',
+                'start_date' => Input::get('start_date'),
+                'end_date' => Input::get('end_date'),
                 'expect_days' => $days,
             ]);
 

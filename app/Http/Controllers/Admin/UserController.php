@@ -14,6 +14,8 @@ use App\Models\Feedback as Feedback;
 use App\Models\Message as Message;
 use App\Models\Energy as Energy;
 use App\Libs\MyJpush as MyJpush;
+use App\Libs\MyEmail as MyEmail;
+
 use App\Event;
 
 use Yajra\Datatables\Datatables;
@@ -118,7 +120,7 @@ class UserController extends Controller
         return Datatables::of($feedbacks)
             ->addColumn('action', function ($feedback) {
                if($feedback->status == 0) {
-                   return '<button data-id="'.$feedback->id.'" class="btn btn-xs btn-primary btn-feedback-deal"><i class="glyphicon glyphicon-edit"></i>处理</button>';
+                   return '<button data-id="'.$feedback->id.'" data-content="'.$feedback->content.'" class="btn btn-xs btn-primary btn-feedback-deal"><i class="glyphicon glyphicon-edit"></i> 回复</button>';
                } else {
                    return '';
                }
@@ -126,13 +128,13 @@ class UserController extends Controller
             ->editColumn('status', function ($feedback) {
                switch ($feedback->status) {
                    case 0:
-                       return '<span class="label">未处理</span>';
+                       return '<span class="label label-default">未处理</span>';
                        break;
                    case 1:
-                       return '<span class="label label-success">已处理（有效）</span>';
+                       return '<span class="label label-success">已处理</span>';
                        break;
                    case 2:
-                       return '<span class="label label-warning">未处理（无效）</span>';
+                       return '<span class="label label-success">已处理</span>';
                        break;
                    default;
                        return '';
@@ -166,33 +168,40 @@ class UserController extends Controller
             return ['status'=>false,'message'=>'反馈记录不存在'];
         }
 
-        $feedback->status = $status;
-        $feedback->reward = $reward;
+        $email = $feedback->user->email;
+
+        if(filter_var($email,FILTER_VALIDATE_EMAIL))
+        {
+            $myEmail = new MyEmail('aes');
+            $myEmail->sendWithContent([$email], '意见反馈回复', $request->content);
+        }
+
+        $feedback->status = 1;
         $feedback->deal_time = time();
         $feedback->save();
 
-        // 发送奖励
-        $user = User::find($feedback->user_id);
-        $user->energy_count += $reward;
-        $user->save();
-
-        //发送消息
-        $message = new Message();
-        $message->from_user = 0;
-        $message->to_user = $feedback->user_id;
-        $message->type = 6 ;
-        $message->title = '反馈回复通知' ;
-        $message->content = $content ;
-        $message->msgable_id = $id;
-        $message->msgable_type = 'App\Models\Feedback';
-        $message->create_time  = time();
-        $message->save();
-
-        // 推送
-        $content = '你的反馈已收到回复';
-
-        $push = new MyJpush();
-        $push->pushToSingleUser($feedback->user_id,$content);
+//        // 发送奖励
+//        $user = User::find($feedback->user_id);
+//        $user->energy_count += $reward;
+//        $user->save();
+//
+//        //发送消息
+//        $message = new Message();
+//        $message->from_user = 0;
+//        $message->to_user = $feedback->user_id;
+//        $message->type = 6 ;
+//        $message->title = '反馈回复通知' ;
+//        $message->content = $content ;
+//        $message->msgable_id = $id;
+//        $message->msgable_type = 'App\Models\Feedback';
+//        $message->create_time  = time();
+//        $message->save();
+//
+//        // 推送
+//        $content = '你的反馈已收到回复';
+//
+//        $push = new MyJpush();
+//        $push->pushToSingleUser($feedback->user_id,$content);
 
         return ['status'=>true,'message'=>'操作成功'];
     }

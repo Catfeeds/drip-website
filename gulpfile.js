@@ -29,9 +29,13 @@ gulp.task("copyfiles", function() {
         "./bower_components/AdminLTE/dist/css/AdminLTE.min.css",
         "./bower_components/AdminLTE/dist/css/skins/skin-blue.min.css",
         "./bower_components/AdminLTE/dist/js/app.min.js",
+        "./bower_components/AdminLTE/plugins/**/*",
+
         // font-awesome
         "./bower_components/font-awesome/css/font-awesome.min.css",
         "./bower_components/font-awesome/fonts/**.*",
+
+
     ], {base: './bower_components/'})
         .   pipe(gulp.dest("./public/plugins/"));
 });

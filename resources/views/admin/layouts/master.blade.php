@@ -5,6 +5,7 @@
     @section('css')
         <link rel="stylesheet" href="{{asset('plugins/bootstrap/dist/css/bootstrap.min.css')}}">
         <link rel="stylesheet" href="{{asset('plugins/font-awesome/css/font-awesome.min.css')}}">
+        <link rel="stylesheet" href="{{asset('plugins/toastr/toastr.min.css')}}">
         <link rel="stylesheet" href="{{asset('plugins/AdminLTE/dist/css/AdminLTE.min.css')}}">
         <link rel="stylesheet" href="{{asset('plugins/datatables/media/css/dataTables.bootstrap.min.css')}}">
         <link rel="stylesheet" href="{{asset('plugins/AdminLTE/dist/css/skins/skin-blue.min.css')}}">
@@ -242,6 +243,8 @@
 </div>
 <script type="text/javascript" src="{{asset('plugins/jquery/dist/jquery.min.js')}}"></script>
 <script type="text/javascript" src="{{asset('plugins/bootstrap/dist/js/bootstrap.min.js')}}"></script>
+<script type="text/javascript" src="{{asset('plugins/toastr/toastr.min.js')}}"></script>
+
 <script type="text/javascript" src="{{asset('plugins/AdminLTE/dist/js/app.min.js')}}"></script>
 
 @yield('scripts')

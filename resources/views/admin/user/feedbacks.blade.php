@@ -3,6 +3,8 @@
 @section('css')
     @parent
     <link rel="stylesheet" href="{{asset('plugins/datatables/media/css/dataTables.bootstrap.min.css')}}">
+    <link rel="stylesheet" href="{{asset('plugins/AdminLTE/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css')}}">
+
 @stop
 
 @section('content')
@@ -48,7 +50,7 @@
     <!-- Modal -->
     <div class="modal fade" id="feedback-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
          aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"><span
@@ -62,11 +64,8 @@
                         <div class="form-group">
                             <label class="col-sm-2 control-label">处理意见:</label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" rows="3" name="content"  id="textarea-content">
-                                    你好：
-                                        我是「水滴打卡」的负责人刚哥，很荣幸在后台收到你对我们产品的反馈。
+                                <textarea class="form-control" rows="3" name="content" id="feedback-content">
 
-                                        如果你有很多的想法或者意见
                                 </textarea>
                             </div>
                         </div>
@@ -81,11 +80,42 @@
         </div>
     </div>
 
+    <div id="feedback-content-template" style="display: none;">
+        <p>
+        <p><br>亲爱的小伙伴：<br><br>&nbsp;您好，我是「水滴打卡」的负责人格吾君。非常感谢你对「水滴打卡」作出反馈。</p>
+        <p><br></p>
+        <p>&nbsp;关于你提出的：</p>
+        <p></p>
+        <blockquote id="feedback-blockquote"></blockquote>
+        <p></p>
+        <p>已经在新版本中进行修复，欢迎下载体验。</p>
+        <p><br></p>
+        <p>同时，我们也诚挚邀请您加入我们的「水滴打卡」产品交流群内对我们的产品进行更加深入的反馈和帮助。<br></p>
+        <p>加入方式：添加格吾君（微信号：<strong>growu001</strong>）,发送暗号<strong>“水滴打卡</strong>”即可。</p>
+        <p><br></p>
+        <p><img alt="" src="http://drip.growu.me/img/qrcode2.png" style="height:300px; width:300px" /></p>
+        <p>期待你的加入，再次感谢你使用「水滴打卡」。</p>
+        <div><p><strong>微信公众号：格吾社区</strong></p>
+            <p><strong>微博：<a target="_blank" rel="nofollow" href="http://weibo.com/growu"
+                             title="Link: http://weibo.com/growu">http://weibo.com/growu</a></strong></p>
+            <p><strong>qq群：7852084</strong></p>
+            <p><b>官网：</b><a target="_blank" rel="nofollow" href="http://drip.growu.me/"
+                            title="Link: http://drip.growu.me/">http://drip.growu.me</a></p>
+            <p><strong>电子邮件：drip@growu.me</strong></p></div>
+        ﻿<br></p>
+    </div>
+
 @stop
 @section('scripts')
     <!-- DataTables -->
     <script type="text/javascript" src="{{asset('plugins/datatables/media/js/jquery.dataTables.min.js')}}"></script>
     <script type="text/javascript" src="{{asset('plugins/datatables/media/js/dataTables.bootstrap.min.js')}}"></script>
+
+    <!-- Bootstrap WYSIHTML5 -->
+    <script type="text/javascript" src="{{asset('plugins/AdminLTE/plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js')}}"></script>
+    <!-- CKEditor -->
+
+    <script type="text/javascript" src="{{asset('plugins/AdminLTE/plugins/ckeditor/ckeditor.js')}}"></script>
 
     <script>
         $(function () {
@@ -96,6 +126,8 @@
                 ajax: '{!! route('admin.user.ajax_feedbacks') !!}',
                 type: 'POST',
                 iDisplayLength:100,
+                scrollX:true,
+                responsive:true,
                 columns: [
                     {data: 'id', name: 'id'},
                     {data: 'email', name: 'email'},
@@ -116,6 +148,7 @@
                     return;
                 }
                 $('#input-id').val(id);
+                $('#feedback-blockquote').html($(this).data('content'))
                 $('#feedback-modal').modal('show');
             });
 
@@ -123,7 +156,19 @@
             // 清空值
             $('#feedback-modal').on('hidden.bs.modal', function (e) {
                 $('#input-id').val('');
-            })
+            });
+
+//            $('#feedback-content').wysihtml5();
+            CKEDITOR.replace('feedback-content');
+
+            $('#feedback-modal').on('shown.bs.modal', function (e) {
+
+
+                var content = $('#feedback-content-template').html();
+//                $('iframe').contents().find('.wysihtml5-editor').html(content);
+                CKEDITOR.instances['feedback-content'].setData(content);
+
+            });
 
             // 反馈处理提交
             $(document).on('click','#btn_feedback_submit',function(){
@@ -132,9 +177,7 @@
                     url: '{!! route('admin.user.deal_feedback') !!}',
                     data: {
                         id:$("#input-id").val(),
-                        status:$(".radio-status:checked").val(),
-                        content:$("#textarea-content").val(),
-                        reward:$("#input-reward").val()
+                        content:CKEDITOR.instances['feedback-content'].getData(),
                     },
                     dataType: "json",
                     success: function(response){
