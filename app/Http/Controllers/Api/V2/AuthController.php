@@ -58,10 +58,10 @@ class AuthController extends BaseController {
 
         try {
             if (!$token = JWTAuth::attempt($credentials)) {
-                return $this->response->error("账号或密码不正确",401);
+                return $this->response->error("账号或密码不正确",500);
 			}
         } catch (JWTException $e) {
-            return $this->response->error("创建token失败",400);
+            return $this->response->error("创建token失败",500);
         }
 
         $user = Auth::user();

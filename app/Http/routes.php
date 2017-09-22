@@ -69,7 +69,15 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 });
 
 $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
-	$api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@goals');
+	$api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
+	$api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
+	$api->get('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@getGoal');
+	$api->get('user/goal/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getGoalEvents');
+	$api->get('user/goal/{id}/chart', 'App\Http\Controllers\Api\V2\UserController@getGoalChart');
+	$api->patch('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@updateGoal');
+	$api->post('goal/create', 'App\Http\Controllers\Api\V2\GoalController@create');
+	$api->put('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@like');
+	$api->delete('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@unLike');
 });
 
 $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {

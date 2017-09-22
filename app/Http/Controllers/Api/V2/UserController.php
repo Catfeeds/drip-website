@@ -5,6 +5,7 @@
 namespace App\Http\Controllers\Api\V2;
 
 use Auth;
+use Carbon\Carbon;
 use Validator;
 use API;
 use DB;
@@ -15,6 +16,7 @@ use App\Checkin;
 use App\Models\Message as Message;
 use App\Models\Attach as Attach;
 use App\Models\Report as Report;
+use App\Event;
 
 
 use Illuminate\Support\Facades\Input;
@@ -66,14 +68,14 @@ class UserController extends BaseController {
     }
  
     // 取出登录用户的目标列表
-    public function goals(Request $request)
+    public function getGoals (Request $request)
     {
         $messages = [
 //            'account.required' => '请输入邮箱地址',
         ];
 
         $validation = Validator::make(Input::all(), [
-            'day'		=> 	'',		// 日期
+            'date'	=> 	'',		// 具体日期
         ],$messages);
 
         if($validation->fails()){
@@ -82,61 +84,104 @@ class UserController extends BaseController {
 
     	$user_id  = $this->auth->user()->user_id;
 
-        $day = $request->input("day",date('Y-m-d'));
+        $date = $request->input("date",date('Y-m-d'));
 
         $goals = User::find($user_id)
             ->goals()
             ->wherePivot('is_del','=',0)
-            ->orderBy('order','asc')
+            ->wherePivot('start_date','<=',$date)
+            ->where(function($query) use ($date) {
+                $query->where('user_goal.end_date', '>=', $date)
+                    ->orWhere('user_goal.end_date', '=', NULL);
+            })
+            ->orderBy('remind_time','asc')
             ->get();
 
         $result = array();
 
         foreach ($goals as $key => $goal) {
 
-            $result['id'] = $goal;
+            $result[$key]['id'] = $goal->goal_id;
+            // TODO
+            // $goals[$key]['name'] = $goal->pivot->name;
+            $result[$key]['name'] = $goal->goal_name;
+            $result[$key]['is_today_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
+            $result[$key]['remind_time'] = $goal->pivot->remind_time?substr($goal->pivot->remind_time,0,5):null;
+            $result[$key]['status'] = $goal->pivot->status;
 
-
-            $goals[$key]['pivot']->is_today_checkin = $goal->pivot->last_checkin_time>=strtotime(date('Y-m-d'))?true:false;
-
-            if($goal->pivot->expect_days==0){
-                $goals[$key]['pivot']->expect_days = ceil((time()-$goal->pivot->start_time)/86400);
-            }
-
-//            $items = DB::table('user_goal_item')
-//                ->where('goal_id', $goal->goal_id)
-//                ->where('user_id',$user_id)
-//                ->where('is_del','0')
-//                ->get();
-//
-//            $goal->items = $items;
         }
 
-        return API::response()->array(compact('goals'))->statusCode(200);
+        return API::response()->array($result)->statusCode(200);
     }
 
-    public function goal()
+    public function getGoalsCalendar (Request $request)
     {
-    	$validation = Validator::make(Input::all(), [
-      		'user_id'		=> 	'required',		// 用户id
-      		'goal_id'		=>	'required',     // 目标id
-    	]);
+        $messages = [
+            'start_date.required' => '请输入开始日期',
+            'end_date.required' => '请输入结束日期',
+        ];
 
-    	if($validation->fails()){
-	      return API::response()->array(['status'=>false,'code' => '2001', 'message' => $validation->errors()]);
-	    }
+        $validation = Validator::make(Input::all(), [
+            'start_date'	=> 	'required',		// 开始日期
+            'end_date'		=> 	'required',		// 结束日期
+        ],$messages);
 
-    	$user_id  = Input::get('user_id');
-    	$goal_id  = Input::get('goal_id');
+        if($validation->fails()){
+            return API::response()->error($validation->errors()->all('</br>:message'),500);
+        }
+
+        $user_id  = $this->auth->user()->user_id;
+
+        $start_date = $request->input("start_date");
+        $format_start_date = Carbon::parse($start_date);;
+        $end_date = $request->input("end_date");
+        $format_end_date = Carbon::parse($end_date);;
+
+        $diffDays = $format_start_date->diffInDays($format_end_date);
+
+        $result = array();
+
+        for($i=0;$i<=$diffDays;$i++) {
+            $result[] = $this->_get_goals_by_day($format_start_date->addDays($i)->toDateString());
+        }
+
+        return API::response()->array($result)->statusCode(200);
+    }
+
+    private function _get_goals_by_day($date) {
+        $user_id  = $this->auth->user()->user_id;
+
+        return User::find($user_id)
+            ->goals()
+            ->wherePivot('is_del','=',0)
+            ->wherePivot('start_date','<=',$date)
+            ->where(function($query) use ($date) {
+                $query->where('user_goal.end_date', '>=', $date)
+                    ->orWhere('user_goal.end_date', '=', NULL);
+            })
+            ->count();
+    }
+
+    public function getGoal($goal_id,Request $request)
+    {
+//    	$validation = Validator::make(Input::all(), [
+//      		'user_id'		=> 	'required',		// 用户id
+//      		'goal_id'		=>	'required',     // 目标id
+//    	]);
+//
+//    	if($validation->fails()){
+//	      return API::response()->array(['status'=>false,'code' => '2001', 'message' => $validation->errors()]);
+//	    }
+
+    	$user_id  = $this->auth->user()->user_id;
 
     	$goal = User::find($user_id)->goals()
             ->wherePivot('goal_id','=',$goal_id)
             ->wherePivot('is_del','=',0)
             ->first();
 
-        // TODO 删除code
         if(empty($goal)) {
-            return API::response()->array(['status'=>false,'code' => '2001', 'message' =>"未制定该目标"]);
+            return $this->response->error("未制定该目标",500);
         }
 
         // 检查今天是否打卡
@@ -168,34 +213,293 @@ class UserController extends BaseController {
 
         $goal->items = $items;
 
-        // TODO 删除code
-        return API::response()->array(['status'=>true,'code' => '0', 'message' =>"",'data'=>$goal]);;
+        $result = array();
+
+        $result['id'] = $goal_id;
+        $result['name'] = $goal->goal_name;
+        $result['expect_days'] = $goal->pivot->expect_days;
+        $result['total_days'] = $goal->pivot->total_days;
+        $result['series_days'] = $goal->pivot->series_days;
+        $result['start_date'] = $goal->pivot->start_date;
+        $result['end_date'] = $goal->pivot->end_date;
+        $result['status'] = $goal->pivot->status;
+        $result['items'] = $goal->items;
+
+
+        return $result;
     }
 
-    public function events()
+    public function updateGoal($id,Request $request){
+
+        $goal = Goal::findOrFail($id);
+
+        $messages = [
+            'goal_id.required' => '缺少目标ID参数',
+        ];
+
+        $validation = Validator::make(Input::all(), [
+            'goal_id' => 'required',     // 目标id
+            'items' => [],             // 统计项目
+            'is_public' => '',             // 是否公开
+            'is_push' => '',                // 是否推送
+            'push_time' => '',             // 推送时间
+        ], $messages);
+
+        if ($validation->fails()) {
+            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
+        }
+
+        $user_id = $this->auth->user()->user_id;
+
+        // 判断是否已经指定了该目标
+        $user_goal = Goal::find($request->goal_id)
+            ->users()
+            ->wherePivot('user_id', '=', $user_id)
+            ->wherePivot('is_del', '=', 0)
+            ->first();
+
+        if (!$user_goal) {
+            return API::response()->array(['status' => false, 'message' => "未制定该目标"]);
+        }
+
+        DB::table('user_goal')->where('id', '=', $user_goal->pivot->id)
+            ->update([
+                'is_public' =>(int)($request->is_public),
+                'is_push' => (int)($request->is_push),
+                'remind_time' => $request->is_push == true ? $request->remind_time : ''
+            ]);
+
+        $this->_insert_items($user_id, $user_goal->pivot->goal_id, $request->items);
+
+        return API::response()->array(['status' => true, 'message' => "更新成功", "data" => []]);
+    }
+
+    public function getGoalChart($goal_id,Request $request)
+    {
+//        $messages = [
+//            'required' => '缺少参数 :attribute',
+//        ];
+////
+//        $validation = Validator::make(Input::all(), [
+//            'page' => '',
+//            'per_page' => ''
+//        ], $messages);
+
+        $user_id  = $this->auth->user()->user_id;
+
+//        $goal = User::find($user_id)->goals()
+//            ->wherePivot('goal_id','=',$goal_id)
+//            ->wherePivot('is_del','=',0)
+//            ->first();
+
+        $mode  = $request->input('mode',"week");
+
+        $end_date  = $request->input('day',date('Y-m-d'));
+
+        $end_dt = new Carbon($end_date);
+
+        $result = [];
+        $data = [];
+
+        $total_checkin_days = 0;
+
+        $total_days = 0;
+        
+        if($mode == 'week') {
+            for($i=5;$i>=0;$i--) {
+                if($i < 5 ) {
+                    $end_dt->subWeek();
+                }
+
+                $week = $end_dt->weekOfYear;
+                $year = $end_dt->year;
+
+                $start_day = $end_dt->startOfWeek()->toDateString();
+                $end_day = $end_dt->endOfWeek()->toDateString();
+
+                $data[$i]['start_date'] = $start_day;
+                $data[$i]['end_date'] = $end_day;
+
+                // 获取日期范围内的打卡次数
+                $count = DB::table('checkin')
+                    ->where('goal_id', $goal_id)
+                    ->where('user_id', $user_id)
+                    ->whereRaw('YEAR(checkin_day)=' . $year)
+                    ->whereRaw('WEEK(checkin_day)=' . $week)
+                    ->count();
+
+                $total_checkin_days += $count;
+
+                $data[$i]['checkin_count'] = $count;
+                $data[$i]['checkin_rate'] = round($count*100/7);
+                $data[$i]['label'] = '第'.$week.'周';
+                $data[$i]['week'] = $week;
+            }
+
+            $total_days = 42;
+
+            $result['title'] = '第'.$data[0]['week'].'周-第'.$data[5]['week'].'周';
+
+        } else if($mode == 'month'){
+            for($i=5;$i>=0;$i--) {
+                if($i < 5 ) {
+                    $end_dt->subMonth();
+                }
+
+                $month = $end_dt->month;
+                $year = $end_dt->year;
+
+                $total_days += $end_dt->daysInMonth;
+
+                $start_day = $end_dt->startOfMonth()->toDateString();
+                $end_day = $end_dt->startOfMonth()->toDateString();
+
+                $data[$i]['start_date'] = $start_day;
+                $data[$i]['end_date'] = $end_day;
+
+                // 获取日期范围内的打卡次数
+                $count = DB::table('checkin')
+                    ->where('goal_id', $goal_id)
+                    ->where('user_id', $user_id)
+                    ->whereRaw('YEAR(checkin_day)=' . $year)
+                    ->whereRaw('MONTH(checkin_day)=' . $month)
+                    ->count();
+
+                $total_checkin_days += $count;
+
+                $data[$i]['checkin_count'] = $count;
+                $data[$i]['checkin_rate'] = round($count*100/$end_dt->daysInMonth);
+                $data[$i]['label'] = $month.'月';
+                $data[$i]['month'] = $month;
+            }
+
+            $result['title'] = $data[0]['month'].'月 - '.$data[5]['month'].'月';
+        } else if ($mode == 'year') {
+            for($i=5;$i>=0;$i--) {
+                if($i < 5 ) {
+                    $end_dt->subYear();
+                }
+
+                $year = $end_dt->year;
+
+                $year_days = $end_dt->isLeapYear()?366:365;
+
+                $total_days += $year_days;
+
+                $start_day = $end_dt->startOfYear()->toDateString();
+                $end_day = $end_dt->endOfYear()->toDateString();
+
+                $data[$i]['start_date'] = $start_day;
+                $data[$i]['end_date'] = $end_day;
+
+                // 获取日期范围内的打卡次数
+                $count = DB::table('checkin')
+                    ->where('goal_id', $goal_id)
+                    ->where('user_id', $user_id)
+                    ->whereRaw('YEAR(checkin_day)=' . $year)
+                    ->count();
+
+                $total_checkin_days += $count;
+
+                $data[$i]['checkin_count'] = $count;
+                $data[$i]['checkin_rate'] = round($count*100/$year_days);
+                $data[$i]['label'] = $year.'年';
+                $data[$i]['year'] = $year;
+            }
+
+            $result['title'] = $data[0]['year'].'年 - '.$data[5]['year'].'年';
+        }
+
+        if($end_date == date('Y-m-d')) {
+            $result['next'] = "";
+        } else {
+            $next_dt =new Carbon($end_date);
+            $result['next'] = $next_dt->addDay()->toDateString();
+        }
+
+        $prev_dt = new Carbon($data[0]['start_date']);
+
+        $result['prev'] = $prev_dt->subDay()->toDateString();
+
+        $result['data'] = array_values($data);
+
+        $result ['total_days'] = $total_days;
+        $result ['checkin_count'] = $total_checkin_days;
+        $result ['checkin_rate'] = round($total_checkin_days*100/$total_days);
+
+        return $result;
+    }
+
+    public function getGoalEvents($goal_id,Request $request)
     {
         $messages = [
             'required' => '缺少参数 :attribute',
         ];
 
     	$validation = Validator::make(Input::all(), [
-      		'user_id'		=> 	'required',		// 用户id
-            'limit'        =>  '',              // 偏移
-            'offset'        =>  ''              // 偏移
+            'page'        =>  '',
+            'per_page'        =>  ''
     	],$messages);
 
-    	if($validation->fails()){
-	      return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-	    }
+        if ($validation->fails()) {
+            return API::response()->error(implode(',',$validation->errors()->all()),500);
+        }
 
-    	$user_id  = Input::get('user_id');
-        $limit  = Input::get('limit')?Input::get('limit'):20;
-        $offset  = Input::get('offset')?Input::get('offset'):0;
+        $user_id = $this->auth->user()->user_id;
 
-        $events = User::find($user_id)->events()->skip($offset)->take($limit)->get();
+        $page  = $request->input('page',1);
+        $per_page = $request->input('per_page',20);
 
-        return API::response()->array(['status' => true, 'message' => '','data'=>$events])->statusCode(200);
+        $events = Event::where('goal_id', $goal_id)
+            ->where('is_public','=',1)
+            ->orderBy('create_time', 'DESC')->skip($page*$per_page)
+            ->take($per_page)->get();
 
+        $result = [];
+
+        foreach ($events as $key => $event) {
+            $result[$key]['content'] = $event->content;
+
+
+            if ($event['type'] == 'USER_CHECKIN') {
+                $checkin = DB::table('checkin')
+                    ->where('checkin_id', $event->event_value)
+                    ->first();
+                $result[$key]['content'] = $checkin?$checkin->checkin_content:'';
+
+                $items = DB::table('checkin_item')
+                    ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
+                    ->where('checkin_id', $event->event_value)
+                    ->get();
+                $attaches = DB::table('attachs')
+                    ->where('attachable_id', $event->event_value)
+                    ->where('attachable_type', 'checkin')
+                    ->get();
+            }
+            // 后去是否点赞过
+
+            $is_like =  Event::find($event->event_id)
+                ->likes()
+                ->where('user_id','=',$user_id)
+                ->first();
+            
+            $result[$key]['owner'] = $event->user;
+            $result[$key]['goal'] = $event->goal;
+
+            $result[$key]['id'] = $event->event_id;
+            $result[$key]['like_count'] = $event->like_count;
+            $result[$key]['comment_count'] = $event->comment_count;
+            $result[$key]['is_hot'] = $event->is_hot;
+            $result[$key]['is_public'] = $event->is_public;
+            $result[$key]['is_like'] = $is_like?true:false;
+            $result[$key]['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
+            $result[$key]['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
+
+        }
+
+//        $events = User::find($user_id)->events()->skip($offset)->take($limit)->get();
+
+        return $result;
     }
 
     public function new_messages()

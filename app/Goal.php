@@ -8,7 +8,7 @@ class Goal extends Model
 {
     protected $table = 'goal';
     protected $primaryKey = 'goal_id';
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function events()
     {
