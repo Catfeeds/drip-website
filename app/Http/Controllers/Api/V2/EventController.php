@@ -10,6 +10,9 @@ use Validator;
 use API;
 use DB;
 
+use Carbon\Carbon;
+
+
 use App\Event;
 use App\Checkin;
 use App\User;
@@ -28,42 +31,64 @@ class EventController extends BaseController {
 	/**
 	 * 获取单条动态的详情
 	 */
-	public function info()
+	public function getEventDetail($event_id,Request $request)
 	{
-		$messages = [
-			'required' => '缺少参数 :attribute',
-		];
+//		$messages = [
+//			'required' => '缺少参数 :attribute',
+//		];
+//
+//		$validation = Validator::make(Input::all(), [
+//			'event_id'		=> 	'required',		// 动态id
+//		],$messages);
+//
+//		if($validation->fails()){
+//			return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
+//		}
 
-		$validation = Validator::make(Input::all(), [
-			'event_id'		=> 	'required',		// 动态id
-		],$messages);
+//		$event_id = Input::get('event_id');
 
-		if($validation->fails()){
-			return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-		}
-
-		$event_id = Input::get('event_id');
+		$result = [];
 
 		$event = Event::with('user')->where('event_id',$event_id)->first();
 
 		if(!$event) {
-			return API::response()->array(['status' => false, 'message' => '未找到动态信息'])->statusCode(200);
+			return $this->response->error('未找到动态信息',500);
 		}
+
+		$result['id'] = $event->event_id;
+		$result['content'] = $event->event_content;
+		$result['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
+		$result['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
+
 
 		if($event->type == 'USER_CHECKIN' ) {
 			// 获取对应的信息
-			$event->checkin = Checkin::find($event->event_value);
-			// 获取项目
-			$event->checkin->items = DB::table('checkin_item')
-				->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
-				->where('checkin_id', $event->event_value)
-				->get();
+			$checkin = Checkin::find($event->event_value);
+
+			$result['content'] = $checkin->checkin_content;
+
+
+//			// 获取项目
+//			$event->checkin->items = DB::table('checkin_item')
+//				->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
+//				->where('checkin_id', $event->event_value)
+//				->get();
 
 			// 获取附件
-			$event->checkin->attaches = DB::table('attachs')
+			$attachs = DB::table('attachs')
 				->where('attachable_id', $event->event_value)
 				->where('attachable_type','checkin')
 				->get();
+
+			$new_attachs = [];
+
+			foreach($attachs as $k=>$attach) {
+				$new_attachs[$k]['id'] = $attach->attach_id;
+				$new_attachs[$k]['name'] = $attach->attach_name;
+				$new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+			}
+
+			$event['attachs'] = $new_attachs;
 
 			$event->goal =  $event->goal;
 		}
@@ -75,22 +100,114 @@ class EventController extends BaseController {
 			->take(10)
 			->get();
 
-		foreach($comments as $comment) {
+		$new_comments = [];
+
+		foreach($comments as $k=>$comment) {
+
+			$new_comments[$k]['id'] = $comment['comment_id'];
+			$new_comments[$k]['content'] = $comment['content'];
+			$new_comments[$k]['like_count'] = $comment['like_count'];
+
+			$user = [];
+
+			$user['id'] = $comment->user->user_id;
+			$user['nickname'] = $comment->user->nickname;
+			$user['avatar_url'] = $comment->user->user_avatar;
+
+			$new_comments[$k]['user'] = $user;
+
 			if($comment->parent_id>0) {
-				$comment->parent = Comment::with('user')->find($comment->parent_id);
+				$parent = Comment::with('user')->find($comment->parent_id);
+
+				$new_comments[$k]['parent'] = $parent;
+
 			} else {
-				$comment->parent = null;
+				$new_comments[$k]['parent'] = null;
 			}
 		}
 
-		$event->comments = $comments;
+		$result['comments'] = $new_comments;
 
 		// 获取点赞
-		$event->likes = Like::with('user')->where('event_id',$event_id)->orderBy('create_time','desc')->take(6)->get();
+		$likes = Like::with('user')->where('event_id',$event_id)->orderBy('create_time','desc')->take(6)->get();
 
-		return API::response()->array(['status' => true, 'message' =>'获取成功','data'=>$event])->statusCode(200);
+		$new_likes = [];
+
+		foreach($likes as $k=>$like) {
+			$new_likes[$k]['id'] = $like->like_id;
+
+			$user = [];
+
+			$user['id'] = $like->user->user_id;
+			$user['nickname'] = $like->user->nickname;
+			$user['avatar_url'] = $like->user->user_avatar;
+
+			$new_likes[$k]['user'] = $user;
+		}
+
+		$result['likes'] = $new_likes;
+
+		$user = DB::table('users')
+			->where('user_id', $event->user_id)
+			->first();
+
+		$new_user = [];
+		$new_user['id'] = $user->user_id;
+		$new_user['nickname'] = $user->nickname;
+		$new_user['avatar_url'] = $user->user_avatar;
+
+		$result['user'] = $new_user;
+
+		return $result;
 	}
 
+
+	public function getEventLikes($event_id,Request $request) {
+
+		$messages = [
+			'required' => '缺少参数 :attribute',
+        ];
+
+    	$validation = Validator::make(Input::all(), [
+			'page'        =>  '',
+			'per_page'        =>  ''
+		],$messages);
+
+		$user_id = $this->auth->user()->user_id;
+
+		$page = $request->input('page',1);
+		$per_page = $request->input('per_page',20);
+
+		$likes = Like::with('user')->where('event_id',$event_id)->orderBy('create_time','desc')->skip(($page-1)*$per_page)->take($per_page)->get();
+
+		$new_likes = [];
+
+		foreach($likes as $k=>$like) {
+			$new_likes[$k]['id'] = $like->like_id;
+
+			$user = [];
+
+			$user['id'] = $like->user->user_id;
+			$user['nickname'] = $like->user->nickname;
+			$user['signature'] = $like->user->signature;
+			$user['avatar_url'] = $like->user->user_avatar;
+
+			$is_follow = DB::table('user_follow')
+				->where('user_id',$user_id)
+				->where('follow_user_id',$like->user->user_id)
+				->first();
+
+
+			// 判断是否关注该用户
+			$user['is_follow'] = $is_follow?true:false;
+
+
+			$new_likes[$k]['user'] = $user;
+		}
+
+		return $new_likes;
+
+	}
 	/**
 	 * 获取动态
 	 */
@@ -171,6 +288,80 @@ class EventController extends BaseController {
 		}
 
 		return API::response()->array(['status' => true, 'message' =>'','data'=>$new_events])->statusCode(200);
+	}
+
+
+	public function getHotEvents(Request $request) {
+
+		$page = $request->input('page',1);
+		$per_page = $request->input('page',10);
+
+		$events = Event::where('is_hot','=',1)
+			->where('is_public','=',1)
+			->orderBy('create_time','DESC')->skip($page*$per_page)
+			->take($per_page)->get();
+
+		$new_events = [];
+
+		foreach ($events as $key => $event) {
+//			$new_events[$key] = $event;
+
+			$new_events[$key]['id'] = $event->event_id;
+			$new_events[$key]['content'] = $event->event_content;
+			$new_events[$key]['like_count'] = $event->like_count;
+
+			if($event->type == 'USER_CHECKIN') {
+
+				$checkin = DB::table('checkin')
+					->where('checkin_id', $event->event_value)
+					->first();
+
+				$content = $checkin->checkin_content;
+
+				$new_events[$key]['content'] = $content?mb_substr($content,0,20):'';
+
+//				$new_events[$key]->checkin->items = DB::table('checkin_item')
+//					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
+//					->where('checkin_id', $event->event_value)
+//					->get();
+				$attachs = DB::table('attachs')
+					->where('attachable_id', $event->event_value)
+					->where('attachable_type','checkin')
+					->get();
+
+				$new_attachs = [];
+
+				foreach($attachs as $k=>$attach) {
+					$new_attachs[$k]['id'] = $attach->attach_id;
+					$new_attachs[$k]['name'] = $attach->attach_name;
+					$new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+				}
+
+
+				$new_events[$key]['attachs'] = $new_attachs;
+
+			}
+
+			$user = DB::table('users')
+				->where('user_id', $event->user_id)
+				->first();
+
+			$owner = [];
+			$owner['id'] = $user->user_id;
+			$owner['nickname'] = $user->nickname;
+			$owner['avatar_url'] = $user->user_avatar;
+
+			$new_events[$key]['owner'] = $owner;
+
+//
+//			$new_events[$key]->goal =DB::table('goal')
+//				->where('goal_id', $event->goal_id)
+//				->first();
+
+		}
+
+		return $new_events;
+
 	}
 
 	/**

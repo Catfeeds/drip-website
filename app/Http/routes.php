@@ -71,13 +71,30 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
 	$api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
+	$api->get('user/messages/fan', 'App\Http\Controllers\Api\V2\UserController@getFanMessages');
+	$api->get('user/messages/comment', 'App\Http\Controllers\Api\V2\UserController@getCommentMessages');
+	$api->get('user/messages/like', 'App\Http\Controllers\Api\V2\UserController@getLikeMessages');
 	$api->get('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@getGoal');
 	$api->get('user/goal/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getGoalEvents');
 	$api->get('user/goal/{id}/chart', 'App\Http\Controllers\Api\V2\UserController@getGoalChart');
+	$api->get('user/goal/{id}/day', 'App\Http\Controllers\Api\V2\UserController@getGoalDay');
+	$api->get('user/goal/{id}/week', 'App\Http\Controllers\Api\V2\UserController@getGoalWeek');
+	$api->get('user/goal/{id}/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalCalendar');
+	$api->post('user/goal/{id}/checkin', 'App\Http\Controllers\Api\V2\UserController@checkinGoal');
 	$api->patch('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@updateGoal');
+	$api->delete('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@deleteGoal');
 	$api->post('goal/create', 'App\Http\Controllers\Api\V2\GoalController@create');
+	$api->put('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@follow');
+	$api->delete('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@unFollow');
 	$api->put('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@like');
 	$api->delete('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@unLike');
+	$api->get('event/hot', 'App\Http\Controllers\Api\V2\EventController@getHotEvents');
+	$api->get('event/follow', 'App\Http\Controllers\Api\V2\EventController@getFollowEvents');
+	$api->get('event/{id}', 'App\Http\Controllers\Api\V2\EventController@getEventDetail');
+	$api->get('event/{id}/likes', 'App\Http\Controllers\Api\V2\EventController@getEventLikes');
+	$api->post('comment/{id}/reply', 'App\Http\Controllers\Api\V2\CommentController@reply');
+	$api->put('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@like');
+
 });
 
 $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {

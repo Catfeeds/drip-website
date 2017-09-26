@@ -187,7 +187,7 @@ class GoalController extends BaseController
         ], $messages);
 
         if ($validation->fails()) {
-            return API::response()->error(implode(',',$validation->errors()->all()),500);
+            return $this->response-error(implode(',',$validation->errors()->all()),500);
         }
 
         $user = $this->auth->user();
@@ -240,9 +240,12 @@ class GoalController extends BaseController
             Goal::find($goal->goal_id)->increment('follow_nums', 1);
         }
 
-        $goal = User::find($user_id)->goals()->wherePivot('goal_id', '=', $goal->goal_id)->first();
+//        $goal = User::find($user_id)->goals()->wherePivot('goal_id', '=', $goal->goal_id)->first();
 
-        return $goal;
+        $new_goal = [];
+        $new_goal['id'] = $goal->goal_id;
+
+        return $new_goal;
     }
 
     /**
