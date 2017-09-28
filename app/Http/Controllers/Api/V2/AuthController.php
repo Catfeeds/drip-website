@@ -12,6 +12,7 @@ use Log;
 use DB;
 
 use App\User;
+use App\Event;
 use App\Models\Device as Device;
 use App\Libs\MyEmail as MyEmail;
 
@@ -68,7 +69,19 @@ class AuthController extends BaseController {
 
 		$this->_insert_device($user->user_id,$request->input('device'),$request);
 
-        return $this->response->array(array('token'=>$token,'user'=>$user));
+		$new_user = [];
+		$new_user['id'] = $user->user_id;
+		$new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
+		$new_user['nickname'] = $user->nickname;
+		$new_user['signature'] = $user->signature;
+		$new_user['avatar_url'] = $user->user_avatar;
+		$new_user['follow_count'] = $user->follow_count;
+		$new_user['fans_count'] = $user->fans_count;
+		$event_count = Event::where('user_id',$user->user_id)->count();
+		$new_user['event_count'] = $event_count;
+
+
+        return $this->response->array(array('token'=>$token,'user'=>$new_user));
 
     }
 
@@ -236,41 +249,85 @@ class AuthController extends BaseController {
     public function register(Request $request) {
 
 		$messages = [
-			'email.required' => '请输入邮箱地址',
-			'email.email'    => '请输入一个合法的邮箱地址',
+			'account.required' => '请输入邮箱或手机号',
 			'password.required' => '请输入密码',
 			'password.between' => '密码长度需:min到:max位',
 		];
 
 	    $validation = Validator::make(Input::all(), [
-      		'email'		=> 	'required|email',		// 邮箱
+      		'account'		=> 	'required',		// 邮箱
+			'code'			=>  'required|digits:4',
 	        'password' 	=> 	'required|between:6,12',		// 密码
 	        'device' 	=> 	'', 	// 设备
     	],$messages);
 
 	    if($validation->fails()){
-	      return API::response()->array(['status' => false, 'message' => $validation->errors()->all('</br>:message')])->statusCode(200);
+	      return $this->response->error(implode(',',$validation->errors()->all()),500);
 	    }
 
-	    $email  = Input::get('email');
-	    $password = Input::get('password');
+
+		$login_type = '';
+
+		if(preg_match("/^1[34578]\d{9}$/", $request->input('account'))) {
+			$login_type  = 'phone';
+		} else if(filter_var($request->input('account'), FILTER_VALIDATE_EMAIL))  {
+			$login_type = 'email';
+		}
+
+		if(empty($login_type)) {
+			return $this->response->error('未知的登录方式',500);
+		}
+
+//		DB::enableQueryLog();
+
+		// 根据验证码和邮箱查找
+		$code = DB::table('verify_code')
+			->where('send_type',$login_type)
+			->where('send_object',$request->account)
+			->where('type','register')
+			->where('code',$request->code)
+			->orderBy('create_time', 'desc')
+			->first();
+
+//		$laQuery = DB::getQueryLog();
+//
+//		$lcWhatYouWant = $laQuery[0]['query'];
+
+		// 检验验证吗是否有效
+
+		if($code) {
+			if ($code->status == 1) {
+				return $this->response->error('验证码已使用',500);
+			}
+
+			if ($code->expire_time < time()) {
+				return $this->response->error('验证码已过期',500);
+			}
+		} else {
+			return $this->response->error('验证码不存在',500);
+		}
+
+		$user = User::where($login_type,'=',$request->input('account'))->first();
+		if($user) {
+			return $this->response->error('邮箱/手机号已注册',500);
+		}
+
+		$password = $request->input('password');
 
 	    // 查询用户是否存在
-	    $user = User::where('email','=',$email)->first();
 
-	    if($user) {
-	    	 return API::response()->array(['status' => false, 'message' =>'邮箱已注册'])->statusCode(200);
-	    }
-
-	    $salt = rand(100000, 999999);
+	    $salt = rand(1000, 9999);
 
 	    $user  = new User();
 	    $user->passwd = md5($password.$salt);
-	    $user->email = $email;
+		if($login_type == 'email') {
+			$user->email = $request->input('account');
+		} else if($login_type == 'phone') {
+			$user->phone = $request->input('account');
+		}
 	    $user->salt = $salt;
 		$user->reg_time = time();
 		$user->reg_ip = $request->ip();
-
 		$user->save();
 
 		$this->_insert_device($user->user_id,$request->input('device'),$request);
@@ -278,10 +335,22 @@ class AuthController extends BaseController {
 	   	$token = JWTAuth::fromUser($user);
 
 		// 发送注册邮件
-		$this->_send_register_email($email);
+		if($login_type == 'email') {
+			$this->_send_register_email($request->input('account'));
+		}
 
- 		// all good so return the token
-        return $this->response->array(array('status'=> true,'message'=>'注册成功','token'=>$token,'user'=>$user));
+		$new_user = [];
+		$new_user['id'] = $user->user_id;
+		$new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
+		$new_user['nickname'] = $user->nickname;
+		$new_user['signature'] = $user->signature;
+		$new_user['avatar_url'] = $user->user_avatar;
+		$new_user['follow_count'] = $user->follow_count;
+		$new_user['fans_count'] = $user->fans_count;
+		$event_count = Event::where('user_id',$user->user_id)->count();
+		$new_user['event_count'] = $event_count;
+
+		return $this->response->array(['token' => $token,'user'=>$new_user]);
     }
 
 
@@ -446,53 +515,69 @@ class AuthController extends BaseController {
 	/**
 	 * 获取验证码
 	 */
-	public function get_verify_code(Request $request)
+	public function getCode(Request $request)
 	{
 		$messages = [
 			'required' => '缺少参数 :attribute',
 		];
 
 		$validation = Validator::make(Input::all(), [
-			'send_type'		=> 	'required',		// 发送方式
-			'send_object'   =>  'required',     // 发送对象
+			'object'   =>  'required',     // 发送对象
 			'type'          =>  'required',     // 用途
 		],$messages);
 
 		if($validation->fails()){
-			return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
+			return $this->response->error(implode(',',$validation->errors()->all()),500);
 		}
+
+		$object = $request->object;
+
+		$object_type = '';
+
+		if(preg_match("/^1[34578]\d{9}$/", $object)) {
+			$object_type  = 'phone';
+		} else if(filter_var($object, FILTER_VALIDATE_EMAIL))  {
+			$object_type = 'email';
+		}
+
 		$type = $request->type;
-		$send_type = $request->send_type;
-		$send_object = $request->send_object;
 
 		// 检查获取频率 60s 一次
 
 		// 如果是找回密码
 
+		$user = DB::table('users')->where($object_type,$object)->first();
+
 		if($type == 'find') {
-			// 判断是否注册
-			$user = DB::table('users')->where($send_type,$send_object)->first();
+			if(!$user) {
+				return $this->response->error('用户未注册',500);
+			}
 
+		} else if($type == 'register') {
 			if($user) {
-				$code = rand(100000,999999);
-				DB::table('verify_code')->insert([
-					'type'=>'find',
-					'send_type'=>$send_type,
-					'send_object'=>$send_object,
-					'code'=> $code,
-					'create_time'=>time(),
-					'expire_time'=>time()+600,
-				]);
-
-				$email = new MyEmail();
-				$email->sendToSingleUser($send_object,'邮箱验证','app_verify_template',['%code%'=>[$code]]);
-
-				return API::response()->array(['status' => true, 'message' => '发送成功'])->statusCode(200);
-
-			} else {
-				return API::response()->array(['status' => false, 'message' => '用户未注册'])->statusCode(200);
+				return $this->response->error('该手机号或邮箱已注册',500);
 			}
 		}
+
+		$code = rand(1000,9999);
+		DB::table('verify_code')->insert([
+			'type'=>$type,
+			'send_type'=>$object_type,
+			'send_object'=>$object,
+			'code'=> $code,
+			'create_time'=>time(),
+			'expire_time'=>time()+600,
+		]);
+
+		if($object_type == 'email') {
+			$email = new MyEmail();
+			$email->sendToSingleUser($object,'邮箱验证','app_verify_template',['%code%'=>[$code]]);
+		}
+
+//		$result = [];
+//		$result['code'] = $code;
+
+		return $this->response->noContent();
 	}
 
 	/**
