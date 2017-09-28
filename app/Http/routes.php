@@ -77,6 +77,8 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->get('user/messages/fan', 'App\Http\Controllers\Api\V2\UserController@getFanMessages');
 	$api->get('user/messages/comment', 'App\Http\Controllers\Api\V2\UserController@getCommentMessages');
 	$api->get('user/messages/like', 'App\Http\Controllers\Api\V2\UserController@getLikeMessages');
+	$api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
+	$api->get('user/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getUserEvents');
 	$api->get('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@getGoal');
 	$api->get('user/goal/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getGoalEvents');
 	$api->get('user/goal/{id}/chart', 'App\Http\Controllers\Api\V2\UserController@getGoalChart');

@@ -10,6 +10,9 @@ use API;
 use JWTAuth;
 use Log;
 use DB;
+use App;
+use Overtrue\EasySms\EasySms;
+
 
 use App\User;
 use App\Event;
@@ -79,7 +82,6 @@ class AuthController extends BaseController {
 		$new_user['fans_count'] = $user->fans_count;
 		$event_count = Event::where('user_id',$user->user_id)->count();
 		$new_user['event_count'] = $event_count;
-
 
         return $this->response->array(array('token'=>$token,'user'=>$new_user));
 
@@ -572,6 +574,47 @@ class AuthController extends BaseController {
 		if($object_type == 'email') {
 			$email = new MyEmail();
 			$email->sendToSingleUser($object,'邮箱验证','app_verify_template',['%code%'=>[$code]]);
+		} else {
+
+			$config = [
+				// HTTP 请求的超时时间（秒）
+				'timeout' => 5.0,
+
+				// 默认发送配置
+				'default' => [
+					// 网关调用策略，默认：顺序调用
+					'strategy' => \Overtrue\EasySms\Strategies\OrderStrategy::class,
+
+					// 默认可用的发送网关
+					'gateways' => [
+						 'aliyun',
+					],
+				],
+				// 可用的网关配置
+				'gateways' => [
+					'errorlog' => [
+						'file' => '/tmp/easy-sms.log',
+					],
+					'aliyun' => [
+						'access_key_id' => 'LTAI6heBxZmwiSKp',
+						'access_key_secret' => 'YPYhxaddcNCNAWiyKsF57J78N5GqG3',
+						'sign_name' => '水滴打卡',
+					],
+				],
+			];
+
+			$easySms = new EasySms($config);
+
+			$easySms->send($object, [
+				'content'  => '您的验证码为: '.$code,
+				'template' => 'SMS_96460074',
+				'data' => [
+					'code' => $code
+				],
+			]);
+
+//			$smsService = App::make(AliyunSms::class);
+//			$smsService->send(strval($request->send_object), 'SMS_96460074', ['code' => $code, 'product' => 'xxx']);
 		}
 
 //		$result = [];

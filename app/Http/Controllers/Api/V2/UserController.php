@@ -33,43 +33,50 @@ class UserController extends BaseController
 {
 
     // 取出用户的基本信息
-    public function info()
+    public function getUser($user_id,Request $request)
     {
-        $messages = [
-            'required' => '缺少参数 :attribute',
-        ];
-
-        $validation = Validator::make(Input::all(), [
-            'user_id' => 'required',        // 用户id
-        ], $messages);
-
-        if ($validation->fails()) {
-            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-        }
-
-        $user_id = Input::get('user_id');
 
         $user = User::find($user_id);
 
-        $is_follow = false;
+        $new_user = [];
 
-        // 查询是否关注
+        if($user) {
 
-        $user_follow = DB::table('user_follow')
-            ->where('user_id', $this->auth->user()->user_id)
-            ->where('follow_user_id', $user_id)
-            ->first();
 
-        if ($user_follow) {
-            $is_follow = true;
+            $is_follow = false;
+
+            // 查询是否关注
+
+            $user_follow = DB::table('user_follow')
+                ->where('user_id', $this->auth->user()->user_id)
+                ->where('follow_user_id', $user_id)
+                ->first();
+
+            if ($user_follow) {
+                $is_follow = true;
+            }
+
+            $new_user['is_follow'] = $is_follow;
+
+            $new_user['id'] = $user->user_id;
+            $new_user['nickname'] = $user->nickname;
+            $new_user['signature'] = $user->signature;
+            $new_user['fans_count'] = $user->fans_count;
+            $new_user['follow_count'] = $user->follow_count;
+            $new_user['avatar_url'] = $user->user_avatar;
+
         }
-
-        $user->is_follow = $is_follow;
 
 
         // TODO 判断用户是否存在
-        return API::response()->array(['status' => true, 'message' => '', 'data' => $user])->statusCode(200);
+        return $new_user;
 
+    }
+
+
+    public function getEvents()
+    {
+        
     }
 
     // 取出登录用户的目标列表
