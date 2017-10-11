@@ -12,6 +12,7 @@ use Log;
 use DB;
 use App;
 use Overtrue\EasySms\EasySms;
+use GuzzleHttp\Client;
 
 
 use App\User;
@@ -83,6 +84,35 @@ class AuthController extends BaseController {
 		$event_count = Event::where('user_id',$user->user_id)->count();
 		$new_user['event_count'] = $event_count;
 
+		// 获取第三方账号绑定情况
+
+        $wechat = DB::table('users_bind')
+            ->where('provider','wechat')
+            ->where('user_id',$user->user_id)
+            ->first();
+
+        $new_wechat = [];
+        $new_wechat['nickname'] = $wechat?$wechat->nickname:null;
+        $new_user['wechat'] = $new_wechat;
+
+        $qq = DB::table('users_bind')
+            ->where('provider','qq')
+            ->where('user_id',$user->user_id)
+            ->first();
+
+        $new_qq = [];
+        $new_qq['nickname'] = $qq?$qq->nickname:null;
+        $new_user['qq'] = $new_qq;
+
+        $weibo = DB::table('users_bind')
+            ->where('provider','weibo')
+            ->where('user_id',$user->user_id)
+            ->first();
+
+        $new_weibo = [];
+        $new_weibo['nickname'] = $weibo?$weibo->nickname:null;
+        $new_user['weibo'] = $new_weibo;
+
         return $this->response->array(array('token'=>$token,'user'=>$new_user));
 
     }
@@ -92,7 +122,7 @@ class AuthController extends BaseController {
 	 * @param Request $request
 	 * @return mixed
 	 */
-	public function oauth(Request $request) {
+	public function thirdLogin(Request $request) {
 
 		Log::debug('第三方登录请求');
 		Log::debug($request);
@@ -103,65 +133,80 @@ class AuthController extends BaseController {
 		]);
 
 		if($validation->fails()){
-			return API::response()->array(['status' => false, 'message' => "参数非法"])->statusCode(200);
+			return $this->response->error("参数非法",500);
 		}
 
-		$providers = array('qq','weibo','xiaomi','weapp');
+		$providers = array('qq','weibo','xiaomi','weapp','wechat');
 
-		if(in_array($provider = $request->input('provider'),$providers)) {
-			// 整理参数
-			$method = '_parse_'.$provider;
-			$params = self::$method($request);
+		$provider = $request->input('provider');
 
-			// 查询openid 是否存在
-			$provider = DB::table('users_bind')
-					->where('openid',$params['openid'])
-					->where('provider',$params['provider'])
-					->first();
+		if(!in_array($provider,$providers)) {
+			$this->response->error('未知的登录方式',500);
 
-			if($provider) {
-				$user = User::find($provider->user_id);
-			} else {
-				// 创建临时用户
-				$user = new User();
-				$user->user_avatar = $params['avatar'];
-				$user->province = $params['province'];
-				$user->nickname = $params['nickname'];
-				$user->sex = $params['sex'];
-				$user->city = $params['city'];
-				$user->reg_time = time();
-				$user->reg_ip = $request->ip();
+		}
 
-				$user->save();
+		// 整理参数
+		$method = '_parse_'.$provider;
+		$params = self::$method($request);
 
-				// 插入绑定信息
-				DB::table('users_bind')->insert([
-					'user_id'=>$user->user_id,
-					'openid'=>$params['openid'],
-					'access_token'=>$params['access_token'],
-					'expire_in'=>$params['expire_in'],
-					'avatar'=>$params['avatar'],
-					'sex'=>$params['sex'],
-					'province'=>$params['province'],
-					'city'=>$params['city'],
-					'nickname'=>$params['nickname'],
-					'provider'=>$params['provider'],
-				]);
+		// 查询openid 是否存在
+		$provider = DB::table('users_bind')
+				->where('openid',$params['openid'])
+				->where('provider',$params['provider'])
+				->first();
 
-			}
-
-			// 插入设备
-			$this->_insert_device($user->user_id,$request->input('device'),$request);
-
-			// token
-			$token = $user['email']?JWTAuth::fromUser($user):'';
-
-
-			return $this->response->array(array('status'=>true,'message'=>'登录成功','user'=>$user,'token'=>$token));
-
+		if($provider) {
+			$user = User::find($provider->user_id);
 		} else {
-			return API::response()->array(['status' => false, 'message' => "不支持的登录方式"])->statusCode(200);
+			// 创建临时用户
+			$user = new User();
+			$user->user_avatar = $params['avatar'];
+			$user->province = $params['province'];
+			$user->nickname = $params['nickname'];
+			$user->sex = $params['sex'];
+			$user->city = $params['city'];
+			$user->reg_time = time();
+			$user->reg_ip = $request->ip();
+
+			$user->save();
+
+			// 插入绑定信息
+			DB::table('users_bind')->insert([
+				'user_id'=>$user->user_id,
+				'openid'=>$params['openid'],
+				'access_token'=>$params['access_token'],
+				'expire_in'=>$params['expire_in'],
+				'avatar'=>$params['avatar'],
+				'sex'=>$params['sex'],
+				'province'=>$params['province'],
+				'city'=>$params['city'],
+				'nickname'=>$params['nickname'],
+				'provider'=>$params['provider'],
+				'unionid'=>$params['unionid'],
+			]);
+
 		}
+
+		// 插入设备
+		$this->_insert_device($user->user_id,$request->input('device'),$request);
+
+		// token
+//		$token = $user['email']?JWTAuth::fromUser($user):'';
+
+		$token = JWTAuth::fromUser($user);
+
+		$new_user = [];
+		$new_user['id'] = $user->user_id;
+		$new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
+		$new_user['nickname'] = $user->nickname;
+		$new_user['signature'] = $user->signature;
+		$new_user['avatar_url'] = $user->user_avatar;
+		$new_user['follow_count'] = $user->follow_count;
+		$new_user['fans_count'] = $user->fans_count;
+		$event_count = Event::where('user_id',$user->user_id)->count();
+		$new_user['event_count'] = $event_count;
+
+		return $this->response->array(array('token'=>$token,'user'=>$new_user));
 
 	}
 
@@ -421,10 +466,26 @@ class AuthController extends BaseController {
 	 */
 	private function _parse_qq($request)
 	{
-		$sex = 0;
-		if($request->gender=='男'){
+        // 获取
+        $client = new Client();
+
+        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token='.$request->access_token.'&oauth_consumer_key=1104758278&openid='.$request->userid, []);
+
+        if($res->getStatusCode() != 200) {
+            $this->response->error("获取用户信息失败",500);
+        }
+
+        $ret = json_decode($res->getBody());
+
+        if(isset($ret->ret) &&$ret->ret != 0) {
+            $this->response->error($ret->msg,500);
+        }
+
+        $sex = 0;
+
+		if($ret->gender=='男'){
 			$sex = 1;
-		} else if($request->gender=='女') {
+		} else if($ret->gender=='女') {
 			$sex = 2;
 		}
 
@@ -432,11 +493,11 @@ class AuthController extends BaseController {
 			'openid'=>$request->userid,
 			'access_token'=>$request->access_token,
 			'expire_in'=>$request->expires_time,
-			'avatar'=>$request->figureurl_2,
+			'avatar'=>$ret->figureurl_2,
 			'sex'=>$sex,
-			'province'=>$request->province,
-			'city'=>$request->city,
-			'nickname'=>$request->nickname,
+			'province'=>$ret->province,
+			'city'=>$ret->city,
+			'nickname'=>$ret->nickname,
 			'provider'=>'qq',
 			'device'=>$request->device
 		];
@@ -472,6 +533,7 @@ class AuthController extends BaseController {
 	 */
 	private function _parse_xiaomi($request)
 	{
+
 		$sex = 0;
 
 		return [
@@ -494,25 +556,87 @@ class AuthController extends BaseController {
 	 */
 	private function _parse_weibo($request)
 	{
-		$sex = 0;
-		if($request->gender=='m'){
+        $client = new Client();
+
+        $res = $client->request('GET', 'https://api.weibo.com/2/users/show.json?uid='.$request->userId.'&access_token='.$request->access_token, []);
+
+        if($res->getStatusCode() != 200) {
+            $this->response->error("获取用户信息失败",500);
+        }
+
+        $ret = json_decode($res->getBody());
+
+        if(isset($ret->error_code)) {
+            $this->response->error($ret->error,500);
+        }
+
+        $sex = 0;
+
+		if($ret->gender=='m'){
 			$sex = 1;
-		} else if($request->gender=='f') {
+		} else if($ret->gender=='f') {
 			$sex = 2;
 		}
 		return [
 			'openid'=>$request->userid,
 			'access_token'=>$request->access_token,
 			'expire_in'=>$request->expires_time,
-			'avatar'=>$request->avatar_hd,
+			'avatar'=>$ret->avatar_hd,
 			'sex'=>$sex,
-			'province'=>$request->province,
-			'city'=>$request->city,
-			'nickname'=>$request->screen_name,
+			'province'=>$ret->province,
+			'city'=>$ret->city,
+			'nickname'=>$ret->screen_name,
 			'provider'=>'weibo',
 			'device'=>$request->device
 		];
 	}
+
+
+	private function _parse_wechat($request)
+	{
+		// 获取
+		$client = new Client();
+
+		$res = $client->request('GET', 'https://api.weixin.qq.com/sns/oauth2/access_token?appid=wxac31b5ac3e65915a&secret=f8b8aac88586192c2b60bfbbf807ef7d&code='.$request->code.'&grant_type=authorization_code', []);
+
+		if($res->getStatusCode() != 200) {
+			$this->response->error("请求access_token失败",500);
+		}
+
+		$ret = json_decode($res->getBody());
+
+		if(isset($ret->errcode)) {
+			$this->response->error($ret->errmsg,500);
+		}
+
+		$res2 = $client->request('GET', 'https://api.weixin.qq.com/sns/userinfo?access_token='.$ret->access_token.'&openid='.$ret->openid);
+
+		if($res2->getStatusCode() != 200) {
+			$this->response->error("请求用户信息失败",500);
+		}
+
+		$ret2 = json_decode($res2->getBody());
+
+		if(isset($ret2->errcode)) {
+			$this->response->error($ret2->errmsg,500);
+		}
+
+		return [
+			'openid'=>$ret2->openid,
+			'access_token'=>$ret->access_token,
+			'expire_in'=>time()+7200,
+			'avatar'=>$ret2->headimgurl,
+			'sex'=>$ret2->sex,
+			'province'=>$ret2->province,
+			'city'=>$ret2->city,
+			'country'=>$ret2->country,
+			'nickname'=>$ret2->nickname,
+			'provider'=>'wechat',
+			'unionid'=>$ret2->unionid,
+			'device'=>$request->device
+		];
+	}
+
 
 	/**
 	 * 获取验证码
@@ -524,7 +648,7 @@ class AuthController extends BaseController {
 		];
 
 		$validation = Validator::make(Input::all(), [
-			'object'   =>  'required',     // 发送对象
+			'account'   =>  'required',     // 发送对象
 			'type'          =>  'required',     // 用途
 		],$messages);
 
@@ -532,14 +656,14 @@ class AuthController extends BaseController {
 			return $this->response->error(implode(',',$validation->errors()->all()),500);
 		}
 
-		$object = $request->object;
+		$account = $request->account;
 
-		$object_type = '';
+		$account_type = '';
 
-		if(preg_match("/^1[34578]\d{9}$/", $object)) {
-			$object_type  = 'phone';
-		} else if(filter_var($object, FILTER_VALIDATE_EMAIL))  {
-			$object_type = 'email';
+		if(preg_match("/^1[34578]\d{9}$/", $account)) {
+			$account_type  = 'phone';
+		} else if(filter_var($account, FILTER_VALIDATE_EMAIL))  {
+			$account_type = 'email';
 		}
 
 		$type = $request->type;
@@ -548,13 +672,12 @@ class AuthController extends BaseController {
 
 		// 如果是找回密码
 
-		$user = DB::table('users')->where($object_type,$object)->first();
+		$user = DB::table('users')->where($account_type,$account)->first();
 
 		if($type == 'find') {
 			if(!$user) {
 				return $this->response->error('用户未注册',500);
 			}
-
 		} else if($type == 'register') {
 			if($user) {
 				return $this->response->error('该手机号或邮箱已注册',500);
@@ -564,16 +687,16 @@ class AuthController extends BaseController {
 		$code = rand(1000,9999);
 		DB::table('verify_code')->insert([
 			'type'=>$type,
-			'send_type'=>$object_type,
-			'send_object'=>$object,
+			'send_type'=>$account_type,
+			'send_object'=>$account,
 			'code'=> $code,
 			'create_time'=>time(),
 			'expire_time'=>time()+600,
 		]);
 
-		if($object_type == 'email') {
+		if($account_type == 'email') {
 			$email = new MyEmail();
-			$email->sendToSingleUser($object,'邮箱验证','app_verify_template',['%code%'=>[$code]]);
+			$email->sendToSingleUser($account,'邮箱验证','app_verify_template',['%code%'=>[$code]]);
 		} else {
 
 			$config = [
@@ -605,7 +728,7 @@ class AuthController extends BaseController {
 
 			$easySms = new EasySms($config);
 
-			$easySms->send($object, [
+			$easySms->send($account, [
 				'content'  => '您的验证码为: '.$code,
 				'template' => 'SMS_96460074',
 				'data' => [
@@ -613,12 +736,7 @@ class AuthController extends BaseController {
 				],
 			]);
 
-//			$smsService = App::make(AliyunSms::class);
-//			$smsService->send(strval($request->send_object), 'SMS_96460074', ['code' => $code, 'product' => 'xxx']);
 		}
-
-//		$result = [];
-//		$result['code'] = $code;
 
 		return $this->response->noContent();
 	}
@@ -633,60 +751,66 @@ class AuthController extends BaseController {
 		];
 
 		$validation = Validator::make(Input::all(), [
-			'send_type'    =>  'required',     //  对象类型
-			'send_object'    =>  'required',     //  对象
+			'account'    =>  'required',     //  对象类型
 			'code'		=> 	'required',		// 验证码
 			'password'   =>  'required',     // 新密码
 		],$messages);
 
 		if($validation->fails()){
-			return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
+			return $this->response->error(implode($validation->errors(),','),500);
+		}
+
+		$account = $request->account;
+
+		$account_type = '';
+
+		if(preg_match("/^1[34578]\d{9}$/", $account)) {
+			$account_type  = 'phone';
+		} else if(filter_var($account, FILTER_VALIDATE_EMAIL))  {
+			$account_type = 'email';
 		}
 
 		// 根据验证码和邮箱查找
 		$record = DB::table('verify_code')
-			->where('send_object',$request->send_object)
-			->where('send_type',$request->send_type)
+			->where('send_object',$account)
+			->where('send_type',$account_type)
+			->where('type','find')
 			->where('code',$request->code)
 			->orderBy('create_time', 'desc')
 			->first();
 
 		// 判断
 
-		if($record) {
-			if($record->status==1) {
-				return API::response()->array(['status' => false, 'message' => '验证码已使用'])->statusCode(200);
-			}
-
-			if($record->expire_time<time()) {
-				return API::response()->array(['status' => false, 'message' => '验证码已过期'])->statusCode(200);
-			}
-
-			// 进入修改密码阶段
-			$user = DB::table('users')->where($request->send_type,$request->send_object)->first();
-
-			if($user) {
-
-				$new_password = md5($request->password.$user->salt);
-
-				DB::table('users')
-					->where('user_id', $user->user_id)
-					->update(['passwd' => $new_password]);
-
-				// 修改验证码状态
-				DB::table('verify_code')
-					->where('id', $record->id)
-					->update(['status' => 1,'validate_time'=>time()]);
-
-				return API::response()->array(['status' => true, 'message' => '修改成功'])->statusCode(200);
-
-			} else {
-				return API::response()->array(['status' => false, 'message' => '用户未注册'])->statusCode(200);
-			}
-
-		} else {
-			return API::response()->array(['status' => false, 'message' => '无效的验证码'])->statusCode(200);
+		if(!$record) {
+			return $this->response->error('无效的验证码',500);
 		}
 
+		if($record->status==1) {
+			return $this->response->error('验证码已使用',500);
+		}
+
+		if($record->expire_time<time()) {
+			return $this->response->error('验证码已过期',500);
+		}
+
+		// 进入修改密码阶段
+		$user = DB::table('users')->where($account_type,$account)->first();
+
+		if(!$user) {
+			return $this->response->error('手机号／邮箱未注册',500);
+		}
+
+		$new_password = md5($request->password.$user->salt);
+
+		DB::table('users')
+			->where('user_id', $user->user_id)
+			->update(['passwd' => $new_password]);
+
+		// 修改验证码状态
+		DB::table('verify_code')
+			->where('id', $record->id)
+			->update(['status' => 1,'validate_time'=>time()]);
+
+		$this->response->noContent();
 	}
 }

@@ -13,8 +13,8 @@ return [
      */
     'supportsCredentials' => false,
     'allowedOrigins' => ['*'],
-    'allowedHeaders' => ['Content-Type', 'Accept','X-Api-Platform','Authorization'],
-    'allowedMethods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    'allowedHeaders' => ['Origin','Content-Type', 'Accept','X-Api-Platform','Authorization'],
+    'allowedMethods' => ['GET','PUT','HEAD','OPTIONS','PATCH','POST','DELETE'],
     'exposedHeaders' => [],
     'maxAge' => 0,
     'hosts' => [],

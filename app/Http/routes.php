@@ -62,8 +62,9 @@ $api->version('v1',['middleware'=>'cors'],function ($api) {
 $api->version('v2',['middleware'=>'cors'],function ($api) {
 	$api->post('auth/login', 'App\Http\Controllers\Api\V2\AuthController@login');
 	$api->post('auth/register', 'App\Http\Controllers\Api\V2\AuthController@register');
-	$api->post('auth/register', 'App\Http\Controllers\Api\V2\AuthController@register');
 	$api->post('auth/code', 'App\Http\Controllers\Api\V2\AuthController@getCode');
+	$api->post('auth/find', 'App\Http\Controllers\Api\V2\AuthController@find');
+	$api->post('auth/third', 'App\Http\Controllers\Api\V2\AuthController@thirdLogin');
 
 //	$api->post('auth/oauth', 'App\Http\Controllers\Api\V2\AuthController@oauth');
 //	$api->post('auth/bind', 'App\Http\Controllers\Api\V2\AuthController@bind');

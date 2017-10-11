@@ -15,6 +15,7 @@ class Kernel extends HttpKernel
      */
     protected $middleware = [
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
+//        \Barryvdh\Cors\HandleCors::class,
     ];
 
     /**
@@ -51,5 +52,6 @@ class Kernel extends HttpKernel
         'jwt.auth' => \Tymon\JWTAuth\Middleware\GetUserFromToken::class,
         'jwt.refresh' => \Tymon\JWTAuth\Middleware\RefreshToken::class,
         'jwt.api.auth' => \App\Http\Middleware\VerifyApiToken::class, //新增注册的中间件
+        'cors' => \Barryvdh\Cors\HandleCors::class,
     ];
 }
