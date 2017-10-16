@@ -237,6 +237,7 @@ class UserController extends BaseController
         $result['end_date'] = $goal->pivot->end_date;
         $result['status'] = $goal->pivot->status;
         $result['items'] = $goal->items;
+        $result['is_today_checkin'] =  $goal->is_today_checkin;
 
 
         return $result;
@@ -595,12 +596,17 @@ class UserController extends BaseController
         foreach ($events as $key => $event) {
             $result[$key]['content'] = $event->content;
 
+            $new_checkin = [];
 
             if ($event['type'] == 'USER_CHECKIN') {
                 $checkin = DB::table('checkin')
                     ->where('checkin_id', $event->event_value)
                     ->first();
+
                 $result[$key]['content'] = $checkin ? $checkin->checkin_content : '';
+
+                $new_checkin['id'] =  $checkin->checkin_id;
+                $new_checkin['total_days'] =  $checkin ?$checkin->total_days:0 ;
 
                 $items = DB::table('checkin_item')
                     ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
@@ -611,6 +617,9 @@ class UserController extends BaseController
                     ->where('attachable_type', 'checkin')
                     ->get();
             }
+
+            $result[$key]['checkin'] = $new_checkin;
+
             // 后去是否点赞过
 
             $is_like = Event::find($event->event_id)
@@ -618,8 +627,18 @@ class UserController extends BaseController
                 ->where('user_id', '=', $user_id)
                 ->first();
 
-            $result[$key]['owner'] = $event->user;
-            $result[$key]['goal'] = $event->goal;
+            $owner = [];
+            $owner['id'] = $event->user->user_id;
+            $owner['nickname'] = $event->user->nickname;
+            $owner['avatar_url'] = $event->user->user_avatar;
+
+            $result[$key]['owner'] =$owner;
+
+            $goal = [];
+            $goal['id'] = $event->goal->goal_id;
+            $goal['name'] = $event->goal->goal_name;
+
+            $result[$key]['goal'] = $goal;
 
             $result[$key]['id'] = $event->event_id;
             $result[$key]['like_count'] = $event->like_count;
@@ -1405,6 +1424,36 @@ class UserController extends BaseController
         }
 
     }
+
+    public function changePassword(Request $request)
+    {
+        $validation = Validator::make(Input::all(), [
+            'old_password' 	=> 'required',
+            'new_password' => 'required',
+            'new_password_check'=> 'required'
+        ]);
+
+        if ($validation->fails()) {
+            return $this->response->error(implode(',',$validation->errors()),500);
+        }
+
+        $user = $this->auth->user();
+
+        // 检查旧密码
+        if($user->passwd != md5($request->old_password.$user->salt)) {
+            return $this->response->error('原密码错误',500);
+        }
+
+        // 生成新密码
+        $salt = rand(1000, 9999);
+        $user->passwd = md5($request->new_password.$salt);
+        $user->salt = $salt;
+        $user->save();
+
+        return $this->response->noContent();
+
+    }
+
 
 
 

@@ -73,7 +73,8 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 });
 
 $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
-	$api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
+    $api->post('user/password/change', 'App\Http\Controllers\Api\V2\UserController@changePassword');
+    $api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
 	$api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
 	$api->get('user/messages/fan', 'App\Http\Controllers\Api\V2\UserController@getFanMessages');
 	$api->get('user/messages/comment', 'App\Http\Controllers\Api\V2\UserController@getCommentMessages');
@@ -100,6 +101,7 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->get('event/{id}/likes', 'App\Http\Controllers\Api\V2\EventController@getEventLikes');
 	$api->post('comment/{id}/reply', 'App\Http\Controllers\Api\V2\CommentController@reply');
 	$api->put('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@like');
+    $api->post('upload/image', 'App\Http\Controllers\Api\V2\UploadController@image');
 
 });
 

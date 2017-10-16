@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use App\Event;
 use App\Checkin;
 use App\User;
+use App\Goal;
 use App\Models\Message as Message;
 use App\Models\Comment as Comment;
 use App\Models\Energy as Energy;
@@ -49,6 +50,8 @@ class EventController extends BaseController {
 
 		$result = [];
 
+        $user_id = $this->auth->user()->user_id;
+
 		$event = Event::with('user')->where('event_id',$event_id)->first();
 
 		if(!$event) {
@@ -60,6 +63,7 @@ class EventController extends BaseController {
 		$result['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
 		$result['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
 
+		$new_checkin = [];
 
 		if($event->type == 'USER_CHECKIN' ) {
 			// 获取对应的信息
@@ -67,6 +71,8 @@ class EventController extends BaseController {
 
 			$result['content'] = $checkin->checkin_content;
 
+            $new_checkin['id'] = $checkin->checkin_id;
+            $new_checkin['total_days'] = $checkin->total_days;
 
 //			// 获取项目
 //			$event->checkin->items = DB::table('checkin_item')
@@ -88,10 +94,16 @@ class EventController extends BaseController {
 				$new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
 			}
 
-			$event['attachs'] = $new_attachs;
+            $result['attachs'] = $new_attachs;
 
-			$event->goal =  $event->goal;
+			$new_goal = [];
+            $new_goal['id'] = $event->goal->goal_id;
+            $new_goal['name'] = $event->goal->goal_name;
+
+            $result['goal'] =  $new_goal;
 		}
+
+        $result['checkin'] =  $new_checkin;
 
 		// 获取评论
 		$comments = Comment::with('user')
@@ -155,6 +167,13 @@ class EventController extends BaseController {
 		$new_user['id'] = $user->user_id;
 		$new_user['nickname'] = $user->nickname;
 		$new_user['avatar_url'] = $user->user_avatar;
+
+        $is_follow = DB::table('user_follow')
+            ->where('user_id',$user_id)
+            ->where('follow_user_id',$user->user_id)
+            ->first();
+
+        $new_user['is_follow'] = $is_follow?true:false;
 
 		$result['user'] = $new_user;
 
@@ -294,7 +313,7 @@ class EventController extends BaseController {
 	public function getHotEvents(Request $request) {
 
 		$page = $request->input('page',1);
-		$per_page = $request->input('page',10);
+		$per_page = $request->input('per_page',20);
 
 		$events = Event::where('is_hot','=',1)
 			->where('is_public','=',1)
@@ -310,6 +329,9 @@ class EventController extends BaseController {
 			$new_events[$key]['content'] = $event->event_content;
 			$new_events[$key]['like_count'] = $event->like_count;
 
+
+			$new_checkin = [];
+
 			if($event->type == 'USER_CHECKIN') {
 
 				$checkin = DB::table('checkin')
@@ -319,6 +341,9 @@ class EventController extends BaseController {
 				$content = $checkin->checkin_content;
 
 				$new_events[$key]['content'] = $content?mb_substr($content,0,20):'';
+
+                $new_checkin['id'] = $checkin->checkin_id;
+                $new_checkin['total_days'] = $checkin->total_days;
 
 //				$new_events[$key]->checkin->items = DB::table('checkin_item')
 //					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
@@ -342,6 +367,8 @@ class EventController extends BaseController {
 
 			}
 
+            $new_events[$key]['checkin'] = $new_checkin;
+
 			$user = DB::table('users')
 				->where('user_id', $event->user_id)
 				->first();
@@ -352,6 +379,14 @@ class EventController extends BaseController {
 			$owner['avatar_url'] = $user->user_avatar;
 
 			$new_events[$key]['owner'] = $owner;
+
+            $goal = [];
+            $goal['id'] = $event->goal->goal_id;
+            $goal['name'] = $event->goal->goal_name;
+
+            $new_events[$key]['goal'] = $goal;
+            $new_events[$key]['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
+            $new_events[$key]['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
 
 //
 //			$new_events[$key]->goal =DB::table('goal')
@@ -364,7 +399,116 @@ class EventController extends BaseController {
 
 	}
 
-	/**
+    public function getFollowEvents(Request $request) {
+
+        $page = $request->input('page',1);
+        $per_page = $request->input('per_page',20);
+
+        $user_id = $this->auth->user()->user_id;
+
+        DB::connection()->enableQueryLog();
+
+        $events =DB::table('events')
+            ->join('user_follow','user_follow.follow_user_id','=','events.user_id')
+            ->select('user_follow.follow_user_id','events.*')
+            ->where('user_follow.user_id','=',$user_id)
+            ->where('events.is_public','=',1)
+            ->orderBy('events.create_time','desc')
+            ->skip($page*$per_page)
+            ->take($per_page)
+            ->get();
+
+//        print_r(DB::getQueryLog());
+
+        $new_events = [];
+
+        foreach ($events as $key => $event) {
+//			$new_events[$key] = $event;
+
+            $new_events[$key]['id'] = $event->event_id;
+            $new_events[$key]['content'] = $event->content;
+            $new_events[$key]['like_count'] = $event->like_count;
+
+            $new_checkin = [];
+            $new_goal = [];
+
+            if($event->type == 'USER_CHECKIN') {
+
+                $checkin = DB::table('checkin')
+                    ->where('checkin_id', $event->event_value)
+                    ->first();
+
+                $content = $checkin->checkin_content;
+
+                $new_events[$key]['content'] = $content?mb_substr($content,0,20):'';
+
+//				$new_events[$key]->checkin->items = DB::table('checkin_item')
+//					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
+//					->where('checkin_id', $event->event_value)
+//					->get();
+
+                $new_checkin['id'] = $checkin->checkin_id;
+                $new_checkin['total_days'] = $checkin->total_days;
+
+                $attachs = DB::table('attachs')
+                    ->where('attachable_id', $event->event_value)
+                    ->where('attachable_type','checkin')
+                    ->get();
+
+                $new_attachs = [];
+
+                foreach($attachs as $k=>$attach) {
+                    $new_attachs[$k]['id'] = $attach->attach_id;
+                    $new_attachs[$k]['name'] = $attach->attach_name;
+                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+                }
+
+                $new_events[$key]['attachs'] = $new_attachs;
+
+            }
+
+            $new_events[$key]['checkin'] = $new_checkin;
+
+            $user = DB::table('users')
+                ->where('user_id', $event->user_id)
+                ->first();
+
+            $owner = [];
+            $owner['id'] = $user->user_id;
+            $owner['nickname'] = $user->nickname;
+            $owner['avatar_url'] = $user->user_avatar;
+
+            $new_events[$key]['owner'] = $owner;
+
+            $goal = Goal::find($event->goal_id);
+
+            if($goal) {
+                $new_goal['id'] = $goal->goal_id;
+                $new_goal['name'] =$goal->goal_name;
+            }
+
+            $new_events[$key]['goal'] = $new_goal;
+            $new_events[$key]['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
+            $new_events[$key]['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
+//
+            $is_like = Event::find($event->event_id)
+                ->likes()
+                ->where('user_id', '=', $user_id)
+                ->first();
+
+            $new_events[$key]['is_like'] = $is_like ? true : false;
+
+//			$new_events[$key]->goal =DB::table('goal')
+//				->where('goal_id', $event->goal_id)
+//				->first();
+
+        }
+
+        return $new_events;
+
+    }
+
+    /**
 	 * 动态点赞
 	 */
 	public function like($event_id,Request $request)

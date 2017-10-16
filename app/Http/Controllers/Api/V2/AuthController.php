@@ -182,7 +182,7 @@ class AuthController extends BaseController {
 				'city'=>$params['city'],
 				'nickname'=>$params['nickname'],
 				'provider'=>$params['provider'],
-				'unionid'=>$params['unionid'],
+				'unionid'=>isset($params['unionid'])?$params['unionid']:'',
 			]);
 
 		}
@@ -207,89 +207,6 @@ class AuthController extends BaseController {
 		$new_user['event_count'] = $event_count;
 
 		return $this->response->array(array('token'=>$token,'user'=>$new_user));
-
-	}
-
-	public function bind(Request $request){
-		Log::info('第三方登录请求');
-		Log::info($request);
-
-		$validation = Validator::make(Input::all(), [
-			'email'			=>  'required',     // 邮箱
-			'password'      =>  'required',     // 密码
-			'user_id'		=> 	'required',		// 绑定Id
-			'is_register'		=> 	'required',		// 绑定Id
-		]);
-
-		if($validation->fails()){
-			return API::response()->array(['status' => false, 'message' => "参数非法"])->statusCode(200);
-		}
-
-		$user = User::find($request->user_id);
-
-		if($user) {
-
-			if($user->email) {
-				return API::response()->array(['status' => false, 'message' => "你的账号已经绑定过邮箱,请勿重复绑定"])->statusCode(200);
-			} else {
-
-				if($request->is_register) {
-					// 验证邮箱和密码是否正确
-					$new_user =  DB::table('users')
-						->where('email',$request->email)
-						->first();
-
-					if($new_user) {
-						// 验证邮箱和密码是否正确
-						$password = md5($request->password.$new_user->salt);
-
-						if($password != $new_user->passwd) {
-							return API::response()->array(['status' => false, 'message' => "密码错误"])->statusCode(200);
-						} else {
-							// 修改绑定信息
-							DB::table('users_bind')
-								->where('user_id', $user->user_id)
-								->update(['user_id' => $new_user->user_id]);
-
-							DB::table('devices')
-								->where('user_id', $user->user_id)
-								->update(['user_id' => $new_user->user_id]);
-
-							$token = JWTAuth::fromUser($new_user);
-							return $this->response->array(array('status'=> true,'message'=>'绑定成功','token'=>$token,'user'=>$new_user));
-						}
-					} else {
-						return API::response()->array(['status' => false, 'message' => "邮箱地址未注册"])->statusCode(200);
-					}
-				} else {
-					// 查找邮箱是否存在
-					$is_exist = DB::table('users')
-						->where('email',$request->email)
-						->first();
-
-					if($is_exist) {
-						return API::response()->array(['status' => false, 'message' => "邮箱地址已注册"])->statusCode(200);
-					} else {
-						$salt = rand(100000, 999999);
-
-						$user->email = $request->email;
-						$user->passwd = md5($request->password.$salt);
-						$user->salt = $salt;
-
-						$user->save();
-
-						$token = JWTAuth::fromUser($user);
-
-						// 发送注册邮件
-						$this->_send_register_email($request->email);
-
-						return $this->response->array(array('status'=> true,'message'=>'绑定成功','token'=>$token,'user'=>$user));
-					}
-				}
-			}
-		} else {
-			return API::response()->array(['status' => false, 'message' => "用户不存在"])->statusCode(200);
-		}
 
 	}
 
@@ -469,7 +386,7 @@ class AuthController extends BaseController {
         // 获取
         $client = new Client();
 
-        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token='.$request->access_token.'&oauth_consumer_key=1104758278&openid='.$request->userid, []);
+        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token='.$request->access_token.'&oauth_consumer_key=1106192747&openid='.$request->userid, []);
 
         if($res->getStatusCode() != 200) {
             $this->response->error("获取用户信息失败",500);
@@ -813,4 +730,23 @@ class AuthController extends BaseController {
 
 		$this->response->noContent();
 	}
+
+    /*
+     * 第三方账号绑定
+     */
+    public function bind()
+    {
+
+
+        $this->response->noContent();
+    }
+
+    /*
+     * 第三方账号解除绑定
+     */
+    public function unbind()
+    {
+
+        $this->response->noContent();
+    }
 }

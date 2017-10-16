@@ -2,6 +2,7 @@
 /**
  * 订单控制器
  */
+
 namespace App\Http\Controllers\Api\V2;
 
 use Auth;
@@ -11,6 +12,7 @@ use App\User;
 use App\Goal;
 use App\Checkin;
 use App\Event;
+use Carbon\Carbon;
 
 
 use API;
@@ -187,18 +189,18 @@ class GoalController extends BaseController
         ], $messages);
 
         if ($validation->fails()) {
-            return $this->response-error(implode(',',$validation->errors()->all()),500);
+            return $this->response->error(implode(',', $validation->errors()->all()), 500);
         }
 
         $user = $this->auth->user();
         $user_id = $user->user_id;
 
-        $start_date = $request->input('start_date',date('Y-m-d'));
+        $start_date = $request->input('start_date', date('Y-m-d'));
 
-        $end_date = $request->input('end_date',null);
+        $end_date = $request->input('end_date', null);
 
-        if($end_date && $end_date<$start_date) {
-            return $this->response->error("结束日期不得小于开始日期",500);
+        if ($end_date && $end_date < $start_date) {
+            return $this->response->error("结束日期不得小于开始日期", 500);
         }
 
         $goal_name = $request->input('name');
@@ -225,8 +227,14 @@ class GoalController extends BaseController
             ->first();
 
         if ($user_goal) {
-            return $this->response->error("你已经制定过该目标",500);
+            return $this->response->error("你已经制定过该目标", 500);
         } else {
+
+            $start_dt = Carbon::parse($start_date);
+            $end_dt = Carbon::parse($end_date);
+
+            $expect_days = $start_dt->diffInDays($end_dt);
+
             $user->goals()->attach($goal->goal_id, [
                 'goal_name' => trim($goal_name),
                 'goal_desc' => trim($request->input('desc')),
@@ -234,6 +242,7 @@ class GoalController extends BaseController
                 'start_time' => time(),
                 'start_date' => $start_date,
                 'end_date' => $end_date,
+                'expect_days' => $expect_days,
             ]);
 
             User::find($user_id)->increment('goal_count', 1);
@@ -343,7 +352,7 @@ class GoalController extends BaseController
 
         DB::table('user_goal')->where('id', '=', $user_goal->pivot->id)
             ->update([
-                'is_public' =>(int)($request->is_public),
+                'is_public' => (int)($request->is_public),
                 'is_push' => (int)($request->is_push),
                 'remind_time' => $request->is_push == true ? $request->remind_time : ''
             ]);
