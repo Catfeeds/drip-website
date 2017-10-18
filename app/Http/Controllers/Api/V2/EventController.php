@@ -440,7 +440,7 @@ class EventController extends BaseController {
 
                 $content = $checkin->checkin_content;
 
-                $new_events[$key]['content'] = $content?mb_substr($content,0,20):'';
+                $new_events[$key]['content'] = $content;
 
 //				$new_events[$key]->checkin->items = DB::table('checkin_item')
 //					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')

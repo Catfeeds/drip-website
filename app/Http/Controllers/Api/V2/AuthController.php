@@ -75,7 +75,8 @@ class AuthController extends BaseController {
 
 		$new_user = [];
 		$new_user['id'] = $user->user_id;
-		$new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
+        $new_user['is_vip'] = $user->is_vip;
+        $new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
 		$new_user['nickname'] = $user->nickname;
 		$new_user['signature'] = $user->signature;
 		$new_user['avatar_url'] = $user->user_avatar;
@@ -197,7 +198,8 @@ class AuthController extends BaseController {
 
 		$new_user = [];
 		$new_user['id'] = $user->user_id;
-		$new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
+        $new_user['is_vip'] = $user->is_vip;
+        $new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
 		$new_user['nickname'] = $user->nickname;
 		$new_user['signature'] = $user->signature;
 		$new_user['avatar_url'] = $user->user_avatar;
@@ -305,7 +307,8 @@ class AuthController extends BaseController {
 
 		$new_user = [];
 		$new_user['id'] = $user->user_id;
-		$new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
+        $new_user['is_vip'] = $user->is_vip;
+        $new_user['created_at'] = date('Y-m-d H:i:s',$user->reg_time);
 		$new_user['nickname'] = $user->nickname;
 		$new_user['signature'] = $user->signature;
 		$new_user['avatar_url'] = $user->user_avatar;

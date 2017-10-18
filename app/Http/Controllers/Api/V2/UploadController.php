@@ -21,6 +21,7 @@ use App\Models\Attach as Attach;
 use Validator;
 use API;
 use DB;
+use Log;
 
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
@@ -31,6 +32,10 @@ class UploadController extends BaseController
 {
     // 文件上传
     public function image(Request $request) {
+
+        Log::info('文件上传');
+        Log::info($request);
+
         if ($request->hasFile('file')) {
             $file = $request->file('file');
 
