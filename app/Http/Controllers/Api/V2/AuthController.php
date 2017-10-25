@@ -80,6 +80,8 @@ class AuthController extends BaseController
 
         $new_user = [];
         $new_user['id'] = $user->user_id;
+        $new_user['email'] = $user->email;
+        $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
         $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
         $new_user['nickname'] = $user->nickname;
@@ -205,6 +207,8 @@ class AuthController extends BaseController
 
         $new_user = [];
         $new_user['id'] = $user->user_id;
+        $new_user['email'] = $user->email;
+        $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
         $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
         $new_user['nickname'] = $user->nickname;
@@ -215,6 +219,35 @@ class AuthController extends BaseController
         $new_user['fans_count'] = $user->fans_count;
         $event_count = Event::where('user_id', $user->user_id)->count();
         $new_user['event_count'] = $event_count;
+
+        // 获取第三方账号绑定情况
+
+        $wechat = DB::table('users_bind')
+            ->where('provider', 'wechat')
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        $new_wechat = [];
+        $new_wechat['nickname'] = $wechat ? $wechat->nickname : null;
+        $new_user['wechat'] = $new_wechat;
+
+        $qq = DB::table('users_bind')
+            ->where('provider', 'qq')
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        $new_qq = [];
+        $new_qq['nickname'] = $qq ? $qq->nickname : null;
+        $new_user['qq'] = $new_qq;
+
+        $weibo = DB::table('users_bind')
+            ->where('provider', 'weibo')
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        $new_weibo = [];
+        $new_weibo['nickname'] = $weibo ? $weibo->nickname : null;
+        $new_user['weibo'] = $new_weibo;
 
         return $this->response->array(array('token' => $token, 'user' => $new_user));
 
@@ -316,6 +349,8 @@ class AuthController extends BaseController
 
         $new_user = [];
         $new_user['id'] = $user->user_id;
+        $new_user['email'] = $user->email;
+        $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
         $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
         $new_user['nickname'] = $user->nickname;
@@ -326,6 +361,35 @@ class AuthController extends BaseController
         $new_user['fans_count'] = $user->fans_count;
         $event_count = Event::where('user_id', $user->user_id)->count();
         $new_user['event_count'] = $event_count;
+
+        // 获取第三方账号绑定情况
+
+        $wechat = DB::table('users_bind')
+            ->where('provider', 'wechat')
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        $new_wechat = [];
+        $new_wechat['nickname'] = $wechat ? $wechat->nickname : null;
+        $new_user['wechat'] = $new_wechat;
+
+        $qq = DB::table('users_bind')
+            ->where('provider', 'qq')
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        $new_qq = [];
+        $new_qq['nickname'] = $qq ? $qq->nickname : null;
+        $new_user['qq'] = $new_qq;
+
+        $weibo = DB::table('users_bind')
+            ->where('provider', 'weibo')
+            ->where('user_id', $user->user_id)
+            ->first();
+
+        $new_weibo = [];
+        $new_weibo['nickname'] = $weibo ? $weibo->nickname : null;
+        $new_user['weibo'] = $new_weibo;
 
         return $this->response->array(['token' => $token, 'user' => $new_user]);
     }
