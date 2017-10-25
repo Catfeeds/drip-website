@@ -79,8 +79,10 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->get('user/messages/fan', 'App\Http\Controllers\Api\V2\UserController@getFanMessages');
 	$api->get('user/messages/comment', 'App\Http\Controllers\Api\V2\UserController@getCommentMessages');
 	$api->get('user/messages/like', 'App\Http\Controllers\Api\V2\UserController@getLikeMessages');
-	$api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
-	$api->get('user/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getUserEvents');
+    $api->get('user/messages/new', 'App\Http\Controllers\Api\V2\UserController@getNewMessages');
+    $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
+    $api->patch('user/{id}', 'App\Http\Controllers\Api\V2\UserController@updateUser');
+    $api->get('user/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getUserEvents');
 	$api->get('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@getGoal');
 	$api->get('user/goal/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getGoalEvents');
 	$api->get('user/goal/{id}/chart', 'App\Http\Controllers\Api\V2\UserController@getGoalChart');
@@ -102,7 +104,6 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->post('comment/{id}/reply', 'App\Http\Controllers\Api\V2\CommentController@reply');
 	$api->put('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@like');
     $api->post('upload/image', 'App\Http\Controllers\Api\V2\UploadController@image');
-
 });
 
 $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {

@@ -2,6 +2,7 @@
 /**
  * 用户控制器
  */
+
 namespace App\Http\Controllers\Api\V2;
 
 use Auth;
@@ -23,7 +24,6 @@ use App\Like;
 use App\Models\Comment as Comment;
 
 
-
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
@@ -33,14 +33,14 @@ class UserController extends BaseController
 {
 
     // 取出用户的基本信息
-    public function getUser($user_id,Request $request)
+    public function getUser($user_id, Request $request)
     {
 
         $user = User::find($user_id);
 
         $new_user = [];
 
-        if($user) {
+        if ($user) {
 
 
             $is_follow = false;
@@ -64,6 +64,7 @@ class UserController extends BaseController
             $new_user['fans_count'] = $user->fans_count;
             $new_user['follow_count'] = $user->follow_count;
             $new_user['avatar_url'] = $user->user_avatar;
+            $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
 
         }
 
@@ -74,9 +75,39 @@ class UserController extends BaseController
     }
 
 
+    public function updateUser($user_id, Request $request)
+    {
+        Log::info('更新用户信息');
+        Log::info($request);
+
+        $input = $request->all();
+
+        if ($input) {
+            DB::table('users')->where('user_id', '=', $user_id)
+                ->update($input);
+        }
+
+        $user = User::findOrFail($user_id);
+
+        $new_user = [];
+        $new_user['id'] = $user->user_id;
+        $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
+        $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
+        $new_user['nickname'] = $user->nickname;
+        $new_user['signature'] = $user->signature;
+        $new_user['avatar_url'] = $user->user_avatar;
+        $new_user['follow_count'] = $user->follow_count;
+        $new_user['sex'] = $user->sex;
+        $new_user['fans_count'] = $user->fans_count;
+        $event_count = Event::where('user_id', $user->user_id)->count();
+        $new_user['event_count'] = $event_count;
+
+        return $new_user;
+    }
+
     public function getEvents()
     {
-        
+
     }
 
     // 取出登录用户的目标列表
@@ -237,7 +268,7 @@ class UserController extends BaseController
         $result['end_date'] = $goal->pivot->end_date;
         $result['status'] = $goal->pivot->status;
         $result['items'] = $goal->items;
-        $result['is_today_checkin'] =  $goal->is_today_checkin;
+        $result['is_today_checkin'] = $goal->is_today_checkin;
 
 
         return $result;
@@ -274,12 +305,12 @@ class UserController extends BaseController
             ->first();
 
         if (!$user_goal) {
-            return $this->response->error("未制定该目标",500);
+            return $this->response->error("未制定该目标", 500);
         }
 
         $input = $request->all();
 
-        if($input) {
+        if ($input) {
             DB::table('user_goal')->where('id', '=', $user_goal->pivot->id)
                 ->update($input);
         }
@@ -289,7 +320,8 @@ class UserController extends BaseController
         return $goal;
     }
 
-    public function getGoalWeek($goal_id, Request $request) {
+    public function getGoalWeek($goal_id, Request $request)
+    {
 
         $user_id = $this->auth->user()->user_id;
 
@@ -299,25 +331,26 @@ class UserController extends BaseController
 
         $result = [];
 
-        for($i=0;$i<7;$i++) {
+        for ($i = 0; $i < 7; $i++) {
 
-            if($i>0) {
+            if ($i > 0) {
                 $dt->addDay();
             }
 
             $is_checkin = DB::table('checkin')
                 ->where('goal_id', $goal_id)
                 ->where('user_id', $user_id)
-                ->where('checkin_day',$dt->toDateString())
+                ->where('checkin_day', $dt->toDateString())
                 ->get();
-            $result[$i] = $is_checkin?true:false;
+            $result[$i] = $is_checkin ? true : false;
         }
 
         return $result;
 
     }
 
-    public function getGoalDay($goal_id, Request $request) {
+    public function getGoalDay($goal_id, Request $request)
+    {
 
         $messages = [
             'day.required' => '缺少目标ID参数',
@@ -328,29 +361,29 @@ class UserController extends BaseController
         ], $messages);
 
         if ($validation->fails()) {
-            return $this->response->error(implode(',',$validation->errors()),500);
+            return $this->response->error(implode(',', $validation->errors()), 500);
         }
 
-        $day = $request->input('day',date('Y-m-d'));
+        $day = $request->input('day', date('Y-m-d'));
 
         $user_id = $this->auth->user()->user_id;
 
         $event = Event::where('goal_id', $goal_id)
             ->where('user_id', $user_id)
-            ->whereRaw("DATE_FORMAT(created_at,'%Y-%m-%d') = '".$day."'")
+            ->whereRaw("DATE_FORMAT(created_at,'%Y-%m-%d') = '" . $day . "'")
             ->first();
 
 
         $new_event = (object)[];
 
-        if($event) {
+        if ($event) {
             $new_event->id = $event->event_id;
             $new_event->content = $event->event_content;
 
-            if($event['type'] == 'USER_CHECKIN') {
+            if ($event['type'] == 'USER_CHECKIN') {
                 $checkin = $event->checkin;
 
-                if($checkin) {
+                if ($checkin) {
                     $new_event->content = $checkin->checkin_content;
 
                     $new_checkin = [];
@@ -373,11 +406,11 @@ class UserController extends BaseController
 
                 $new_attachs = [];
 
-                foreach ($attachs as $k=>$attach) {
+                foreach ($attachs as $k => $attach) {
                     $new_attachs[$k]['id'] = $attach->attach_id;
                     $new_attachs[$k]['name'] = $attach->attach_name;
                     $new_attachs[$k]['path'] = $attach->attach_path;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/" . $attach->attach_path . '/' . $attach->attach_name;
 
                 }
 
@@ -388,13 +421,14 @@ class UserController extends BaseController
             }
         }
 
-       return response()->json($new_event);
+        return response()->json($new_event);
 
 //        return $new_event;
 
     }
 
-    public function getGoalCalendar($goal_id, Request $request) {
+    public function getGoalCalendar($goal_id, Request $request)
+    {
 
         $user_id = $this->auth->user()->user_id;
 
@@ -605,8 +639,8 @@ class UserController extends BaseController
 
                 $result[$key]['content'] = $checkin ? $checkin->checkin_content : '';
 
-                $new_checkin['id'] =  $checkin->checkin_id;
-                $new_checkin['total_days'] =  $checkin ?$checkin->total_days:0 ;
+                $new_checkin['id'] = $checkin->checkin_id;
+                $new_checkin['total_days'] = $checkin ? $checkin->total_days : 0;
 
                 $items = DB::table('checkin_item')
                     ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
@@ -632,7 +666,7 @@ class UserController extends BaseController
             $owner['nickname'] = $event->user->nickname;
             $owner['avatar_url'] = $event->user->user_avatar;
 
-            $result[$key]['owner'] =$owner;
+            $result[$key]['owner'] = $owner;
 
             $goal = [];
             $goal['id'] = $event->goal->goal_id;
@@ -656,24 +690,48 @@ class UserController extends BaseController
         return $result;
     }
 
-    public function new_messages()
+    public function getNewMessages()
     {
-        $validation = Validator::make(Input::all(), [
-            'user_id' => 'required',     // 用户id
-        ]);
+        $user_id = $this->auth->user()->user_id;
 
-        if ($validation->fails()) {
-            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-        }
-
-        $user_id = Input::get('user_id');
-
-        $count = Message::where('to_user', $user_id)
+        $total_count = Message::where('to_user', $user_id)
             ->where('status', '0')
             ->count();
 
-        return API::response()->array(['status' => true, 'message' => "", 'count' => $count]);;
+        $like_count = Message::where('to_user', $user_id)
+            ->where('status', 0)
+            ->where('type', 2)
+            ->count();
 
+        $comment_count = Message::where('to_user', $user_id)
+            ->where('status', 0)
+            ->where('type', 3)
+            ->count();
+
+        $fan_count = Message::where('to_user', $user_id)
+            ->where('status', 0)
+            ->where('type', 4)
+            ->count();
+
+
+        $at_count = Message::where('to_user', $user_id)
+            ->where('status', 0)
+            ->where('type', 5)
+            ->count();
+
+        $notice_count = Message::where('to_user', $user_id)
+            ->where('status', 0)
+            ->where('type', 6)
+            ->count();
+
+        $result = [];
+        $result['total_count'] = $total_count;
+        $result['like_count'] = $like_count;
+        $result['comment_count'] = $comment_count;
+        $result['at_count'] = $at_count;
+        $result['notice'] = $notice_count;
+
+        return $result;
     }
 
     public function messages()
@@ -1015,15 +1073,15 @@ class UserController extends BaseController
     {
         $user_id = $this->auth->user()->user_id;
 
-        $page = $request->input('page',1);
-        $per_page = $request->input('per_page',20);
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
 
         $messages = DB::table('messages')
             ->where('type', 4)
             ->where('to_user', $user_id)
             ->orderBy('messages.status')
             ->orderBy('messages.create_time', 'desc')
-            ->skip(($page-1)*$per_page)
+            ->skip(($page - 1) * $per_page)
             ->take($per_page)
             ->get();
 
@@ -1040,20 +1098,20 @@ class UserController extends BaseController
 
         foreach ($messages as $k => $message) {
             $new_messages[$k]['id'] = $message->message_id;
-            $new_messages[$k]['created_at'] = date('Y-m-d H:i:s',$message->create_time);
+            $new_messages[$k]['created_at'] = date('Y-m-d H:i:s', $message->create_time);
 
-            $user  = User::find($message->from_user)->first();
+            $user = User::find($message->from_user);
 
             $is_follow = DB::table('user_follow')
-                ->where('user_id',$user_id)
-                ->where('follow_user_id',$user->user_id)
+                ->where('user_id', $user_id)
+                ->where('follow_user_id', $user->user_id)
                 ->first();
 
             // 判断是否关注该用户
 
             $new_user = [];
 
-            $new_user['is_follow'] = $is_follow?true:false;
+            $new_user['is_follow'] = $is_follow ? true : false;
             $new_user['id'] = $user->user_id;
             $new_user['nickname'] = $user->nickname;
             $new_user['avatar_url'] = $user->user_avatar;
@@ -1072,17 +1130,16 @@ class UserController extends BaseController
     {
         $user_id = $this->auth->user()->user_id;
 
-        $page = $request->input('page',1);
-        $per_page = $request->input('per_page',20);
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
 
         $messages = DB::table('messages')
             ->where('type', 3)
             ->where('to_user', $user_id)
-            ->where('msgable_id', '<>',null)
-
+            ->where('msgable_id', '<>', null)
             ->orderBy('messages.status')
             ->orderBy('messages.create_time', 'desc')
-            ->skip(($page-1)*$per_page)
+            ->skip(($page - 1) * $per_page)
             ->take($per_page)
             ->get();
 
@@ -1099,9 +1156,9 @@ class UserController extends BaseController
 
         foreach ($messages as $k => $message) {
             $new_messages[$k]['id'] = $message->message_id;
-            $new_messages[$k]['created_at'] = date('Y-m-d H:i:s',$message->create_time);
+            $new_messages[$k]['created_at'] = date('Y-m-d H:i:s', $message->create_time);
 
-            $user  = User::find($message->from_user);
+            $user = User::find($message->from_user);
 
             $new_user = [];
 
@@ -1118,16 +1175,16 @@ class UserController extends BaseController
             $new_comment['content'] = $comment->content;
             $new_comment['event_id'] = $comment->event_id;
 
-            if($comment->parent_id == 0) {
+            if ($comment->parent_id == 0) {
                 $event = Event::findOrFail($comment->event_id);
-                if($event->type == 'USER_CHECKIN') {
+                if ($event->type == 'USER_CHECKIN') {
                     $new_comment['source'] = $event->checkin->checkin_content;
                 } else {
                     $new_comment['source'] = $event->event_content;
                 }
             } else {
                 // 获取回复的评论对象
-                if($comment->reply_id > 0 ) {
+                if ($comment->reply_id > 0) {
                     $reply_comment = Comment::find($comment->reply_id);
                 } else {
                     $reply_comment = Comment::find($comment->parent_id);
@@ -1149,16 +1206,16 @@ class UserController extends BaseController
     {
         $user_id = $this->auth->user()->user_id;
 
-        $page = $request->input('page',1);
-        $per_page = $request->input('per_page',20);
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
 
         $messages = DB::table('messages')
             ->where('type', 2)
             ->where('to_user', $user_id)
-            ->where('msgable_id', '<>',null)
+            ->where('msgable_id', '<>', null)
             ->orderBy('messages.status')
             ->orderBy('messages.create_time', 'desc')
-            ->skip(($page-1)*$per_page)
+            ->skip(($page - 1) * $per_page)
             ->take($per_page)
             ->get();
 
@@ -1177,16 +1234,16 @@ class UserController extends BaseController
 
 
             $like = Like::find($message->msgable_id);
-            if(!$like)  continue;
+            if (!$like) continue;
 
             $new_like = [];
             $new_like['id'] = $like->like_id;
             $new_like['event_id'] = $like->event_id;
 
             $event = Event::findOrFail($like->event_id);
-            if($event->type == 'USER_CHECKIN') {
+            if ($event->type == 'USER_CHECKIN') {
 
-                if(!$event->checkin) continue;
+                if (!$event->checkin) continue;
                 $new_like['source'] = $event->checkin->checkin_content;
             } else {
                 $new_like['source'] = $event->event_content;
@@ -1197,9 +1254,9 @@ class UserController extends BaseController
             $new_message['like'] = $new_like;
 
             $new_message['id'] = $message->message_id;
-            $new_message['created_at'] = date('Y-m-d H:i:s',$message->create_time);
+            $new_message['created_at'] = date('Y-m-d H:i:s', $message->create_time);
 
-            $user  = User::find($message->from_user);
+            $user = User::find($message->from_user);
 
             $new_user = [];
             $new_user['id'] = $user->user_id;
@@ -1207,21 +1264,22 @@ class UserController extends BaseController
             $new_user['avatar_url'] = $user->user_avatar;
 
             $is_follow = DB::table('user_follow')
-                ->where('user_id',$user_id)
-                ->where('follow_user_id',$user->user_id)
+                ->where('user_id', $user_id)
+                ->where('follow_user_id', $user->user_id)
                 ->first();
 
-            $new_user['is_follow'] = $is_follow?true:false;
+            $new_user['is_follow'] = $is_follow ? true : false;
             $new_message['user'] = $new_user;
 
-            array_push($new_messages,$new_message);
+            array_push($new_messages, $new_message);
         }
 
 
         return $new_messages;
     }
 
-    public function deleteGoal($goal_id) {
+    public function deleteGoal($goal_id)
+    {
 
         $user_id = $this->auth->user()->user_id;
 
@@ -1243,25 +1301,28 @@ class UserController extends BaseController
             return $this->response->noContent();
 
         } else {
-            return $this->response->error("未设定该目标",500);
+            return $this->response->error("未设定该目标", 500);
         }
     }
 
-    public function checkinGoal($goal_id,Request $request)
+    public function checkinGoal($goal_id, Request $request)
     {
+        Log::info("打卡信息");
+        Log::info($request);
+
         $validation = Validator::make(Input::all(), [
-            'content' 	=> '',	// 备注
+            'content' => '',    // 备注
             'is_public' => '',          // 是否公开
-            'day'    	=> 'date',		// 打卡类型
-            'items'   	=> '',          // 项目
-            'attaches'   => '',
+            'day' => 'date',        // 打卡类型
+            'items' => '',          // 项目
+            'attaches' => '',
         ]);
 
         if ($validation->fails()) {
-            return $this->response->error(implode(',',$validation->errors()),500);
+            return $this->response->error(implode(',', $validation->errors()), 500);
         }
 
-        $day = $request->input('day',date('Y-m-d'));
+        $day = $request->input('day', date('Y-m-d'));
         $content = $request->input('content');
 
         $user_id = $this->auth->user()->user_id;
@@ -1269,11 +1330,11 @@ class UserController extends BaseController
         $user_goal = User::find($user_id)
             ->goals()
             ->wherePivot('goal_id', '=', $goal_id)
-            ->wherePivot('is_del','=',0)
+            ->wherePivot('is_del', '=', 0)
             ->first();
 
-        if(empty($user_goal)) {
-            return $this->response->error('未设定该目标',500);
+        if (empty($user_goal)) {
+            return $this->response->error('未设定该目标', 500);
         }
 
         $series_days = $user_goal->pivot->series_days;
@@ -1285,8 +1346,8 @@ class UserController extends BaseController
             ->first();
 
         // 如果存在该条打卡记录
-        if($user_checkin) {
-            return $this->response->error('今日已打卡',500);
+        if ($user_checkin) {
+            return $this->response->error('今日已打卡', 500);
         }
 
         $checkin = new Checkin();
@@ -1313,7 +1374,7 @@ class UserController extends BaseController
 //        }
 
         // 如果存在该条打卡记录
-        if(date('Y-m-d',$user_goal->pivot->last_checkin_time)==date("Y-m-d",strtotime("-1 day",strtotime($day)))) {
+        if (date('Y-m-d', $user_goal->pivot->last_checkin_time) == date("Y-m-d", strtotime("-1 day", strtotime($day)))) {
             $series_days += 1;
         } else {
             $series_days = 1;
@@ -1321,7 +1382,7 @@ class UserController extends BaseController
 
         $total_days = $user_goal->pivot->total_days;
 
-        $total_days ++;
+        $total_days++;
 
         $checkin->total_days = $total_days;
         $checkin->series_days = $series_days;
@@ -1330,20 +1391,20 @@ class UserController extends BaseController
 
         // 插入items
         $items = Input::get('items');
-        if(!empty($items)) {
-            foreach($items as $item) {
+        if (!empty($items)) {
+            foreach ($items as $item) {
                 DB::table('checkin_item')
                     ->insert([
-                        'checkin_id'=>$checkin->checkin_id,
-                        'item_id'=>$item['item_id'],
-                        'item_value'=>$item['item_expect']
+                        'checkin_id' => $checkin->checkin_id,
+                        'item_id' => $item['item_id'],
+                        'item_value' => $item['item_expect']
                     ]);
             }
         }
 
         // 更新附件
-        if($attaches = $request->input('attaches')) {
-            foreach($attaches as $attach) {
+        if ($attachs = $request->input('attachs')) {
+            foreach ($attachs as $attach) {
                 $attach = Attach::find($attach['id']);
                 $attach->attachable_id = $checkin->checkin_id;
                 $attach->attachable_type = 'checkin';
@@ -1358,7 +1419,7 @@ class UserController extends BaseController
 
         $user_goal->pivot->total_days = $total_days;
         $user_goal->pivot->series_days = $series_days;
-        $user_goal->pivot->last_checkin_time = $day<date('Y-m-d')?strtotime($day)+86439:time();
+        $user_goal->pivot->last_checkin_time = $day < date('Y-m-d') ? strtotime($day) + 86439 : time();
         $user_goal->pivot->save();
         // $user_goal->updateExistingPivot();
 //
@@ -1367,8 +1428,8 @@ class UserController extends BaseController
 //                ->wherePivot('is_del','=',0)
 //                ->updateExistingPivot($obj_id,$data);
 
-        User::find($user_id)->increment('checkin_count',1);
-        User::find($user_id)->increment('energy_count',1);
+        User::find($user_id)->increment('checkin_count', 1);
+        User::find($user_id)->increment('energy_count', 1);
 
 //        if($add_energy == 0) {
 //            $energy = new Energy();
@@ -1391,25 +1452,26 @@ class UserController extends BaseController
         $event->save();
 
         //更新用户目标表
-        if($content) {
-            $this->_parse_content($content,$user_id,$event->event_id);
+        if ($content) {
+            $this->_parse_content($content, $user_id, $event->event_id);
         }
 
         return response()->json($checkin);
 
     }
 
-    private function _parse_content($content,$user_id,$event_id){
+    private function _parse_content($content, $user_id, $event_id)
+    {
         $topic_pattern = "/\#([^\#|.]+)\#/";
-        preg_match_all($topic_pattern,$content,$topic_array);
-        foreach($topic_array[0] as $v) {
+        preg_match_all($topic_pattern, $content, $topic_array);
+        foreach ($topic_array[0] as $v) {
             // 查找是否存在
 
-            $name = str_replace('#','',$v);
+            $name = str_replace('#', '', $v);
 
-            $topic = Topic::where('name','=',$name)->first();
+            $topic = Topic::where('name', '=', $name)->first();
 
-            if(!$topic) {
+            if (!$topic) {
                 $topic = new Topic();
                 $topic->name = $name;
                 $topic->create_time = time();
@@ -1417,7 +1479,7 @@ class UserController extends BaseController
             }
 
             // 插入对应关系
-            DB::table('event_topic')->insert(['topic_id'=>$topic->id,'event_id'=>$event_id]);
+            DB::table('event_topic')->insert(['topic_id' => $topic->id, 'event_id' => $event_id]);
 
             $topic->follow_count += 1;
             $topic->save();
@@ -1428,33 +1490,31 @@ class UserController extends BaseController
     public function changePassword(Request $request)
     {
         $validation = Validator::make(Input::all(), [
-            'old_password' 	=> 'required',
+            'old_password' => 'required',
             'new_password' => 'required',
-            'new_password_check'=> 'required'
+            'new_password_check' => 'required'
         ]);
 
         if ($validation->fails()) {
-            return $this->response->error(implode(',',$validation->errors()),500);
+            return $this->response->error(implode(',', $validation->errors()), 500);
         }
 
         $user = $this->auth->user();
 
         // 检查旧密码
-        if($user->passwd != md5($request->old_password.$user->salt)) {
-            return $this->response->error('原密码错误',500);
+        if ($user->passwd != md5($request->old_password . $user->salt)) {
+            return $this->response->error('原密码错误', 500);
         }
 
         // 生成新密码
         $salt = rand(1000, 9999);
-        $user->passwd = md5($request->new_password.$salt);
+        $user->passwd = md5($request->new_password . $salt);
         $user->salt = $salt;
         $user->save();
 
         return $this->response->noContent();
 
     }
-
-
 
 
 }
