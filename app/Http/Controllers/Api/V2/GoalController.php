@@ -216,6 +216,10 @@ class GoalController extends BaseController
             $goal->follow_nums = 1;
             //TODO 删除create_time
             $goal->create_time = time();
+
+            if($start_date> date('Y-m-d')) {
+                $goal->status = -1;
+            }
             $goal->save();
         }
 
