@@ -1337,6 +1337,14 @@ class UserController extends BaseController
             return $this->response->error('未设定该目标', 500);
         }
 
+        if($user_goal['start_date'] > date('Y-m-d')) {
+            return $this->response->error('目标还未开始', 500);
+        }
+
+        if($user_goal['end_date'] < date('Y-m-d')) {
+            return $this->response->error('目标已结束', 500);
+        }
+
         $series_days = $user_goal->pivot->series_days;
 
         // 获取当天的打卡记录
