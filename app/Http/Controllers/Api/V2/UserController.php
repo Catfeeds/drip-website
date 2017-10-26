@@ -118,7 +118,7 @@ class UserController extends BaseController
         ];
 
         $validation = Validator::make(Input::all(), [
-            'date' => '',        // 具体日期
+            'day' => '',        // 具体日期
         ], $messages);
 
         if ($validation->fails()) {
@@ -127,7 +127,9 @@ class UserController extends BaseController
 
         $user_id = $this->auth->user()->user_id;
 
-        $date = $request->input("date", date('Y-m-d'));
+        $date = $request->input("day", date('Y-m-d'));
+
+//        		DB::enableQueryLog();
 
         $goals = User::find($user_id)
             ->goals()
@@ -140,6 +142,12 @@ class UserController extends BaseController
             ->orderBy('remind_time', 'asc')
             ->get();
 
+//        $laQuery = DB::getQueryLog();
+
+//		$lcWhatYouWant = $laQuery[0]['query'];
+
+//		var_dump($laQuery);
+
         $result = array();
 
         foreach ($goals as $key => $goal) {
@@ -150,7 +158,17 @@ class UserController extends BaseController
             $result[$key]['name'] = $goal->goal_name;
             $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
             $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
-            $result[$key]['status'] = $goal->pivot->status;
+
+            // TODO 修改status 0未开始 1进行中 2已结束
+//            if($goal->pivot->status==0) {
+//                $result[$key]['status'] = 1;
+//            } else if ($goal->pivot->status==1) {
+//                $result[$key]['status'] = 2;
+//            } else if ($goal->pivot->status== -1) {
+//                $result[$key]['status'] = 0;
+//            }
+
+            $result[$key]['status'] = $goal->pivot->status+1;
 
         }
 
