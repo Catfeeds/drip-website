@@ -197,7 +197,7 @@ class GoalController extends BaseController
 
         $start_date = $request->input('start_date', date('Y-m-d'));
 
-        $end_date = $request->input('end_date', null);
+        $end_date = $request->input('end_date');
 
         if ($end_date && $end_date < $start_date) {
             return $this->response->error("结束日期不得小于开始日期", 500);
@@ -216,10 +216,6 @@ class GoalController extends BaseController
             $goal->follow_nums = 1;
             //TODO 删除create_time
             $goal->create_time = time();
-
-            if($start_date> date('Y-m-d')) {
-                $goal->status = -1;
-            }
             $goal->save();
         }
 
@@ -234,10 +230,16 @@ class GoalController extends BaseController
             return $this->response->error("你已经制定过该目标", 500);
         } else {
 
-            $start_dt = Carbon::parse($start_date);
-            $end_dt = Carbon::parse($end_date);
+            $expect_days = 0;
 
-            $expect_days = $start_dt->diffInDays($end_dt);
+            if (!empty($end_date)) {
+                var_dump($end_date);
+
+                $start_dt = Carbon::parse($start_date);
+                $end_dt = Carbon::parse($end_date);
+
+                $expect_days = $start_dt->diffInDays($end_dt);
+            }
 
             $user->goals()->attach($goal->goal_id, [
                 'goal_name' => trim($goal_name),
@@ -246,6 +248,7 @@ class GoalController extends BaseController
                 'start_time' => time(),
                 'start_date' => $start_date,
                 'end_date' => $end_date,
+                'status' => ($start_date > date('Y-m-d')) ? -1 : 0,
                 'expect_days' => $expect_days,
             ]);
 
