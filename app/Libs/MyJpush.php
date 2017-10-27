@@ -12,8 +12,8 @@ use JPush;
  */
 class MyJpush
 {
-    private $appKey = 'c31d2ddd5cb355159e6d4b85';
-    private $masterSecret = '6006e9d173cdbec11cbf5acf';
+    private $appKey = '46becc0d96be0a46d601867f';
+    private $masterSecret = 'dbcdf2429fcca86bfffc5b12';
 
     private $client;
 
