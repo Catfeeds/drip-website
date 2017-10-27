@@ -278,12 +278,14 @@ class UserController extends Controller
                 'users.email',
                 'users.nickname',
                 'checkin.checkin_content',
-//                'attachs.attach_id',
-//                'attachs.attach_name',
-//                'attachs.attach_path'
+                'attachs.attach_id',
+                'attachs.attach_name',
+                'attachs.attach_path'
             ])
             ->join('users','users.user_id','=','events.user_id')
             ->join('checkin','checkin.checkin_id','=','events.event_value')
+            ->leftJoin('attachs','attachs.attachable_id','=','events.event_value')
+            ->where('attachs.attachable_type', '=', 'checkin')
 //            ->leftJoin('attachs', function ($join) {
 //                $join->on('attachs.attachable_id', '=', 'events.event_value')
 //                    ->where('attachs.attachable_type', '=', 'checkin');
@@ -294,12 +296,12 @@ class UserController extends Controller
             ->addColumn('action', function ($event) {
                 return '<button data-id="'.$event->event_id.'" class="btn btn-xs btn-primary btn-event-hot"><i class="glyphicon glyphicon-edit"></i>设为精选</button>';
             })
-//            ->addColumn('attach', function ($event) {
-//                if($event->attach_id) {
-//                    return '<img src="http://drip.growu.me/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" class="user-image img-circle" width="64" height="64">';
-//                }
-//                return '无';
-//            })
+            ->addColumn('attach', function ($event) {
+                if($event->attach_id) {
+                    return '<img src="http://drip.growu.me/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" class="" width="200" height="200">';
+               }
+                return '无';
+            })
             ->editColumn('is_public', function ($event) {
                 return $event->is_public==1?'是':'否';
             })

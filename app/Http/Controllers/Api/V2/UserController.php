@@ -640,7 +640,7 @@ class UserController extends BaseController
 
         $events = Event::where('goal_id', $goal_id)
             ->where('is_public', '=', 1)
-            ->orderBy('create_time', 'DESC')->skip($page * $per_page)
+            ->orderBy('create_time', 'DESC')->skip(($page-1)* $per_page)
             ->take($per_page)->get();
 
         $result = [];
@@ -655,19 +655,31 @@ class UserController extends BaseController
                     ->where('checkin_id', $event->event_value)
                     ->first();
 
-                $result[$key]['content'] = $checkin ? $checkin->checkin_content : '';
-
-                $new_checkin['id'] = $checkin->checkin_id;
-                $new_checkin['total_days'] = $checkin ? $checkin->total_days : 0;
+                if($checkin) {
+                    $result[$key]['content'] = $checkin->checkin_content;
+                    $new_checkin['total_days'] = $checkin->total_days;
+                    $new_checkin['id'] = $checkin->checkin_id;
+                }
 
                 $items = DB::table('checkin_item')
                     ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
                     ->where('checkin_id', $event->event_value)
                     ->get();
-                $attaches = DB::table('attachs')
+
+                $attachs = DB::table('attachs')
                     ->where('attachable_id', $event->event_value)
-                    ->where('attachable_type', 'checkin')
+                    ->where('attachable_type','checkin')
                     ->get();
+
+                $new_attachs = [];
+
+                foreach($attachs as $k=>$attach) {
+                    $new_attachs[$k]['id'] = $attach->attach_id;
+                    $new_attachs[$k]['name'] = $attach->attach_name;
+                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+                }
+
+                $result[$key]['attachs'] = $new_attachs;
             }
 
             $result[$key]['checkin'] = $new_checkin;

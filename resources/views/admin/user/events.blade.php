@@ -33,6 +33,7 @@
                                     <th>#ID</th>
                                     <th>用户</th>
                                     <th>内容</th>
+                                    <th>附件</th>
                                     <th>是否公开</th>
                                     <th>是否精选</th>
                                     <th>时间</th>
@@ -113,7 +114,7 @@
                     {data: 'event_id', name: 'event_id'},
                     {data: 'nickname', name: 'nickname'},
                     {data: 'checkin_content', name: 'checkin_content'},
-//                    {data: 'attach', name: 'attach'},
+                    {data: 'attach', name: 'attach'},
                     {data: 'is_public', name: 'is_public'},
                     {data: 'is_hot', name: 'is_hot'},
                     {data: 'create_time', name: 'create_time'},

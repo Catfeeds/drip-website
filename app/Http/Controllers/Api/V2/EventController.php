@@ -317,7 +317,7 @@ class EventController extends BaseController {
 
 		$events = Event::where('is_hot','=',1)
 			->where('is_public','=',1)
-			->orderBy('create_time','DESC')->skip($page*$per_page)
+			->orderBy('create_time','DESC')->skip(($page-1)*$per_page)
 			->take($per_page)->get();
 
 		$new_events = [];
@@ -599,8 +599,6 @@ class EventController extends BaseController {
 			$event->save();
 			$user->save();
 
-
-
 			//  消息
 			$message = new Message();
 			$message->from_user = $this->auth->user()->user_id;
@@ -613,11 +611,11 @@ class EventController extends BaseController {
 			$message->save();
 
 			// TODO 开启推送
-//			$name = $this->auth->user()->nickname?$this->auth->user()->nickname:'keeper'.$this->auth->user()->user_id;
-//			$content = $name.' 鼓励了你';
+			$name = $this->auth->user()->nickname?$this->auth->user()->nickname:'一个小伙伴';
+			$content = $name.' 鼓励了你';
 //
-//			$push = new MyJpush();
-//			$push->pushToSingleUser($event->user_id,$content);
+			$push = new MyJpush();
+			$push->pushToSingleUser($event->user_id,$content);
 
 		}
 
