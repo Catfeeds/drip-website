@@ -1371,8 +1371,10 @@ class UserController extends BaseController
             return $this->response->error('目标还未开始', 500);
         }
 
-        if($user_goal['end_date'] < date('Y-m-d')) {
-            return $this->response->error('目标已结束', 500);
+        if($user_goal['end_date']) {
+            if($user_goal['end_date'] < date('Y-m-d')) {
+                return $this->response->error('目标已结束', 500);
+            }
         }
 
         $series_days = $user_goal->pivot->series_days;
