@@ -45,12 +45,12 @@ class AuthController extends BaseController
 
         $validation = Validator::make(Input::all(), [
             'account' => 'required',        // 邮箱
-            'password' => 'required|between:6,12',        // 密码
+            'password' => 'required|between:6,16',        // 密码
             'device' => '',    // 设备
         ], $messages);
 
         if ($validation->fails()) {
-            return API::response()->error($validation->errors()->all('</br>:message'), 500);
+            return $this->response->error(implode(',', $validation->errors()->all()), 500);
         }
 
         $login_type = '';
@@ -265,7 +265,7 @@ class AuthController extends BaseController
         $validation = Validator::make(Input::all(), [
             'account' => 'required',        // 邮箱
             'code' => 'required|digits:4',
-            'password' => 'required|between:6,12',        // 密码
+            'password' => 'required|between:6,16',        // 密码
             'device' => '',    // 设备
         ], $messages);
 
@@ -463,7 +463,15 @@ class AuthController extends BaseController
         // 获取
         $client = new Client();
 
-        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token=' . $request->access_token . '&oauth_consumer_key=1106192747&openid=' . $request->userid, []);
+        $app_id = 1106248902;
+
+        $device = $request->device;
+
+        if(isset($device['platform'])&&$device['platform'] == 'iOS') {
+            $app_id = 1106192747;
+        }
+
+        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token=' . $request->access_token . '&oauth_consumer_key='.$app_id.'&openid=' . $request->userid, []);
 
         if ($res->getStatusCode() != 200) {
             $this->response->error("获取用户信息失败", 500);
