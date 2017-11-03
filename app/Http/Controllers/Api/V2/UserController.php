@@ -691,12 +691,12 @@ class UserController extends BaseController
                 ->where('user_id', '=', $user_id)
                 ->first();
 
-            $owner = [];
-            $owner['id'] = $event->user->user_id;
-            $owner['nickname'] = $event->user->nickname;
-            $owner['avatar_url'] = $event->user->user_avatar;
+            $new_user = [];
+            $new_user['id'] = $event->user->user_id;
+            $new_user['nickname'] = $event->user->nickname;
+            $new_user['avatar_url'] = $event->user->user_avatar;
 
-            $result[$key]['owner'] = $owner;
+            $result[$key]['user'] = $new_user;
 
             $goal = [];
             $goal['id'] = $event->goal->goal_id;

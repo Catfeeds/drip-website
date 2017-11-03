@@ -60,7 +60,10 @@ class EventController extends BaseController {
 
 		$result['id'] = $event->event_id;
 		$result['content'] = $event->event_content;
-		$result['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
+        $result['like_count'] = $event->like_count;
+        $result['comment_count'] = $event->comment_count;
+        $result['favourite_count'] = 0;
+        $result['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
 		$result['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
 
 		$new_checkin = [];
@@ -91,7 +94,7 @@ class EventController extends BaseController {
 			foreach($attachs as $k=>$attach) {
 				$new_attachs[$k]['id'] = $attach->attach_id;
 				$new_attachs[$k]['name'] = $attach->attach_name;
-				$new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+				$new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
 			}
 
             $result['attachs'] = $new_attachs;
@@ -359,7 +362,7 @@ class EventController extends BaseController {
 				foreach($attachs as $k=>$attach) {
 					$new_attachs[$k]['id'] = $attach->attach_id;
 					$new_attachs[$k]['name'] = $attach->attach_name;
-					$new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+					$new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
 				}
 
 
@@ -373,12 +376,12 @@ class EventController extends BaseController {
 				->where('user_id', $event->user_id)
 				->first();
 
-			$owner = [];
-			$owner['id'] = $user->user_id;
-			$owner['nickname'] = $user->nickname;
-			$owner['avatar_url'] = $user->user_avatar;
+			$new_user = [];
+            $new_user['id'] = $user->user_id;
+            $new_user['nickname'] = $user->nickname;
+            $new_user['avatar_url'] = $user->user_avatar;
 
-			$new_events[$key]['owner'] = $owner;
+			$new_events[$key]['user'] = $new_user;
 
             $goal = [];
             $goal['id'] = $event->goal->goal_id;
@@ -460,7 +463,7 @@ class EventController extends BaseController {
                 foreach($attachs as $k=>$attach) {
                     $new_attachs[$k]['id'] = $attach->attach_id;
                     $new_attachs[$k]['name'] = $attach->attach_name;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+                    $new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
                 }
 
                 $new_events[$key]['attachs'] = $new_attachs;
@@ -473,12 +476,12 @@ class EventController extends BaseController {
                 ->where('user_id', $event->user_id)
                 ->first();
 
-            $owner = [];
-            $owner['id'] = $user->user_id;
-            $owner['nickname'] = $user->nickname;
-            $owner['avatar_url'] = $user->user_avatar;
+            $new_user = [];
+            $new_user['id'] = $user->user_id;
+            $new_user['nickname'] = $user->nickname;
+            $new_user['avatar_url'] = $user->user_avatar;
 
-            $new_events[$key]['owner'] = $owner;
+            $new_events[$key]['user'] = $new_user;
 
             $goal = Goal::find($event->goal_id);
 
