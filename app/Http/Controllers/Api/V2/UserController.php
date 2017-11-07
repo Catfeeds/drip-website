@@ -129,7 +129,7 @@ class UserController extends BaseController
 
         $date = $request->input("day", date('Y-m-d'));
 
-//        		DB::enableQueryLog();
+        		DB::enableQueryLog();
 
         $goals = User::find($user_id)
             ->goals()
@@ -146,7 +146,7 @@ class UserController extends BaseController
 
 //		$lcWhatYouWant = $laQuery[0]['query'];
 
-//		var_dump($laQuery);
+//		return $laQuery;
 
         $result = array();
 
@@ -278,7 +278,8 @@ class UserController extends BaseController
         $result = array();
 
         $result['id'] = $goal_id;
-        $result['name'] = $goal->goal_name;
+        $result['name'] = $goal->pivot->name?$goal->pivot->name:$goal->goal_name;
+        $result['desc'] = $goal->pivot->desc;
         $result['expect_days'] = $goal->pivot->expect_days;
         $result['total_days'] = $goal->pivot->total_days;
         $result['series_days'] = $goal->pivot->series_days;
@@ -329,6 +330,33 @@ class UserController extends BaseController
         $input = $request->all();
 
         if ($input) {
+
+            if($request->has('start_date')) {
+                $start_date = $request->input('start_date');
+            } else {
+                $start_date = $request->input('start_date');
+            }
+
+            if($request->has('end_date')) {
+                $end_date = $request->input('end_date');
+            } else {
+                $end_date = $request->input('end_date');
+            }
+
+            if($end_date) {
+                if($start_date > $end_date) {
+                    return $this->response->error("开始时间不得大于结束时间", 500);
+                }
+
+                $start_dt = Carbon::parse($start_date);
+                $end_dt = Carbon::parse($end_date);
+
+                $expect_days = $start_dt->diffInDays($end_dt);
+
+                $input['expect_days'] = $expect_days;
+            }
+
+
             DB::table('user_goal')->where('id', '=', $user_goal->pivot->id)
                 ->update($input);
         }

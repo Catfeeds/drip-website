@@ -43,7 +43,9 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 	Route::get('admin/version/ajax_versions', 'VersionController@ajax_versions')->name('admin.version.ajax_versions');
 	Route::post('admin/version/create', 'VersionController@create')->name('admin.version.create');
 	Route::get('admin/mall', 'MallController@index');
-	Route::get('admin/mall/ajax_feedbacks', 'MallController@ajax_goods')->name('admin.mall.ajax_goods');
+    Route::get('admin/blog/articles', 'BlogController@articles');
+
+    Route::get('admin/mall/ajax_feedbacks', 'MallController@ajax_goods')->name('admin.mall.ajax_goods');
 
 });
 

@@ -233,7 +233,6 @@ class GoalController extends BaseController
             $expect_days = 0;
 
             if (!empty($end_date)) {
-                var_dump($end_date);
 
                 $start_dt = Carbon::parse($start_date);
                 $end_dt = Carbon::parse($end_date);
