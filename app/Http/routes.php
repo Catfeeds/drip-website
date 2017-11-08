@@ -13,14 +13,15 @@
 
 Route::get('/', 'HomeController@index');
 
+Route::get('blog/', 'ArticleController@index');
+
 Route::get('goal', 'GoalController@explore');
 
 Route::get('account/login', 'AccountController@login');
 Route::get('account/forget', 'AccountController@forget');
 Route::get('account/reset', 'AccountController@reset');
-
-
 Route::get('goal/view/{id}','GoalController@view');
+Route::get('article/{id}','ArticleController@view');
 
 Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 //	Route::controller('user', 'UserController', [
@@ -43,8 +44,10 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 	Route::get('admin/version/ajax_versions', 'VersionController@ajax_versions')->name('admin.version.ajax_versions');
 	Route::post('admin/version/create', 'VersionController@create')->name('admin.version.create');
 	Route::get('admin/mall', 'MallController@index');
-    Route::get('admin/blog/articles', 'BlogController@articles');
-
+    Route::get('admin/blog/articles', 'ArticleController@index');
+    Route::get('admin/blog/article/create', 'ArticleController@create');
+    Route::get('admin/blog/article/lists', 'ArticleController@lists')->name('admin.blog.article.lists');
+    Route::post('admin/blog/article/store', 'ArticleController@store')->name('admin.blog.article.store');
     Route::get('admin/mall/ajax_feedbacks', 'MallController@ajax_goods')->name('admin.mall.ajax_goods');
 
 });

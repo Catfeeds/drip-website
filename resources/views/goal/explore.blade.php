@@ -3,7 +3,7 @@
 @section('title', '发现目标')
 
 @section('content')
-    <div class="container pl-xl pr-xl">
+    <div class="container ">
         <div class="row">
             <div class="page-header">
         	   <h2>最新创建</h2>
