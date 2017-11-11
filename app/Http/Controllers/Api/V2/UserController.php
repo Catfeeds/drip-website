@@ -285,7 +285,7 @@ class UserController extends BaseController
         $result['series_days'] = $goal->pivot->series_days;
         $result['start_date'] = $goal->pivot->start_date;
         $result['end_date'] = $goal->pivot->end_date;
-        $result['status'] = $goal->pivot->status;
+        $result['status'] = $goal->pivot->status+1;
         $result['items'] = $goal->items;
         $result['is_today_checkin'] = $goal->is_today_checkin;
 
@@ -868,27 +868,35 @@ class UserController extends BaseController
 
         $validation = Validator::make(Input::all(), [
             'content' => 'required',        // 内容
+            'type' => '',             // 附件
+            'contact' => '',             // 附件
             'attaches' => '',             // 附件
             'device' => '',             // 设备信息
-            'version' => '',            // 版本
+            'app_version' => '',            // 版本
+            'web_version' => ''            // 版本
+
         ], $messages);
 
         if ($validation->fails()) {
-            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
+            return $this->response->error(implode(',', $validation->errors()), 500);
         }
 
         $data = [
             'user_id' => $this->auth->user()->user_id,
-            'content' => Input::get('content'),
-            'device' => json_encode(Input::get('device')),
-            'version' => Input::get('version'),
+            'type_id' => $request->input('type'),
+            'content' => $request->input('content'),
+            'device' =>  json_encode( $request->input('device')),
+            'version' => $request->input('app_version'),
+            // TODO 移除version字段
+            'app_version' => $request->input('app_version'),
+            'web_version' => $request->input('web_version'),
             'create_time' => time(),
         ];
 
         $feedback_id = DB::table('feedback')->insertGetId($data);
 
         // 更新附件
-        if ($attaches = Input::get('attaches')) {
+        if ($attaches = $request->input('attaches')) {
             foreach ($attaches as $attach) {
                 $attach = Attach::find($attach['id']);
                 $attach->attachable_id = $feedback_id;
@@ -897,7 +905,7 @@ class UserController extends BaseController
             }
         }
 
-        return API::response()->array(['status' => true, 'message' => '反馈成功'])->statusCode(200);
+        return $this->response->noContent();
 
     }
 

@@ -18,82 +18,82 @@ use App\Checkin;
 use App\Models\Message as Message;
 
 
-
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
 
 
-class CommentController extends BaseController {
+class CommentController extends BaseController
+{
 
 
-    public function like()
+    public function like($comment_id)
     {
-        $messages = [
-            'required' => '缺少参数 :attribute',
-        ];
-
-        $validation = Validator::make(Input::all(), [
-            'comment_id'		=> 	'required',		// 评论id
-        ],$messages);
-
-        if($validation->fails()){
-            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-        }
-
-        $comment_id =  Input::get('comment_id');
 
         $user_id = $this->auth->user()->user_id;
 
-        $is_like = false;
+        $comment = Comment::find($comment_id);
+
+        if (!$comment) {
+            return $this->response->error("评论不存在");
+        }
+
+        DB::table('comment_like')->insert([
+            ['comment_id' => $comment_id, 'user_id' => $user_id, 'create_time' => time()]
+        ]);
+
+        $comment->increment('like_count', 1);
+
+        return $this->response->noContent();
+
+    }
+
+    public function unLike($comment_id)
+    {
+//        $messages = [
+//            'required' => '缺少参数 :attribute',
+//        ];
+//
+//        $validation = Validator::make(Input::all(), [
+//            'comment_id'		=> 	'required',		// 评论id
+//        ],$messages);
+//
+//        if($validation->fails()){
+//            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
+//        }
+
+        $user_id = $this->auth->user()->user_id;
 
         $comment = Comment::find($comment_id);
 
-        if(!$comment) {
-            return API::response()->array(['status' => false, 'message' => '评论不存在'])->statusCode(200);
-        }
-        
-        // 查询是否
-        $like = DB::table('comment_like')
-            ->where('comment_id',$comment_id)
-            ->where('user_id',$user_id)
-            ->first();
-
-        if($like) { //取消点赞
-            DB::table('comment_like')
-                ->where('comment_id',$comment_id)
-                ->where('user_id',$user_id)
-                ->delete();
-
-            $comment->decrement('like_count',1);
-
-        } else {
-            DB::table('comment_like')->insert([
-                ['comment_id' => $comment_id, 'user_id' => $user_id,'create_time'=>time()]
-            ]);
-
-            $comment->increment('like_count',1);
-
-            $is_like = true;
+        if (!$comment) {
+            return $this->response->error('评论不存在');
         }
 
-        return API::response()->array(['status' => true, 'message' => '','data'=>compact('is_like')])->statusCode(200);
+        DB::table('comment_like')
+            ->where('comment_id', $comment_id)
+            ->where('user_id', $user_id)
+            ->delete();
+
+        $comment->decrement('like_count', 1);
+
+        return $this->response->noContent();
 
     }
 
 
-    public function reply($comment_id,Request $request)
+    public function reply($comment_id, Request $request)
     {
         $messages = [
             'required' => '缺少参数 :attribute',
         ];
 
         $validation = Validator::make(Input::all(), [
-            'content'		=> 	'required',		// 评论内容
-        ],$messages);
+            'content' => 'required',        // 评论内容
+        ], $messages);
 
-        if($validation->fails()){
-            return $this->response->error(implode(',',$validation->errors()),500);
+        if ($validation->fails()) {
+            return $this->response->error(implode(',', $validation->errors()), 500);
         }
 
 
@@ -112,15 +112,15 @@ class CommentController extends BaseController {
         // 判断EVENT是否存在
         $event = Event::find($reply_comment->event_id);
 
-        if(!$event) {
-            return $this->response->error('动态不存在',500);
+        if (!$event) {
+            return $this->response->error('动态不存在', 500);
         }
 
         $comment = new Comment();
         $comment->event_id = $reply_comment->event_id;
         $comment->content = trim($content);
-        $comment->parent_id = $reply_comment->parent_id == 0 ?$comment_id:$reply_comment->parent_id;
-        $comment->reply_id = $reply_comment->parent_id == 0 ?0:$comment_id;
+        $comment->parent_id = $reply_comment->parent_id == 0 ? $comment_id : $reply_comment->parent_id;
+        $comment->reply_id = $reply_comment->parent_id == 0 ? 0 : $comment_id;
         $comment->user_id = $user_id;
         $comment->create_time = time();
         $comment->save();
@@ -129,21 +129,21 @@ class CommentController extends BaseController {
         $event->comment_count += 1;
         $event->save();
 
-        if($event->user_id != $this->auth->user()->user_id) {
+        if ($event->user_id != $this->auth->user()->user_id) {
             //  消息
             $message = new Message();
             $message->from_user = $this->auth->user()->user_id;
             $message->to_user = $event->user_id;
-            $message->type = 3 ;
+            $message->type = 3;
             $message->msgable_id = $comment->comment_id;
             $message->msgable_type = 'App\Comment';
 
-            $message->create_time  = time();
+            $message->create_time = time();
             $message->save();
 
             // 推送
-            $name = $this->auth->user()->nickname?$this->auth->user()->nickname:'keeper'.$this->auth->user()->user_id;
-            $content = $name.' 评论了你';
+            $name = $this->auth->user()->nickname ? $this->auth->user()->nickname : 'keeper' . $this->auth->user()->user_id;
+            $content = $name . ' 评论了你';
 
 //            $push = new MyJpush();
 //            $push->pushToSingleUser($event->user_id,$content);

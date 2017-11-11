@@ -132,13 +132,26 @@ class EventController extends BaseController {
 			$new_comments[$k]['user'] = $user;
 
 			if($comment->parent_id>0) {
-				$parent = Comment::with('user')->find($comment->parent_id);
+                $reply = Comment::with('user')->find($comment->parent_id);
 
-				$new_comments[$k]['parent'] = $parent;
+                $new_reply = [];
+
+                $new_reply['id'] = $reply->comment_id;
+                $new_reply['content'] = $reply->content;
+
+                $new_user = [];
+                $new_user['id'] = $reply->user->user_id;
+                $new_user['nickname'] = $reply->user->nickname;
+
+                $new_reply['user'] = $new_user;
+
+                $new_comments[$k]['reply'] = $new_reply;
 
 			} else {
-				$new_comments[$k]['parent'] = null;
+				$new_comments[$k]['reply'] = null;
 			}
+
+            $new_comments[$k]['created_at'] = date('Y-m-d H:i:s',$comment->create_time);
 		}
 
 		$result['comments'] = $new_comments;
@@ -179,6 +192,14 @@ class EventController extends BaseController {
         $new_user['is_follow'] = $is_follow?true:false;
 
 		$result['user'] = $new_user;
+
+
+        $is_like = Event::find($event_id)
+            ->likes()
+            ->where('user_id', '=', $user_id)
+            ->first();
+
+        $result['is_like'] = $is_like ? true : false;
 
 		return $result;
 	}
@@ -614,7 +635,7 @@ class EventController extends BaseController {
 			$message->save();
 
 			// TODO 开启推送
-			$name = $this->auth->user()->nickname?$this->auth->user()->nickname:'一个小伙伴';
+			$name = $this->auth->user()->nickname?$this->auth->user()->nickname:'一个神秘的小伙伴';
 			$content = $name.' 鼓励了你';
 //
 			$push = new MyJpush();
@@ -671,25 +692,23 @@ class EventController extends BaseController {
 	}
 
 	// 发表评论
-	public function comment()
+	public function comment($event_id,Request $request)
 	{
 		$messages = [
 			'required' => '缺少参数 :attribute',
 		];
 
 		$validation = Validator::make(Input::all(), [
-			'event_id'		=> 	'required',		// 动态id
 			'content'       => 'required',      // 评论内容,
-			'parent_id'		=> 	'required',		// 动态id
+			'reply_id'		=> 	'',		// 动态id
 		],$messages);
 
 		if($validation->fails()){
-			return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
+            return $this->response->error(implode(',',$validation->errors()), 500);
 		}
 
-		$event_id = Input::get('event_id');
-		$content = Input::get('content');
-		$parent_id = Input::get('parent_id');
+		$content = $request->input('content');
+		$reply_id = $request->input('reply_id');
 
 		$user_id = $this->auth->user()->user_id;
 
@@ -703,8 +722,9 @@ class EventController extends BaseController {
 		$comment = new Comment();
 		$comment->event_id = $event_id;
 		$comment->content = trim($content);
-		$comment->parent_id = $parent_id;
-		$comment->user_id = $user_id;
+		$comment->parent_id = $reply_id;
+        $comment->reply_id = $reply_id;
+        $comment->user_id = $user_id;
 		$comment->create_time = time();
 		$comment->save();
 
@@ -725,7 +745,7 @@ class EventController extends BaseController {
 			$message->save();
 
 			// 推送
-			$name = $this->auth->user()->nickname?$this->auth->user()->nickname:'keeper'.$this->auth->user()->user_id;
+			$name = $this->auth->user()->nickname?$this->auth->user()->nickname:'一个神秘的小伙伴';
 			$content = $name.' 评论了你';
 
 			$push = new MyJpush();
@@ -735,11 +755,26 @@ class EventController extends BaseController {
 
 		$comment =  Comment::with('user')->find($comment->comment_id);
 
-		if($comment->parent_id>0) {
-			$comment->parent =  Comment::with('user')->find($comment->parent_id);
-		}
 
-		return API::response()->array(['status' => true, 'message' =>'评论成功','data'=>$comment])->statusCode(200);
 
+		$new_comment = [];
+
+        $new_comment['id'] = $comment->comment_id;
+        $new_comment['content'] =  $comment->content;
+        $new_comment['like_count'] =$comment->like_count;
+
+        $user = [];
+
+        $user['id'] = $comment->user->user_id;
+        $user['nickname'] = $comment->user->nickname;
+        $user['avatar_url'] = $comment->user->user_avatar;
+
+        $new_comment['user'] = $user;
+
+        if($comment->parent_id>0) {
+            $new_comment['reply'] =  Comment::with('user')->find($comment->parent_id);
+        }
+
+        return $new_comment;
 	}
 }

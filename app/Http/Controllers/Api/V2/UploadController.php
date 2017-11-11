@@ -27,6 +27,8 @@ use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
 
+use Qiniu\Auth as QiniuAuth;
+use Qiniu\Storage\UploadManager;
 
 class UploadController extends BaseController
 {
@@ -71,7 +73,23 @@ class UploadController extends BaseController
 
                 $attach->save();
 
-                $data = ['url'=> url('/'.$destinationPath).'/'.$fileName,'id'=>$attach->attach_id];
+                // 同步到七牛
+                $accessKey = 'Gp_kwMCtSa1jdalGbgv4h8Xk1JMA2vDqPyVIVVu5';
+                $secretKey = 'DmjVDP_FxJuFccMRUpomHou-nmNw6QzDDLmyqC0D';
+                $auth = new QiniuAuth($accessKey, $secretKey);
+                $bucket = 'drip';
+                $token = $auth->uploadToken($bucket);
+
+                $uploadMgr = new UploadManager();
+
+                list($ret, $err) = $uploadMgr->putFile($token, $fileName, $destinationPath.'/'.$fileName);
+                if ($err !== null) {
+                    return $this->response->error('图片类型不合法',500);
+                }
+
+//                $data = ['url'=> url('/'.$destinationPath).'/'.$fileName,'id'=>$attach->attach_id];
+
+                $data = ['url'=> 'http://file.growu.me/'.$ret['key'],'id'=>$attach->attach_id];
 
                 return $data;
 

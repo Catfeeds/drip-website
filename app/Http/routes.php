@@ -85,6 +85,7 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->get('user/messages/comment', 'App\Http\Controllers\Api\V2\UserController@getCommentMessages');
 	$api->get('user/messages/like', 'App\Http\Controllers\Api\V2\UserController@getLikeMessages');
     $api->get('user/messages/new', 'App\Http\Controllers\Api\V2\UserController@getNewMessages');
+    $api->post('user/feedback', 'App\Http\Controllers\Api\V2\UserController@feedback');
     $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
     $api->patch('user/{id}', 'App\Http\Controllers\Api\V2\UserController@updateUser');
     $api->get('user/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getUserEvents');
@@ -102,12 +103,15 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->delete('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@unFollow');
 	$api->put('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@like');
 	$api->delete('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@unLike');
-	$api->get('event/hot', 'App\Http\Controllers\Api\V2\EventController@getHotEvents');
+    $api->post('event/{id}/comment', 'App\Http\Controllers\Api\V2\EventController@comment');
+    $api->get('event/hot', 'App\Http\Controllers\Api\V2\EventController@getHotEvents');
 	$api->get('event/follow', 'App\Http\Controllers\Api\V2\EventController@getFollowEvents');
 	$api->get('event/{id}', 'App\Http\Controllers\Api\V2\EventController@getEventDetail');
 	$api->get('event/{id}/likes', 'App\Http\Controllers\Api\V2\EventController@getEventLikes');
 	$api->post('comment/{id}/reply', 'App\Http\Controllers\Api\V2\CommentController@reply');
 	$api->put('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@like');
+    $api->delete('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@unLike');
+
     $api->post('upload/image', 'App\Http\Controllers\Api\V2\UploadController@image');
 });
 
