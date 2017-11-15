@@ -105,9 +105,106 @@ class UserController extends BaseController
         return $new_user;
     }
 
-    public function getEvents()
+    public function getUserEvents($user_id,Request $request)
     {
+        $messages = [
+            'required' => '缺少参数 :attribute',
+        ];
 
+        $validation = Validator::make(Input::all(), [
+            'page' => '',
+            'per_page' => ''
+        ], $messages);
+
+        if ($validation->fails()) {
+            return API::response()->error(implode(',', $validation->errors()->all()), 500);
+        }
+
+        $current_user_id = $this->auth->user()->user_id;
+
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
+
+        $events = Event::where('user_id', $user_id)
+            ->where('is_public', '=', 1)
+            ->orderBy('create_time', 'DESC')->skip(($page-1)* $per_page)
+            ->take($per_page)->get();
+
+        $result = [];
+
+        foreach ($events as $key => $event) {
+            $result[$key]['content'] = $event->content;
+
+            $new_checkin = [];
+
+            if ($event['type'] == 'USER_CHECKIN') {
+                $checkin = DB::table('checkin')
+                    ->where('checkin_id', $event->event_value)
+                    ->first();
+
+                if($checkin) {
+                    $result[$key]['content'] = $checkin->checkin_content;
+                    $new_checkin['total_days'] = $checkin->total_days;
+                    $new_checkin['id'] = $checkin->checkin_id;
+                }
+
+                $items = DB::table('checkin_item')
+                    ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
+                    ->where('checkin_id', $event->event_value)
+                    ->get();
+
+                $attachs = DB::table('attachs')
+                    ->where('attachable_id', $event->event_value)
+                    ->where('attachable_type','checkin')
+                    ->get();
+
+                $new_attachs = [];
+
+                foreach($attachs as $k=>$attach) {
+                    $new_attachs[$k]['id'] = $attach->attach_id;
+                    $new_attachs[$k]['name'] = $attach->attach_name;
+                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+                }
+
+                $result[$key]['attachs'] = $new_attachs;
+            }
+
+            $result[$key]['checkin'] = $new_checkin;
+
+            // 后去是否点赞过
+
+            $is_like = Event::find($event->event_id)
+                ->likes()
+                ->where('user_id', '=', $current_user_id)
+                ->first();
+
+            $new_user = [];
+            $new_user['id'] = $event->user->user_id;
+            $new_user['nickname'] = $event->user->nickname;
+            $new_user['avatar_url'] = $event->user->user_avatar;
+
+            $result[$key]['user'] = $new_user;
+
+            $goal = [];
+            $goal['id'] = $event->goal->goal_id;
+            $goal['name'] = $event->goal->goal_name;
+
+            $result[$key]['goal'] = $goal;
+
+            $result[$key]['id'] = $event->event_id;
+            $result[$key]['like_count'] = $event->like_count;
+            $result[$key]['comment_count'] = $event->comment_count;
+            $result[$key]['is_hot'] = $event->is_hot;
+            $result[$key]['is_public'] = $event->is_public;
+            $result[$key]['is_like'] = $is_like ? true : false;
+            $result[$key]['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
+            $result[$key]['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
+
+        }
+
+//        $events = User::find($user_id)->events()->skip($offset)->take($limit)->get();
+
+        return $result;
     }
 
     // 取出登录用户的目标列表
@@ -1048,42 +1145,93 @@ class UserController extends BaseController
     }
 
 
-    public function fans(Request $request)
+    public function getFans($user_id,Request $request)
     {
         // 关注时间排序
 
-        $follow_user_id = $request->user_id;
-        $offset = $request->offset;
+
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
+
 
         $users = DB::table('user_follow')
             ->join('users', 'users.user_id', '=', 'user_follow.user_id')
-            ->where('follow_user_id', '=', $follow_user_id)
+            ->where('follow_user_id', '=', $user_id)
             ->orderBy('create_time', 'asc')
-            ->skip($offset)
-            ->limit(20)
+            ->skip(($page-1)*$per_page)
+            ->limit($per_page)
             ->get();
 
-        return API::response()->array(['status' => true, 'message' => '', 'data' => $users]);
+        $new_users = [];
 
+        foreach($users as $k=>$user) {
+
+//            $new_user = [];
+
+            $new_users[$k]['id'] = $user->user_id;
+            $new_users[$k]['nickname'] =  $user->nickname;
+            $new_users[$k]['signature'] =  $user->signature;
+            $new_users[$k]['avatar_url'] =  $user->user_avatar;
+
+            $is_follow = DB::table('user_follow')
+                ->where('user_id',$user_id)
+                ->where('follow_user_id',$user->user_id)
+                ->first();
+
+            // 判断是否关注该用户
+            $new_users[$k]['is_follow'] = $is_follow?true:false;
+
+//            $new_users[$k]['user'] = $new_user;
+
+        }
+
+        return $new_users;
 
     }
 
-    public function follows(Request $request)
+    public function getFollowings($user_id,Request $request)
     {
         // 关注时间排序
 
-        $follow_user_id = $request->user_id;
-        $offset = $request->offset;
+        $page = $request->page;
+        $per_page = $request->per_page;
+
 
         $users = DB::table('user_follow')
             ->join('users', 'users.user_id', '=', 'user_follow.follow_user_id')
-            ->where('user_follow.user_id', '=', $follow_user_id)
+            ->where('user_follow.user_id', '=', $user_id)
             ->orderBy('create_time', 'asc')
-            ->skip($offset)
-            ->limit(20)
+            ->skip($page)
+            ->limit($per_page)
             ->get();
 
-        return API::response()->array(['status' => true, 'message' => '', 'data' => $users]);
+
+        $new_users = [];
+
+        foreach($users as $k=>$user) {
+
+//            $new_user = [];
+
+            $new_users[$k]['id'] = $user->user_id;
+            $new_users[$k]['nickname'] =  $user->nickname;
+            $new_users[$k]['signature'] =  $user->signature;
+            $new_users[$k]['avatar_url'] =  $user->user_avatar;
+
+            $is_follow = DB::table('user_follow')
+                ->where('user_id',$user_id)
+                ->where('follow_user_id',$user->user_id)
+                ->first();
+
+            // 判断是否关注该用户
+            $new_users[$k]['is_follow'] = $is_follow?true:false;
+
+//            $new_users[$k]['user'] = $new_user;
+
+        }
+
+        return $new_users;
+
+//        return API::response()->array(['status' => true, 'message' => '', 'data' => $users]);
 
     }
 

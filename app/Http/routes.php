@@ -88,6 +88,8 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->post('user/feedback', 'App\Http\Controllers\Api\V2\UserController@feedback');
     $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
     $api->patch('user/{id}', 'App\Http\Controllers\Api\V2\UserController@updateUser');
+    $api->get('user/{id}/fans', 'App\Http\Controllers\Api\V2\UserController@getFans');
+    $api->get('user/{id}/followings', 'App\Http\Controllers\Api\V2\UserController@getFollowings');
     $api->get('user/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getUserEvents');
 	$api->get('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@getGoal');
 	$api->get('user/goal/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getGoalEvents');
