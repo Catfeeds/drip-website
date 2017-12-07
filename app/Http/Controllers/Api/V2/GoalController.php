@@ -85,6 +85,63 @@ class GoalController extends BaseController
         return API::response()->array(['status' => true, 'message' => '', 'data' => $goals])->statusCode(200);
     }
 
+
+    public function getUserGoals($user_id,Request $request)
+    {
+
+        $date = $request->input("day", date('Y-m-d'));
+
+//        DB::enableQueryLog();
+
+        $goals = User::find($user_id)
+            ->goals()
+            ->wherePivot('is_del', '=', 0)
+            ->wherePivot('is_public', '=', 1)
+            ->wherePivot('start_date', '<=', $date)
+            ->where(function ($query) use ($date) {
+                $query->where('user_goal.end_date', '>=', $date)
+                    ->orWhere('user_goal.end_date', '=', NULL);
+            })
+            ->orderBy('remind_time', 'asc')
+            ->get();
+
+//        $laQuery = DB::getQueryLog();
+
+//		$lcWhatYouWant = $laQuery[0]['query'];
+
+//		return $laQuery;
+
+        $result = array();
+
+        foreach ($goals as $key => $goal) {
+
+            $result[$key]['id'] = $goal->goal_id;
+            // TODO
+            // $goals[$key]['name'] = $goal->pivot->name;
+            $result[$key]['name'] = $goal->pivot->name?$goal->pivot->name:$goal->goal_name;
+            $result[$key]['desc'] = $goal->pivot->desc?$goal->pivot->desc:$goal->goal_desc;
+            $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
+            $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
+            $result[$key]['total_days'] = $goal->pivot->total_days;
+            $result[$key]['expect_days'] = $goal->pivot->expect_days;
+
+            // TODO 修改status 0未开始 1进行中 2已结束
+//            if($goal->pivot->status==0) {
+//                $result[$key]['status'] = 1;
+//            } else if ($goal->pivot->status==1) {
+//                $result[$key]['status'] = 2;
+//            } else if ($goal->pivot->status== -1) {
+//                $result[$key]['status'] = 0;
+//            }
+
+            $result[$key]['status'] = $goal->pivot->status+1;
+
+        }
+
+        return API::response()->array($result)->statusCode(200);
+    }
+
+
     /**
      * 目标排序
      */

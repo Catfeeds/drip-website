@@ -4,6 +4,7 @@ namespace  App\Libs;
 use App\User;
 use App\Models\Device as Device;
 use JPush;
+use JPushExcepition;
 /**
  * 主要对 jpush 封装
  * User: Jason.z
@@ -42,12 +43,17 @@ class MyJpush
 //            if($devices) {
 //                foreach($devices as $device) {
                     if($device->push_id) {
-                        $result = $this->client->push()
-                            ->setPlatform(strtolower($device->device_platform))
-                            ->addRegistrationId($device->push_id)
-                            ->setNotificationAlert($content)
-                            ->setOptions($sendno=null, $time_to_live=null, $override_msg_id=null, $apns_production=true, $big_push_duration=null)
-                            ->send();
+                        try {
+                            $result = $this->client->push()
+                                ->setPlatform(strtolower($device->device_platform))
+                                ->addRegistrationId($device->push_id)
+                                ->setNotificationAlert($content)
+                                ->setOptions($sendno=null, $time_to_live=null, $override_msg_id=null, $apns_production=true, $big_push_duration=null)
+                                ->send();
+                        } catch (\JPush\Exceptions\JPushException$exception) {
+
+                        }
+
                     }
 //                     echo '推送结果:' . json_encode($result) . PHP_EOL;
 //                }

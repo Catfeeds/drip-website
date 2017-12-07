@@ -80,11 +80,14 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->post('user/password/change', 'App\Http\Controllers\Api\V2\UserController@changePassword');
     $api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
-	$api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
+    $api->get('user/{id}/goals', 'App\Http\Controllers\Api\V2\GoalController@getUserGoals');
+    $api->get('user/{id}/photos', 'App\Http\Controllers\Api\V2\UserController@getPhotos');
+    $api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
 	$api->get('user/messages/fan', 'App\Http\Controllers\Api\V2\UserController@getFanMessages');
 	$api->get('user/messages/comment', 'App\Http\Controllers\Api\V2\UserController@getCommentMessages');
 	$api->get('user/messages/like', 'App\Http\Controllers\Api\V2\UserController@getLikeMessages');
     $api->get('user/messages/new', 'App\Http\Controllers\Api\V2\UserController@getNewMessages');
+    $api->get('user/messages/notice', 'App\Http\Controllers\Api\V2\UserController@getNoticeMessages');
     $api->post('user/feedback', 'App\Http\Controllers\Api\V2\UserController@feedback');
     $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
     $api->patch('user/{id}', 'App\Http\Controllers\Api\V2\UserController@updateUser');

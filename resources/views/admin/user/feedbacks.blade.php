@@ -84,17 +84,17 @@
         <p>
         <p><br>亲爱的小伙伴：<br><br>&nbsp;您好，我是「水滴打卡」的负责人格吾君。非常感谢你对「水滴打卡」作出反馈。</p>
         <p><br></p>
-        <p>&nbsp;关于你提出的：</p>
+        <p>&nbsp;关于你提出的问题：</p>
         <p></p>
         <blockquote id="feedback-blockquote"></blockquote>
         <p></p>
         <p>已经在新版本中进行修复，欢迎下载体验。</p>
         <p><br></p>
-        <p>同时，我们也诚挚邀请您加入我们的「水滴打卡」产品交流群内对我们的产品进行更加深入的反馈和帮助。<br></p>
-        <p>加入方式：添加格吾君（微信号：<strong>growu001</strong>）,发送暗号<strong>“水滴打卡</strong>”即可。</p>
+        <p>如果你有其他意见建议或者需要帮助的地方，欢迎加入我们的产品交流群进行反馈。<br></p>
+        <p>加入方式：添加格吾君（微信号：<strong>growu001</strong>）好友,发送暗号<strong>“水滴打卡</strong>”即可。</p>
         <p><br></p>
         <p><img alt="" src="http://drip.growu.me/img/qrcode2.png" style="height:300px; width:300px" /></p>
-        <p>期待你的加入，再次感谢你使用「水滴打卡」。</p>
+        <p>再次感谢你使用「水滴打卡」。</p>
         <div><p><strong>微信公众号：格吾社区</strong></p>
             <p><strong>微博：<a target="_blank" rel="nofollow" href="http://weibo.com/growu"
                              title="Link: http://weibo.com/growu">http://weibo.com/growu</a></strong></p>

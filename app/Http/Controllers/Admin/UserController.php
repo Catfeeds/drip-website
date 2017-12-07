@@ -156,9 +156,9 @@ class UserController extends Controller
      */
     public function deal_feedback(Request $request) {
         $id = $request->id;
-        $content = $request->content;
-        $status = $request->status;
-        $reward = $request->reward;
+        $content = $request->input("content");
+        $status = $request->input("status");
+        $reward = $request->input("reward");
 
 
         // 查询反馈信息
@@ -173,8 +173,21 @@ class UserController extends Controller
         if(filter_var($email,FILTER_VALIDATE_EMAIL))
         {
             $myEmail = new MyEmail('aes');
-            $myEmail->sendWithContent([$email], '意见反馈回复', $request->content);
+            $myEmail->sendWithContent([$email], '意见反馈回复', $content);
         }
+
+        //发送站内信
+
+        $message = new Message();
+        $message->from_user = 0;
+        $message->to_user = $feedback->user_id;
+        $message->type = 6 ;
+        $message->title = '反馈回复' ;
+        $message->content = $content ;
+        $message->msgable_id = $id;
+        $message->msgable_type = 'App\Models\Feedback';
+        $message->create_time  = time();
+        $message->save();
 
         $feedback->status = 1;
         $feedback->deal_time = time();
@@ -185,7 +198,7 @@ class UserController extends Controller
 //        $user->energy_count += $reward;
 //        $user->save();
 //
-//        //发送消息
+        //发送消息
 //        $message = new Message();
 //        $message->from_user = 0;
 //        $message->to_user = $feedback->user_id;

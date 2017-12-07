@@ -272,6 +272,25 @@ class UserController extends BaseController
         return API::response()->array($result)->statusCode(200);
     }
 
+
+    public function getPhotos($user_id,Request $request)
+    {
+        $attachs = DB::table('attachs')
+            ->join('checkin', 'checkin.checkin_id','=','attachs.attachable_id')
+            ->where('checkin.user_id','=',$user_id)
+            ->where('attachs.attachable_type','=',"checkin")
+            ->get();
+
+        $new_attachs = [];
+
+        foreach($attachs as $k=>$attach) {
+            $new_attachs[$k]['id'] = $attach->attach_id;
+            $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/'.$attach->attach_path.'/'.$attach->attach_name;
+        }
+
+        return $new_attachs;
+    }
+
     public function getGoalsCalendar(Request $request)
     {
         $messages = [
@@ -1491,6 +1510,55 @@ class UserController extends BaseController
 
         return $new_messages;
     }
+
+    public function getNoticeMessages(Request $request)
+    {
+        $user_id = $this->auth->user()->user_id;
+
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
+
+        $messages = DB::table('messages')
+            ->where('type', 6)
+            ->where('to_user', $user_id)
+            ->where('msgable_id', '<>', null)
+            ->orderBy('messages.status')
+            ->orderBy('messages.create_time', 'desc')
+            ->skip(($page - 1) * $per_page)
+            ->take($per_page)
+            ->get();
+
+        // 修改所有未读的状态为已读
+        DB::table('messages')
+            ->where('to_user', $user_id)
+            ->where('type', 6)
+            ->where('status', 0)
+            ->update([
+                'status' => 1
+            ]);
+
+        $new_messages = [];
+
+        foreach ($messages as $k => $message) {
+
+
+            $like = Like::find($message->msgable_id);
+            if (!$like) continue;
+
+
+            $new_message = [];
+            $new_message['id'] = $message->message_id;
+            $new_message['title'] = $message->title;
+            $new_message['content'] = $message->content;
+            $new_message['created_at'] = date('Y-m-d H:i:s', $message->create_time);
+
+            array_push($new_messages, $new_message);
+        }
+
+
+        return $new_messages;
+    }
+
 
     public function deleteGoal($goal_id)
     {
