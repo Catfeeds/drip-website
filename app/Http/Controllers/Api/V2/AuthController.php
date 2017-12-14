@@ -580,7 +580,7 @@ class AuthController extends BaseController
             $sex = 2;
         }
         return [
-            'openid' => $request->userid,
+            'openid' => $request->userId,
             'access_token' => $request->access_token,
             'expire_in' => $request->expires_time,
             'avatar' => $ret->avatar_hd,

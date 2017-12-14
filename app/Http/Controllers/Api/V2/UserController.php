@@ -784,6 +784,7 @@ class UserController extends BaseController
 
         $events = Event::where('goal_id', $goal_id)
             ->where('is_public', '=', 1)
+            ->where('user_id',$user_id)
             ->orderBy('create_time', 'DESC')->skip(($page-1)* $per_page)
             ->take($per_page)->get();
 
@@ -1358,6 +1359,24 @@ class UserController extends BaseController
         return $new_messages;
     }
 
+    public function getMessageDetail($id)
+    {
+        $message = DB::table('messages')
+            ->where('message_id', $id)
+            ->first();
+
+        $new_message = array();
+
+
+        if($message) {
+            $new_message['id'] = $message->message_id;
+            $new_message['title'] = $message->title;
+            $new_message['content'] = $message->content;
+        }
+
+        return $new_message;
+    }
+
 
     public function getCommentMessages(Request $request)
     {
@@ -1549,7 +1568,7 @@ class UserController extends BaseController
             $new_message = [];
             $new_message['id'] = $message->message_id;
             $new_message['title'] = $message->title;
-            $new_message['content'] = $message->content;
+                $new_message['content'] = $message->content?mb_substr(strip_tags($message->content),0,150):'';
             $new_message['created_at'] = date('Y-m-d H:i:s', $message->create_time);
 
             array_push($new_messages, $new_message);
@@ -1649,7 +1668,7 @@ class UserController extends BaseController
         $checkin->goal_id = $goal_id;
         $checkin->obj_type = 'GOAL';
         $checkin->user_id = $user_id;
-        $checkin->is_public = $request->is_public;
+        $checkin->is_public = $request->is_public?$request->is_public:$user_goal->is_public;
         $checkin->checkin_time = time();
         $checkin->save();
 

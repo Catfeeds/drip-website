@@ -258,7 +258,7 @@ class UserController extends Controller
         $message->to_user = $event->user_id;
         $message->type = 6 ;
         $message->title = '精选动态入选通知' ;
-        $message->content = '恭喜,你的打卡动态被评选为精选动态,并奖励能量点+5,请继续努力吧~<a href="#/event/'.$id.'">点击查看</a>' ;
+        $message->content = '恭喜你,你的打卡动态被评选为精选动态,并奖励能量点+5,希望再接再厉~<a href="#/event/'.$id.'">点击查看</a>' ;
         $message->msgable_id = $id;
         $message->msgable_type = 'App\Event';
         $message->create_time  = time();

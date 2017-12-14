@@ -83,7 +83,8 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('user/{id}/goals', 'App\Http\Controllers\Api\V2\GoalController@getUserGoals');
     $api->get('user/{id}/photos', 'App\Http\Controllers\Api\V2\UserController@getPhotos');
     $api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
-	$api->get('user/messages/fan', 'App\Http\Controllers\Api\V2\UserController@getFanMessages');
+    $api->get('message/{id}', 'App\Http\Controllers\Api\V2\UserController@getMessageDetail');
+    $api->get('user/messages/fan', 'App\Http\Controllers\Api\V2\UserController@getFanMessages');
 	$api->get('user/messages/comment', 'App\Http\Controllers\Api\V2\UserController@getCommentMessages');
 	$api->get('user/messages/like', 'App\Http\Controllers\Api\V2\UserController@getLikeMessages');
     $api->get('user/messages/new', 'App\Http\Controllers\Api\V2\UserController@getNewMessages');

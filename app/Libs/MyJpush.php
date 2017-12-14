@@ -50,7 +50,7 @@ class MyJpush
                                 ->setNotificationAlert($content)
                                 ->setOptions($sendno=null, $time_to_live=null, $override_msg_id=null, $apns_production=true, $big_push_duration=null)
                                 ->send();
-                        } catch (\JPush\Exceptions\JPushException$exception) {
+                        } catch (\JPush\Exceptions\JPushException $exception) {
 
                         }
 
