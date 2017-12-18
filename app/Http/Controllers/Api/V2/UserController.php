@@ -1757,7 +1757,7 @@ class UserController extends BaseController
         $event->user_id = $user_id;
         $event->event_value = $checkin->checkin_id;
         $event->type = 'USER_CHECKIN';
-        $event->is_public = (int)$request->is_public;
+        $event->is_public = $request->is_public?(int)$request->is_public:$user_goal->is_public;
         $event->create_time = time();
 
         $event->save();
