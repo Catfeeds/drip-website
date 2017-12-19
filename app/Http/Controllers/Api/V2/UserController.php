@@ -224,17 +224,20 @@ class UserController extends BaseController
 
         $user_id = $this->auth->user()->user_id;
 
-        $date = $request->input("day", date('Y-m-d'));
+        $date = $request->input("day");
 
-        		DB::enableQueryLog();
+//        		DB::enableQueryLog();
 
         $goals = User::find($user_id)
             ->goals()
             ->wherePivot('is_del', '=', 0)
-            ->wherePivot('start_date', '<=', $date)
             ->where(function ($query) use ($date) {
-                $query->where('user_goal.end_date', '>=', $date)
-                    ->orWhere('user_goal.end_date', '=', NULL);
+                if($date) {
+                    $query->where('user_goal.start_date','>=',$date)
+                        ->where('user_goal.end_date', '>=', $date)
+                        ->orWhere('user_goal.end_date', '=', NULL);
+                }
+
             })
             ->orderBy('remind_time', 'asc')
             ->get();
@@ -255,6 +258,9 @@ class UserController extends BaseController
             $result[$key]['name'] = $goal->goal_name;
             $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
             $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
+            $result[$key]['expect_days'] = ceil((time() - $goal->pivot->start_time) / 86400);
+            $result[$key]['total_days'] = $goal->pivot->total_days;
+
 
             // TODO 修改status 0未开始 1进行中 2已结束
 //            if($goal->pivot->status==0) {
