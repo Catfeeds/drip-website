@@ -53,11 +53,45 @@
         </div>
     </div>
 
+    <div class="modal fade" id="add-vip-modal">
+        <div class="modal-dialog    ">
+            <div class="modal-content">
+                <form action="{!! route('admin.user.add_vip') !!}" method="post" id="add-vip-form">
+                    <input type="hidden" name="user_id" id="add_vip_userid">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">赠送会员</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="article-title">天数<span class="required">*</span></label>
+                        <input type="text" class="form-control" name="days">
+                    </div>
+                    <div class="form-group">
+                        <label for="article-title">备注</label>
+                        <textarea class="form-control" name="remark">
+                        </textarea>
+                    </div>
+                </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">确认</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 @stop
 @section('scripts')
 <!-- DataTables -->
 <script type="text/javascript" src="{{asset('plugins/datatables/media/js/jquery.dataTables.min.js')}}"></script>
 <script type="text/javascript" src="{{asset('plugins/datatables/media/js/dataTables.bootstrap.min.js')}}"></script>
+
+<!-- Jquery-validation -->
+<script type="text/javascript" src="{{asset('plugins/jquery-validation/dist/jquery.validate.js')}}"></script>
+<script type="text/javascript" src="{{asset('plugins/jquery-validation/dist/additional-methods.js')}}"></script>
 
 <script>
         $(function() {
@@ -76,6 +110,52 @@
                     { data: 'last_login_time', name: 'last_login_time' },
                     { data: 'action', name: 'action' }
                 ]
+            });
+
+            $("#add-vip-form").validate({
+                rules: {
+                    days: {
+                        required: true,
+                        digits:true
+                    },
+                    remark:{
+
+                    }
+                },
+                messages:{
+                    days:{
+                        required:"天数不能为空",
+                        digits:"天数必须为正整数"
+                    }
+                },
+                submitHandler:function(form){
+
+//                    $(form).ajaxSubmit();
+//                    return false;
+
+
+                    $.ajax({
+                        url : "{!! route('admin.user.add_vip') !!}",
+                        type : "post",
+                        dataType : "json",
+                        data:$(form).serialize(),
+                        success : function(res) {
+                            if(res.stauts){
+                                toastr.success("赠送成功");
+                            } else {
+                                toastr.error("赠送失败");
+                            }
+                        }
+                    });
+
+                    return false;
+
+                }
+            });
+
+            $(document).on('click','.add-vip-btn',function () {
+               var userId = $(this).attr('data-userid');
+                $('#add_vip_userid').val(userId);
             });
         });
     </script>

@@ -37,7 +37,7 @@ class UserController extends Controller
     {
         return Datatables::of(User::query())
             ->addColumn('action', function ($user) {
-                return '<a href="#edit-'.$user->user_id.'" class="btn btn-xs btn-primary"><i class="glyphicon glyphicon-edit"></i> 编辑</a>';
+                return '<a class="btn btn-xs btn-primary add-vip-btn"  data-toggle="modal" data-target="#add-vip-modal" data-userid="'.$user->user_id.'"><i class="glyphicon glyphicon-add"></i>赠送会员</a>';
             })
             ->editColumn('reg_time', function ($user) {
                 return $user->reg_time>0?date("Y-m-d H:i:s",$user->reg_time):'';
@@ -149,6 +149,69 @@ class UserController extends Controller
 //            })
             ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
             ->make(true);
+    }
+
+    public function add_vip(Request $request) {
+        $user_id = $request->input("user_id");
+        $days = $request->input("days");
+        $remark = $request->input("remark");
+
+        $user = User::find($user_id);
+
+        if(!$user) {
+            return ['status'=>false,'message'=>'用户不存在'];
+        }
+
+        if($user->is_vip) {
+            // 判断vip是否过期
+            if($user->vip_end_date<date('Y-m-d')) {
+                $user->is_vip = 1;
+                $user->vip_begin_date = date('Y-m-d');
+                $user->vip_end_date = date('Y-m-d',strtotime("+".$days." days"));
+            }else {
+                $user->vip_end_date  = date('Y-m-d',strtotime($user->vip_end_date)+86400*$days);
+            }
+        } else {
+            $user->is_vip = 1;
+            $user->vip_begin_date = date('Y-m-d');
+            $user->vip_end_date = date('Y-m-d',strtotime("+".$days." days"));
+        }
+
+        $user->save();
+
+
+        $id = DB::table('user_vip_log')->insertGetId(
+            [
+                'user_id' => $user_id,
+                'days' => $days,
+                'type' => 'reward',
+                'remark' => $remark,
+                'remark' => '',
+                'created_at' => date('Y-m-d H:i:s')
+            ]
+        );
+
+        $content = "恭喜你，获得一份会员奖励。<br><br>
+                    赠送人：水滴君<br>
+                    赠送时间：".$days."<br>
+                    赠送说明：".$remark;
+
+        $message = new Message();
+        $message->from_user = 0;
+        $message->to_user = $user_id;
+        $message->type = 6 ;
+        $message->title = '会员奖励' ;
+        $message->content = $content;
+        $message->msgable_id = $id;
+        $message->msgable_type = 'user_vip_log';
+        $message->create_time  = time();
+        $message->save();
+
+
+
+        return ['status'=>true,'message'=>'操作成功'];
+
+
     }
 
     /**

@@ -37,7 +37,8 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 	Route::get('admin/user/feedbacks', 'UserController@feedbacks');
 	Route::get('admin/user/ajax_feedbacks', 'UserController@ajax_feedbacks')->name('admin.user.ajax_feedbacks');
 	Route::post('admin/user/deal_feedback', 'UserController@deal_feedback')->name('admin.user.deal_feedback');
-	Route::get('admin/user/events', 'UserController@events');
+    Route::post('admin/user/add_vip', 'UserController@add_vip')->name('admin.user.add_vip');
+    Route::get('admin/user/events', 'UserController@events');
 	Route::get('admin/user/ajax_events', 'UserController@ajax_events')->name('admin.user.ajax_events');
 	Route::post('admin/user/hot_event', 'UserController@hot_event')->name('admin.user.hot_event');
 	Route::get('admin/version', 'VersionController@index');

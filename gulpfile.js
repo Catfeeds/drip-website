@@ -35,6 +35,9 @@ gulp.task("copyfiles", function() {
         "./bower_components/font-awesome/css/font-awesome.min.css",
         "./bower_components/font-awesome/fonts/**.*",
 
+        // jquery-validation
+        "./bower_components/jquery-validation/dist/jquery.validate.js",
+        "./bower_components/jquery-validation/dist/additional-methods.js",
 
     ], {base: './bower_components/'})
         .   pipe(gulp.dest("./public/plugins/"));

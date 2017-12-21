@@ -1569,11 +1569,6 @@ class UserController extends BaseController
 
         foreach ($messages as $k => $message) {
 
-
-            $like = Like::find($message->msgable_id);
-            if (!$like) continue;
-
-
             $new_message = [];
             $new_message['id'] = $message->message_id;
             $new_message['title'] = $message->title;
