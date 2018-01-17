@@ -47,6 +47,12 @@ $app->configureMonologUsing(function(Monolog\Logger $monolog) {
     $monolog->pushHandler($handler);
 });
 
+//$app['Dingo\Api\Transformer\Factory']->setAdapter(function ($app) {
+//    $fractal = new League\Fractal\Manager;
+//    $fractal->setSerializer(new App\Http\Controllers\Api\V2\Serializers\NoDataArraySerializer);
+//    return new Dingo\Api\Transformer\Adapter\Fractal($fractal);
+//});
+
 /*
 |--------------------------------------------------------------------------
 | Return The Application

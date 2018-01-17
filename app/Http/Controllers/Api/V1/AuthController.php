@@ -40,7 +40,10 @@ class AuthController extends BaseController {
 			'device' 	=> 	'', 	// 设备
 		],$messages);
 
-		if($validation->fails()){
+//        return API::response()->array(['status' => true, 'message' => '您好，微打卡已于2017.12.31下线了，我们推出了更新版本的《水滴打卡》，欢迎下载体验。'])->statusCode(200);
+
+
+        if($validation->fails()){
 			return API::response()->array(['status' => false, 'message' => $validation->errors()->all('</br>:message')])->statusCode(200);
 		}
 
@@ -242,7 +245,11 @@ class AuthController extends BaseController {
 	        'device' 	=> 	'', 	// 设备
     	],$messages);
 
-	    if($validation->fails()){
+//        return API::response()->array(['status' => true, 'message' => '您好，微打卡已于2017.12.31下线了，我们推出了更新版本的《水滴打卡》，欢迎下载体验。'])->statusCode(200);
+
+
+
+        if($validation->fails()){
 	      return API::response()->array(['status' => false, 'message' => $validation->errors()->all('</br>:message')])->statusCode(200);
 	    }
 
@@ -274,7 +281,9 @@ class AuthController extends BaseController {
 		// 发送注册邮件
 		$this->_send_register_email($email);
 
- 		// all good so return the token
+
+
+        // all good so return the token
         return $this->response->array(array('status'=> true,'message'=>'注册成功','token'=>$token,'user'=>$user));
     }
 

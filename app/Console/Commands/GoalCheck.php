@@ -84,40 +84,50 @@ class GoalCheck extends Command
             $jpush->pushToSingleUser($user_goal->user_id,$content);
         }
 
-
-        // 更改创建时间为30天未打卡的目标为过期
+        // 更改开始日期为今天的目标状态为0
         $user_goals = DB::table('user_goal')
             ->where('is_del','=',0)
-            ->where('status','=',0)
-            ->where('last_checkin_time','<',strtotime('-1 month'))
-            ->where('create_time','<',strtotime('-1 month'))
+            ->where('status','=',-1)
+            ->where('start_date','<=',date('Y-m-d'))
             ->get();
 
         foreach($user_goals as $user_goal) {
-            $user_goal->status = 1;
-            $user_goal->end_date = date('Y-m-d');
-            $user_goal->save();
-
-            $goal = Goal::find($user_goal->goal_id);
-
-            // 给用户发送message
-            $message = new Message();
-            $message->from_user = $user_goal->user_id;
-            $message->to_user = $user_goal->user_id;
-            $message->type = 6;
-            $message->msgable_id = $user_goal->goal_id;
-            $message->msgable_type = 'goal_expire';
-            $message->title = '目标过期通知' ;
-            $message->content = '你制定的目标"'+$goal->goal_name+'"由于30天未进行打卡，由系统自动关闭，你可以删除或重新制定该目标~<a href="#/goal/'.$user_goal->goal_id.'">点击查看详情</a>' ;
-            $message->status = 0;
-            $message->create_time = time();
-            $message->update_time = time();
-            $message->save();
-
-            $content = "目标过期通知";
-            $jpush = new MyJpush();
-            $jpush->pushToSingleUser($user_goal->user_id,$content);
+            DB::table('user_goal')->where('id', $user_goal->id)->update(['status' => 0]);
         }
+
+        // 更改创建时间为30天未打卡的目标为过期
+//        $user_goals = DB::table('user_goal')
+//            ->where('is_del','=',0)
+//            ->where('status','=',0)
+//            ->where('last_checkin_time','<',strtotime('-1 month'))
+//            ->where('create_time','<',strtotime('-1 month'))
+//            ->get();
+//
+//        foreach($user_goals as $user_goal) {
+//            $user_goal->status = 1;
+//            $user_goal->end_date = date('Y-m-d');
+//            $user_goal->save();
+//
+//            $goal = Goal::find($user_goal->goal_id);
+//
+//            // 给用户发送message
+//            $message = new Message();
+//            $message->from_user = $user_goal->user_id;
+//            $message->to_user = $user_goal->user_id;
+//            $message->type = 6;
+//            $message->msgable_id = $user_goal->goal_id;
+//            $message->msgable_type = 'goal_expire';
+//            $message->title = '目标过期通知' ;
+//            $message->content = '你制定的目标"'+$goal->goal_name+'"由于30天未进行打卡，由系统自动关闭，你可以删除或重新制定该目标~<a href="#/goal/'.$user_goal->goal_id.'">点击查看详情</a>' ;
+//            $message->status = 0;
+//            $message->create_time = time();
+//            $message->update_time = time();
+//            $message->save();
+//
+//            $content = "目标过期通知";
+//            $jpush = new MyJpush();
+//            $jpush->pushToSingleUser($user_goal->user_id,$content);
+//        }
 
 
         echo "Done!";

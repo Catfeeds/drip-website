@@ -6,6 +6,9 @@ use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use JWTAuth;
 
+use App\Models\Energy as Energy;
+
+
 class EventServiceProvider extends ServiceProvider
 {
     /**
@@ -31,8 +34,24 @@ class EventServiceProvider extends ServiceProvider
 
         $events->listen('tymon.jwt.valid', function () {
             $user = JWTAuth::parseToken()->toUser();
+
+            // 判断是否是今日首次登录
+            if(date('Y-m-d',$user->last_login_time)<date('Y-m-d')) {
+                // 发送首次登录奖励
+                $energy = new Energy();
+                $energy->user_id = $user->user_id;
+                $energy->change = 10;
+                $energy->obj_type = 'login';
+                $energy->obj_id = 0;
+                $energy->create_time = time();
+                $energy->save();
+
+                $user->increment('energy_count',10);
+            }
+
             $user->last_login_time = time();
             $user->save();
+
         });
     }
 }

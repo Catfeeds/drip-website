@@ -15,7 +15,7 @@
         "yajra/laravel-datatables-oracle": "~6.0",
         "aws/aws-sdk-php-laravel": "^3.1",
         "cmzz/laravel-aliyun-sms": "^1.0",
-        "overtrue/easy-sms": "^0.0.9",
+        "overtrue/easy-sms": "^1.0.3",
         "guzzlehttp/guzzle": "^6.3",
         "qiniu/php-sdk": "^7.2"
     },

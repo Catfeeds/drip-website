@@ -43,7 +43,7 @@ class GoalRemind extends Command
      */
     public function handle()
     {
-        // DB::connection()->enableQueryLog();
+         DB::connection()->enableQueryLog();
 
         // 获取所有需要推送的目标
         $goals = DB::table('user_goal')
@@ -53,10 +53,6 @@ class GoalRemind extends Command
             ->where('remind_time','=',date('H:i').':00')
             ->select('users.*', 'goal.goal_name','user_goal.*')
             ->get();
-
-        // $queries = DB::getQueryLog();
-        // $last_query = end($queries);
-        // var_dump($last_query);
 
         $bar = $this->output->createProgressBar(count($goals));
 

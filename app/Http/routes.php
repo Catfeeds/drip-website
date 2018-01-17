@@ -91,6 +91,7 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('user/messages/new', 'App\Http\Controllers\Api\V2\UserController@getNewMessages');
     $api->get('user/messages/notice', 'App\Http\Controllers\Api\V2\UserController@getNoticeMessages');
     $api->post('user/feedback', 'App\Http\Controllers\Api\V2\UserController@feedback');
+    $api->get('user/coin/logs', 'App\Http\Controllers\Api\V2\UserController@getCoinLog');
     $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
     $api->patch('user/{id}', 'App\Http\Controllers\Api\V2\UserController@updateUser');
     $api->get('user/{id}/fans', 'App\Http\Controllers\Api\V2\UserController@getFans');
@@ -118,8 +119,14 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->post('comment/{id}/reply', 'App\Http\Controllers\Api\V2\CommentController@reply');
 	$api->put('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@like');
     $api->delete('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@unLike');
-
+    $api->post('user/bind/phone', 'App\Http\Controllers\Api\V2\UserController@bindPhone');
+    $api->post('user/bind/email', 'App\Http\Controllers\Api\V2\UserController@bindEmail');
+    $api->post('user/bind/wechat', 'App\Http\Controllers\Api\V2\UserController@bindWechat');
+    $api->post('user/bind/weibo', 'App\Http\Controllers\Api\V2\UserController@bindWeibo');
+    $api->post('user/bind/qq', 'App\Http\Controllers\Api\V2\UserController@bindQQ');
+    $api->post('vip/buy', 'App\Http\Controllers\Api\V2\UserController@buyVip');
     $api->post('upload/image', 'App\Http\Controllers\Api\V2\UploadController@image');
+    $api->get('top/all', 'App\Http\Controllers\Api\V2\TopController@all');
 });
 
 $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {

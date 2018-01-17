@@ -6,6 +6,7 @@
 namespace App\Http\Controllers\Api\V2;
 
 use Auth;
+use Dompdf\Exception;
 use Validator;
 use API;
 use JWTAuth;
@@ -24,6 +25,7 @@ use App\Libs\MyEmail as MyEmail;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Controllers\Api\V2\Transformers\UserTransformer;
 
 
 class AuthController extends BaseController
@@ -83,6 +85,8 @@ class AuthController extends BaseController
         $new_user['email'] = $user->email;
         $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
+        $new_user['vip_begin_date'] = $user->vip_begin_date;
+        $new_user['vip_end_date'] = $user->vip_end_date;
         $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
         $new_user['nickname'] = $user->nickname;
         $new_user['signature'] = $user->signature;
@@ -90,6 +94,7 @@ class AuthController extends BaseController
         $new_user['avatar_url'] = $user->user_avatar;
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
+        $new_user['coin'] = $user->energy_count;
         $event_count = Event::where('user_id', $user->user_id)->count();
         $new_user['event_count'] = $event_count;
 
@@ -121,6 +126,8 @@ class AuthController extends BaseController
         $new_weibo = [];
         $new_weibo['nickname'] = $weibo ? $weibo->nickname : null;
         $new_user['weibo'] = $new_weibo;
+
+//        $this->response->item($user, new UserTransformer);
 
         return $this->response->array(array('token' => $token, 'user' => $new_user));
 
@@ -210,6 +217,8 @@ class AuthController extends BaseController
         $new_user['email'] = $user->email;
         $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
+        $new_user['vip_begin_date'] = $user->vip_begin_date;
+        $new_user['vip_end_date'] = $user->vip_end_date;
         $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
         $new_user['nickname'] = $user->nickname;
         $new_user['signature'] = $user->signature;
@@ -217,6 +226,7 @@ class AuthController extends BaseController
         $new_user['avatar_url'] = $user->user_avatar;
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
+        $new_user['coin'] = $user->energy_count;
         $event_count = Event::where('user_id', $user->user_id)->count();
         $new_user['event_count'] = $event_count;
 
@@ -352,6 +362,8 @@ class AuthController extends BaseController
         $new_user['email'] = $user->email;
         $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
+        $new_user['vip_begin_date'] = $user->vip_begin_date;
+        $new_user['vip_end_date'] = $user->vip_end_date;
         $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
         $new_user['nickname'] = $user->nickname;
         $new_user['signature'] = $user->signature;
@@ -359,6 +371,7 @@ class AuthController extends BaseController
         $new_user['sex'] = $user->sex;
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
+        $new_user['coin'] = $user->energy_count;
         $event_count = Event::where('user_id', $user->user_id)->count();
         $new_user['event_count'] = $event_count;
 
@@ -680,7 +693,7 @@ class AuthController extends BaseController
             if (!$user) {
                 return $this->response->error('用户未注册', 500);
             }
-        } else if ($type == 'register') {
+        } else if ($type == 'register' || $type == 'bind') {
             if ($user) {
                 return $this->response->error('该手机号或邮箱已注册', 500);
             }
@@ -730,13 +743,22 @@ class AuthController extends BaseController
 
             $easySms = new EasySms($config);
 
-            $easySms->send($account, [
-                'content' => '您的验证码为: ' . $code,
-                'template' => 'SMS_96460074',
-                'data' => [
-                    'code' => $code
-                ],
-            ]);
+
+            try {
+
+                $easySms->send($account, [
+                    'content' => '您的验证码为: ' . $code,
+                    'template' => 'SMS_96460074',
+                    'data' => [
+                        'code' => $code
+                    ],
+                ]);
+
+            } catch (Exception $e) {
+                Log::debug($e->result);
+            }
+
+
 
         }
 
@@ -817,9 +839,9 @@ class AuthController extends BaseController
     }
 
     /*
-     * 第三方账号绑定
+     * 手机号绑定
      */
-    public function bind()
+    public function bindPhone(Request $request)
     {
 
 

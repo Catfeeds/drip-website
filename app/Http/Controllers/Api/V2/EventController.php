@@ -401,7 +401,7 @@ class EventController extends BaseController {
             $new_user['id'] = $user->user_id;
             $new_user['nickname'] = $user->nickname;
             $new_user['avatar_url'] = $user->user_avatar;
-
+            $new_user['is_vip'] = $user->is_vip==1?true:false;
 			$new_events[$key]['user'] = $new_user;
 
             $goal = [];
@@ -461,18 +461,24 @@ class EventController extends BaseController {
                 $checkin = DB::table('checkin')
                     ->where('checkin_id', $event->event_value)
                     ->first();
+                if($checkin) {
+                    $content = $checkin->checkin_content;
 
-                $content = $checkin->checkin_content;
+                    $new_events[$key]['content'] = $content;
 
-                $new_events[$key]['content'] = $content;
+                    $new_checkin['id'] = $checkin->checkin_id;
+                    $new_checkin['total_days'] = $checkin->total_days;
+                } else {
+                    $new_events[$key]['content'] = "";
+                }
+
 
 //				$new_events[$key]->checkin->items = DB::table('checkin_item')
 //					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
 //					->where('checkin_id', $event->event_value)
 //					->get();
 
-                $new_checkin['id'] = $checkin->checkin_id;
-                $new_checkin['total_days'] = $checkin->total_days;
+
 
                 $attachs = DB::table('attachs')
                     ->where('attachable_id', $event->event_value)
@@ -501,6 +507,7 @@ class EventController extends BaseController {
             $new_user['id'] = $user->user_id;
             $new_user['nickname'] = $user->nickname;
             $new_user['avatar_url'] = $user->user_avatar;
+            $new_user['is_vip'] = $user->is_vip==1?true:false;
 
             $new_events[$key]['user'] = $new_user;
 
@@ -563,6 +570,25 @@ class EventController extends BaseController {
 
 			if($like->save()) {
 				$this->_update_like_count($event,$like->like_id,'save');
+
+				// 查询今天点赞的次数
+                $count = DB::table('energy')
+                    ->where('user_id',$user_id)
+                    ->where('obj_type','like')
+                    ->whereRaw('FROM_UNIXTIME(create_time,"%Y-%m-%d") = ?',[date('Y-m-d')])
+                    ->count();
+
+                    if($count<5) {
+                        $energy = new Energy();
+                        $energy->user_id = $user_id;
+                        $energy->change = 2;
+                        $energy->obj_type = 'like';
+                        $energy->obj_id = $event->event_id;
+                        $energy->create_time = time();
+                        $energy->save();
+                    }
+
+
 				$this->response->noContent();
 			} else {
 				$this->response->error('点赞失败，请重试',500);

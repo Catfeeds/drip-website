@@ -257,16 +257,24 @@ class UserController extends Controller
         $feedback->save();
 
 //        // 发送奖励
-//        $user = User::find($feedback->user_id);
-//        $user->energy_count += $reward;
-//        $user->save();
+        $user = User::find($feedback->user_id);
+        $user->energy_count += 10;
+        $user->save();
+
+        $energy = new Energy();
+        $energy->user_id = $feedback->user_id;
+        $energy->change = 10;
+        $energy->obj_type = 'feedback';
+        $energy->obj_id = $feedback->id;
+        $energy->create_time = time();
+        $energy->save();
 //
         //发送消息
 //        $message = new Message();
 //        $message->from_user = 0;
 //        $message->to_user = $feedback->user_id;
 //        $message->type = 6 ;
-//        $message->title = '反馈回复通知' ;
+//        $message->title = '意见反馈回复' ;
 //        $message->content = $content ;
 //        $message->msgable_id = $id;
 //        $message->msgable_type = 'App\Models\Feedback';

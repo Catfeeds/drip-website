@@ -12,6 +12,7 @@ use Validator;
 use API;
 use DB;
 use Log;
+use GuzzleHttp\Client;
 
 use App\User;
 use App\Checkin;
@@ -22,11 +23,14 @@ use App\Models\Report as Report;
 use App\Event;
 use App\Like;
 use App\Models\Comment as Comment;
+use App\Models\Energy as Energy;
 
 
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Controllers\Api\V2\Transformers\UserTransformer;
+use League\Fractal\Serializer\ArraySerializer;
 
 
 class UserController extends BaseController
@@ -257,7 +261,7 @@ class UserController extends BaseController
             $result[$key]['id'] = $goal->goal_id;
             // TODO
             // $goals[$key]['name'] = $goal->pivot->name;
-            $result[$key]['name'] = $goal->goal_name;
+            $result[$key]['name'] = $goal->pivot->name?$goal->pivot->name:$goal->goal_name;
             $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
             $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
             $result[$key]['expect_days'] = ceil((time() - $goal->pivot->start_time) / 86400);
@@ -413,6 +417,7 @@ class UserController extends BaseController
         $result['status'] = $goal->pivot->status+1;
         $result['items'] = $goal->items;
         $result['is_today_checkin'] = $goal->is_today_checkin;
+        $result['remind_time'] = $goal->pivot->remind_time;
 
 
         return $result;
@@ -849,6 +854,7 @@ class UserController extends BaseController
             $new_user['id'] = $event->user->user_id;
             $new_user['nickname'] = $event->user->nickname;
             $new_user['avatar_url'] = $event->user->user_avatar;
+            $new_user['is_vip'] = $event->user->is_vip==1?true:false;
 
             $result[$key]['user'] = $new_user;
 
@@ -1627,7 +1633,13 @@ class UserController extends BaseController
             return $this->response->error(implode(',', $validation->errors()), 500);
         }
 
+        $isReCheckin = false;
         $day = $request->input('day', date('Y-m-d'));
+
+        if($day<date('Y-m-d')) {
+            $isReCheckin = true;
+        }
+
         $content = $request->input('content');
 
         $user_id = $this->auth->user()->user_id;
@@ -1660,6 +1672,7 @@ class UserController extends BaseController
             ->where('checkin_day', '=', $day)
             ->first();
 
+
         // 如果存在该条打卡记录
         if ($user_checkin) {
             return $this->response->error('今日已打卡', 500);
@@ -1676,17 +1689,26 @@ class UserController extends BaseController
         $checkin->checkin_time = time();
         $checkin->save();
 
-//        if(!$isReCheckin) {
-//            if($series_days<10){
-//                $add_energy = 5;
-//            }else if ($series_days>=10&&$series_days<30) {
-//                $add_energy = 10;
-//            } else if ($series_days>=30&&$series_days<60) {
-//                $add_energy = 15;
-//            }else if ($series_days>=60) {
-//                $add_energy = 20;
-//            }
-//        }
+        // 单次打卡奖励
+        $single_add_coin = 0;
+
+        if(!$isReCheckin) {
+            // TODO 判断当前目标今天是否打卡
+            $single_add_coin = 2;
+        }
+
+        // 连续打卡奖励
+        $series_add_coin = 0;
+
+        if(!$isReCheckin) {
+            if ($series_days>=5&&$series_days<10) {
+                $series_add_coin = 5;
+            } else if ($series_days>=10&&$series_days<20) {
+                $series_add_coin = 10;
+            }else if ($series_days>=20) {
+                $series_add_coin = 20;
+            }
+        }
 
         // 如果存在该条打卡记录
         if (date('Y-m-d', $user_goal->pivot->last_checkin_time) == date("Y-m-d", strtotime("-1 day", strtotime($day)))) {
@@ -1746,15 +1768,25 @@ class UserController extends BaseController
         User::find($user_id)->increment('checkin_count', 1);
         User::find($user_id)->increment('energy_count', 1);
 
-//        if($add_energy == 0) {
-//            $energy = new Energy();
-//            $energy->user_id = $user_id;
-//            $energy->change = $add_energy;
-//            $energy->obj_type = 'checkin';
-//            $energy->obj_id = $checkin->checkin_id;
-//            $energy->create_time = time();
-//            $energy->save();
-//        }
+        if($single_add_coin > 0) {
+            $energy = new Energy();
+            $energy->user_id = $user_id;
+            $energy->change = $single_add_coin;
+            $energy->obj_type = 'checkin';
+            $energy->obj_id = $checkin->checkin_id;
+            $energy->create_time = time();
+            $energy->save();
+        }
+
+        if($series_add_coin > 0) {
+            $energy = new Energy();
+            $energy->user_id = $user_id;
+            $energy->change = $series_add_coin;
+            $energy->obj_type = 'series_checkin';
+            $energy->obj_id = $checkin->checkin_id;
+            $energy->create_time = time();
+            $energy->save();
+        }
 
         $event = new Event();
         $event->goal_id = $goal_id;
@@ -1770,8 +1802,8 @@ class UserController extends BaseController
         if ($content) {
             $this->_parse_content($content, $user_id, $event->event_id);
         }
-
-        return response()->json($checkin);
+        return compact('series_add_coin','single_add_coin');
+//        return response()->json($checkin);
 
     }
 
@@ -1831,5 +1863,436 @@ class UserController extends BaseController
 
     }
 
+    public function getCoinLog(Request $request)
+    {
+        $user_id = $this->auth->user()->user_id;
+        $page = $request->input('page');
+        $per_page = $request->input('per_page');
 
+        $logs = DB::table('energy')
+            ->join('energy_type','energy_type.name','=','energy.obj_type')
+            ->where('user_id','=',$user_id)
+            ->orderBy('create_time','desc')
+            ->skip(($page-1)*$per_page)
+            ->limit($per_page)
+            ->get();
+
+        $new_logs = [];
+
+        foreach($logs as $k=>$log) {
+            $new_logs[$k]['id'] = $log->id;
+            $new_logs[$k]['created_at'] = date('Y-m-d H:i:s',$log->create_time);
+            $new_logs[$k]['change'] =  $log->change;
+            $new_logs[$k]['name'] = $log->name2;
+
+        }
+
+        return $new_logs;
+
+    }
+
+    public function bindPhone(Request $request)
+    {
+        $messages = [
+            'account.required' => '请输入手机号',
+            'code.required' => '请输入验证码',
+        ];
+
+        $validation = Validator::make(Input::all(), [
+            'account' => 'required',        // 邮箱
+            'code' => 'required|digits:4'
+        ], $messages);
+
+        if ($validation->fails()) {
+            return $this->response->error(implode(',', $validation->errors()->all()), 500);
+        }
+
+        $phone = $request->input('account');
+        $code = $request->input('code');
+        $user = $this->auth->user();
+
+        if (!preg_match("/^1[34578]\d{9}$/",$phone)) {
+            return $this->response->error('手机号格式不正确', 500);
+        }
+
+        // 查找手机号是否被绑定
+        $is_bind = User::where('phone',$phone)->first();
+
+        if($is_bind) {
+            return $this->response->error('手机号已被绑定', 500);
+        }
+
+        $code = DB::table('verify_code')
+        ->where('send_type', 'phone')
+        ->where('send_object', $phone)
+        ->where('type', 'bind')
+        ->where('code', $code)
+        ->orderBy('create_time', 'desc')
+        ->first();
+
+        if ($code) {
+            if ($code->status == 1) {
+                return $this->response->error('验证码已使用', 500);
+            }
+
+            if ($code->expire_time < time()) {
+                return $this->response->error('验证码已过期', 500);
+            }
+        } else {
+            return $this->response->error('验证码不存在', 500);
+        }
+
+        $user->phone = $phone;
+
+        $user->save();
+
+        return $this->response->item($user, new UserTransformer);
+    }
+
+    public function bindEmail(Request $request)
+    {
+        $messages = [
+            'account.required' => '请输入手机号',
+            'code.required' => '请输入验证码',
+        ];
+
+        $validation = Validator::make(Input::all(), [
+            'account' => 'required',        // 邮箱
+            'code' => 'required|digits:4'
+        ], $messages);
+
+        if ($validation->fails()) {
+            return $this->response->error(implode(',', $validation->errors()->all()), 500);
+        }
+
+        $email = $request->input('account');
+        $code = $request->input('code');
+        $user = $this->auth->user();
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->response->error('手机号格式不正确', 500);
+        }
+
+        // 查找手机号是否被绑定
+        $is_bind = User::where('email',$email)->first();
+
+        if($is_bind) {
+            return $this->response->error('邮箱已被绑定', 500);
+        }
+
+        $code = DB::table('verify_code')
+            ->where('send_type', 'email')
+            ->where('send_object', $email)
+            ->where('type', 'bind')
+            ->where('code', $code)
+            ->orderBy('create_time', 'desc')
+            ->first();
+
+        if ($code) {
+            if ($code->status == 1) {
+                return $this->response->error('验证码已使用', 500);
+            }
+
+            if ($code->expire_time < time()) {
+                return $this->response->error('验证码已过期', 500);
+            }
+        } else {
+            return $this->response->error('验证码不存在', 500);
+        }
+
+        $user->email = $email;
+
+        $user->save();
+
+        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
+    }
+
+    public function bindWechat(Request $request) {
+
+        $params = $this->_parse_wechat($request);
+
+        Log::debug("微信参数");
+
+        Log::debug($params);
+
+
+        $provider = DB::table('users_bind')
+            ->where('openid', $params['openid'])
+            ->where('provider', 'wechat')
+            ->first();
+
+        if($provider) {
+            return $this->response->error('该微信号已绑定', 500);
+        }
+
+        $user = $this->auth->user();
+
+        DB::table('users_bind')->insert([
+            'user_id' => $user->user_id,
+            'openid' => $params['openid'],
+            'access_token' => $params['access_token'],
+            'expire_in' => $params['expire_in'],
+            'avatar' => $params['avatar'],
+            'sex' => $params['sex'],
+            'province' => $params['province'],
+            'city' => $params['city'],
+            'nickname' => $params['nickname'],
+            'provider' => $params['provider'],
+            'unionid' => isset($params['unionid']) ? $params['unionid'] : '',
+        ]);
+
+        return $user;
+
+
+    }
+
+    private function _parse_wechat($request)
+    {
+        // 获取
+        $client = new Client();
+
+        $res = $client->request('GET', 'https://api.weixin.qq.com/sns/oauth2/access_token?appid=wxac31b5ac3e65915a&secret=f8b8aac88586192c2b60bfbbf807ef7d&code=' . $request->code . '&grant_type=authorization_code', []);
+
+        if ($res->getStatusCode() != 200) {
+            $this->response->error("请求access_token失败", 500);
+        }
+
+        $ret = json_decode($res->getBody());
+
+        if (isset($ret->errcode)) {
+            $this->response->error($ret->errmsg, 500);
+        }
+
+        $res2 = $client->request('GET', 'https://api.weixin.qq.com/sns/userinfo?access_token=' . $ret->access_token . '&openid=' . $ret->openid);
+
+        if ($res2->getStatusCode() != 200) {
+            $this->response->error("请求用户信息失败", 500);
+        }
+
+        $ret2 = json_decode($res2->getBody());
+
+        if (isset($ret2->errcode)) {
+            $this->response->error($ret2->errmsg, 500);
+        }
+
+        return [
+            'openid' => $ret2->openid,
+            'access_token' => $ret->access_token,
+            'expire_in' => time() + 7200,
+            'avatar' => $ret2->headimgurl,
+            'sex' => $ret2->sex,
+            'province' => $ret2->province,
+            'city' => $ret2->city,
+            'country' => $ret2->country,
+            'nickname' => $ret2->nickname,
+            'provider' => 'wechat',
+            'unionid' => $ret2->unionid,
+            'device' => $request->device
+        ];
+    }
+
+    public function bindWeibo(Request $request) {
+
+        $params = $this->_parse_weibo($request);
+
+        $provider = DB::table('users_bind')
+            ->where('openid', $params['openid'])
+            ->where('provider', 'weibo')
+            ->first();
+
+        if($provider) {
+            return $this->response->error('该微博已绑定', 500);
+        }
+
+        $user = $this->auth->user();
+
+        DB::table('users_bind')->insert([
+            'user_id' => $user->user_id,
+            'openid' => $params['openid'],
+            'access_token' => $params['access_token'],
+            'expire_in' => $params['expire_in'],
+            'avatar' => $params['avatar'],
+            'sex' => $params['sex'],
+            'province' => $params['province'],
+            'city' => $params['city'],
+            'nickname' => $params['nickname'],
+            'provider' => $params['provider'],
+            'unionid' => isset($params['unionid']) ? $params['unionid'] : '',
+        ]);
+
+        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
+
+    }
+
+    private function _parse_weibo($request)
+    {
+        $client = new Client();
+
+        $res = $client->request('GET', 'https://api.weibo.com/2/users/show.json?uid=' . $request->userId . '&access_token=' . $request->access_token, []);
+
+        if ($res->getStatusCode() != 200) {
+            $this->response->error("获取用户信息失败", 500);
+        }
+
+        $ret = json_decode($res->getBody());
+
+        if (isset($ret->error_code)) {
+            $this->response->error($ret->error, 500);
+        }
+
+        $sex = 0;
+
+        if ($ret->gender == 'm') {
+            $sex = 1;
+        } else if ($ret->gender == 'f') {
+            $sex = 2;
+        }
+        return [
+            'openid' => $request->userId,
+            'access_token' => $request->access_token,
+            'expire_in' => $request->expires_time,
+            'avatar' => $ret->avatar_hd,
+            'sex' => $sex,
+            'province' => $ret->province,
+            'city' => $ret->city,
+            'nickname' => $ret->screen_name,
+            'provider' => 'weibo',
+            'device' => $request->device
+        ];
+    }
+
+    public function bindQQ(Request $request) {
+
+        $params = $this->_parse_qq($request);
+
+        $provider = DB::table('users_bind')
+            ->where('openid', $params['openid'])
+            ->where('provider', 'qq')
+            ->first();
+
+        if($provider) {
+            return $this->response->error('该QQ已绑定', 500);
+        }
+
+        $user = $this->auth->user();
+
+        DB::table('users_bind')->insert([
+            'user_id' => $user->user_id,
+            'openid' => $params['openid'],
+            'access_token' => $params['access_token'],
+            'expire_in' => $params['expire_in'],
+            'avatar' => $params['avatar'],
+            'sex' => $params['sex'],
+            'province' => $params['province'],
+            'city' => $params['city'],
+            'nickname' => $params['nickname'],
+            'provider' => $params['provider'],
+            'unionid' => isset($params['unionid']) ? $params['unionid'] : '',
+        ]);
+
+        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
+    }
+
+
+    private function _parse_qq($request)
+    {
+        // 获取
+        $client = new Client();
+
+        $app_id = 1106248902;
+
+        $device = $request->device;
+
+        if(isset($device['platform'])&&$device['platform'] == 'iOS') {
+            $app_id = 1106192747;
+        }
+
+        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token=' . $request->access_token . '&oauth_consumer_key='.$app_id.'&openid=' . $request->userid, []);
+
+        if ($res->getStatusCode() != 200) {
+            $this->response->error("获取用户信息失败", 500);
+        }
+
+        $ret = json_decode($res->getBody());
+
+        if (isset($ret->ret) && $ret->ret != 0) {
+            $this->response->error($ret->msg, 500);
+        }
+
+        $sex = 0;
+
+        if ($ret->gender == '男') {
+            $sex = 1;
+        } else if ($ret->gender == '女') {
+            $sex = 2;
+        }
+
+        return [
+            'openid' => $request->userid,
+            'access_token' => $request->access_token,
+            'expire_in' => $request->expires_time,
+            'avatar' => $ret->figureurl_2,
+            'sex' => $sex,
+            'province' => $ret->province,
+            'city' => $ret->city,
+            'nickname' => $ret->nickname,
+            'provider' => 'qq',
+            'device' => $request->device
+        ];
+    }
+
+
+    public function buyVip(Request $request) {
+        $messages = [
+            'required' => '缺少参数 :attribute',
+            'integer' => '月数必须为正整数',
+        ];
+
+        $validation = Validator::make(Input::all(), [
+            'num' => 'required|integer',
+        ], $messages);
+
+        if ($validation->fails()) {
+            return API::response()->error(implode(',', $validation->errors()->all()), 500);
+        }
+
+        $user = $this->auth->user();
+
+        $num = $request->input("num",0);
+
+        if($user->energy_count < $num*1000) {
+            return API::response()->error("水滴币数量不足", 500);
+        }
+
+        if($user->is_vip == 1) {
+            $user->vip_end_date = date('Y-m-d', strtotime($user->vip_end_date. ' + '.($num*30).' days'));
+        } else {
+            $user->is_vip = 1;
+            $user->vip_begin_date = date('Y-m-d');
+            $user->vip_end_date = date('Y-m-d', strtotime(date('Y-m-d'). ' + '.($num*30).' days'));
+        }
+
+        $user->energy_count -= $num*1000;
+        $user->save();
+
+        $energy = new Energy();
+        $energy->user_id = $user->user_id;
+        $energy->change = -($num*1000);
+        $energy->obj_type = null;
+        $energy->obj_id = null;
+        $energy->create_time = time();
+        $energy->save();
+
+//        return $this->response->item($user, new UserTransformer());
+        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
+
+    }
 }
