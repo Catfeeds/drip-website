@@ -417,6 +417,7 @@ class UserController extends BaseController
         $result['status'] = $goal->pivot->status+1;
         $result['items'] = $goal->items;
         $result['is_today_checkin'] = $goal->is_today_checkin;
+        $result['is_public'] = (boolean)$goal->pivot->is_public;
         $result['remind_time'] = $goal->pivot->remind_time;
 
 
