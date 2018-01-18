@@ -306,6 +306,7 @@ class GoalController extends BaseController
                 'end_date' => $end_date,
                 'status' => ($start_date > date('Y-m-d')) ? -1 : 0,
                 'expect_days' => $expect_days,
+                'remind_time' => $request->input('remind_time')
             ]);
 
             User::find($user_id)->increment('goal_count', 1);
