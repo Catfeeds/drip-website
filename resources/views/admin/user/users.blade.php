@@ -83,6 +83,37 @@
         </div>
     </div>
 
+    <div class="modal fade" id="add-coin-modal">
+        <div class="modal-dialog    ">
+            <div class="modal-content">
+                <form action="{!! route('admin.user.add_coin') !!}" method="post" id="add-coin-form">
+                    <input type="hidden" name="user_id" id="add_coin_userid">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">赠送水滴币</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="article-title">数量<span class="required">*</span></label>
+                            <input type="text" class="form-control" name="num">
+                        </div>
+                        <div class="form-group">
+                            <label for="article-title">备注</label>
+                            <textarea class="form-control" name="remark">Hi,感谢你为水滴打卡提供的建议和帮助，水滴君特赠送你 %d 水滴币作为奖励，请注意查收。
+                        </textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">确认</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
 @stop
 @section('scripts')
 <!-- DataTables -->
@@ -112,9 +143,55 @@
                 ]
             });
 
-            $("#add-vip-form").validate({
+            {{--$("#add-vip-form").validate({--}}
+                {{--rules: {--}}
+                    {{--days: {--}}
+                        {{--required: true,--}}
+                        {{--digits:true--}}
+                    {{--},--}}
+                    {{--remark:{--}}
+
+                    {{--}--}}
+                {{--},--}}
+                {{--messages:{--}}
+                    {{--days:{--}}
+                        {{--required:"天数不能为空",--}}
+                        {{--digits:"天数必须为正整数"--}}
+                    {{--}--}}
+                {{--},--}}
+                {{--submitHandler:function(form){--}}
+
+{{--//                    $(form).ajaxSubmit();--}}
+{{--//                    return false;--}}
+
+
+                    {{--$.ajax({--}}
+                        {{--url : "{!! route('admin.user.add_vip') !!}",--}}
+                        {{--type : "post",--}}
+                        {{--dataType : "json",--}}
+                        {{--data:$(form).serialize(),--}}
+                        {{--success : function(res) {--}}
+                            {{--if(res.stauts){--}}
+                                {{--toastr.success("赠送成功");--}}
+                            {{--} else {--}}
+                                {{--toastr.error("赠送失败");--}}
+                            {{--}--}}
+                        {{--}--}}
+                    {{--});--}}
+
+                    {{--return false;--}}
+
+                {{--}--}}
+            {{--});--}}
+
+            {{--$(document).on('click','.add-vip-btn',function () {--}}
+               {{--var userId = $(this).attr('data-userid');--}}
+                {{--$('#add_vip_userid').val(userId);--}}
+            {{--});--}}
+
+            $("#add-coin-form").validate({
                 rules: {
-                    days: {
+                    num: {
                         required: true,
                         digits:true
                     },
@@ -123,9 +200,9 @@
                     }
                 },
                 messages:{
-                    days:{
-                        required:"天数不能为空",
-                        digits:"天数必须为正整数"
+                    num:{
+                        required:"数量不得为空",
+                        digits:"数量必须为正整数"
                     }
                 },
                 submitHandler:function(form){
@@ -135,7 +212,7 @@
 
 
                     $.ajax({
-                        url : "{!! route('admin.user.add_vip') !!}",
+                        url : "{!! route('admin.user.add_coin') !!}",
                         type : "post",
                         dataType : "json",
                         data:$(form).serialize(),
@@ -153,9 +230,9 @@
                 }
             });
 
-            $(document).on('click','.add-vip-btn',function () {
-               var userId = $(this).attr('data-userid');
-                $('#add_vip_userid').val(userId);
+            $(document).on('click','.add-coin-btn',function () {
+                var userId = $(this).attr('data-userid');
+                $('#add_coin_userid').val(userId);
             });
         });
     </script>

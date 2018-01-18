@@ -37,7 +37,7 @@ class UserController extends Controller
     {
         return Datatables::of(User::query())
             ->addColumn('action', function ($user) {
-                return '<a class="btn btn-xs btn-primary add-vip-btn"  data-toggle="modal" data-target="#add-vip-modal" data-userid="'.$user->user_id.'"><i class="glyphicon glyphicon-add"></i>赠送会员</a>';
+                return ' <a class="btn btn-xs btn-primary add-coin-btn"  data-toggle="modal" data-target="#add-coin-modal" data-userid="'.$user->user_id.'"><i class="glyphicon glyphicon-add"></i>赠送水滴币</a>';
             })
             ->editColumn('reg_time', function ($user) {
                 return $user->reg_time>0?date("Y-m-d H:i:s",$user->reg_time):'';
@@ -213,6 +213,48 @@ class UserController extends Controller
 
 
     }
+
+
+    public function add_coin(Request $request) {
+        $user_id = $request->input("user_id");
+        $num = $request->input("num");
+        $remark = $request->input("remark");
+
+        $user = User::find($user_id);
+
+        if(!$user) {
+            return ['status'=>false,'message'=>'用户不存在'];
+        }
+
+        $user->energy_count += $num;
+        $user->save();
+
+        $energy = new Energy();
+        $energy->user_id = $user->user_id;
+        $energy->change = $num;
+        $energy->obj_type = 'feedback';
+        $energy->obj_id = 0;
+        $energy->create_time = time();
+        $energy->save();
+
+        $message = new Message();
+        $message->from_user = 0;
+        $message->to_user = $user_id;
+        $message->type = 6 ;
+        $message->title = '奖励通知' ;
+        $message->content = trim(sprintf($remark,$num));
+        $message->msgable_id = $energy->id;
+        $message->msgable_type = 'App\Energy';
+        $message->create_time  = time();
+        $message->save();
+
+
+
+        return ['status'=>true,'message'=>'操作成功'];
+
+
+    }
+
 
     /**
      * 处理用户反馈

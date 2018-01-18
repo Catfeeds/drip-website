@@ -1272,15 +1272,13 @@ class UserController extends BaseController
 
     public function energy(Request $request)
     {
-        // 关注时间排序
-
         $user_id = $request->user_id;
         $offset = $request->offset;
 
         $logs = DB::table('energy')
             ->join('energy_type', 'energy_type.name', '=', 'energy.obj_type')
             ->where('user_id', '=', $user_id)
-            ->orderBy('create_time', 'desc   ')
+            ->orderBy('create_time', 'desc')
             ->skip($offset)
             ->limit(20)
             ->get();
