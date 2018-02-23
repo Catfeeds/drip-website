@@ -20,6 +20,7 @@ use App\Models\Message as Message;
 use App\Goal;
 use App\Models\Attach as Attach;
 use App\Models\Report as Report;
+use App\Models\Topic as Topic;
 use App\Event;
 use App\Like;
 use App\Models\Comment as Comment;
@@ -230,7 +231,7 @@ class UserController extends BaseController
 
         $date = $request->input("day");
 
-        		DB::enableQueryLog();
+        DB::enableQueryLog();
 
         $goals = User::find($user_id)
             ->goals()
@@ -402,7 +403,17 @@ class UserController extends BaseController
             ->where('is_del', '0')
             ->get();
 
-        $goal->items = $items;
+        $new_items = array();
+
+        foreach($items as $k=>$item) {
+            $new_items[$k]['id'] = $item->item_id;
+            $new_items[$k]['name'] = $item->item_name;
+            $new_items[$k]['expect'] = $item->item_expect;
+            $new_items[$k]['unit'] = $item->item_unit;
+            $new_items[$k]['type'] = $item->type;
+        }
+
+        $goal->items = $new_items;
 
         $result = array();
 
@@ -488,14 +499,46 @@ class UserController extends BaseController
             }
 
 
+            unset($input['items']);
+
             DB::table('user_goal')->where('id', '=', $user_goal->pivot->id)
                 ->update($input);
+
+            $this->_insert_items($user_id, $user_goal->pivot->goal_id, $request->input('items'));
+
         }
 
-//        $this->_insert_items($user_id, $user_goal->pivot->goal_id, $request->items);
 
         return $goal;
     }
+
+    private function _insert_items($user_id, $goal_id, $items)
+    {
+
+        // 删除
+        $result = DB::table('user_goal_item')
+            ->where('user_id', $user_id)
+            ->where('goal_id', $goal_id)
+            ->where('is_del', 0)
+            ->delete();
+
+        foreach ($items as $item) {
+
+            DB::table('user_goal_item')->insert(
+                [
+                    'item_name' => $item['name'],
+                    'item_unit' => $item['unit'],
+                    'item_expect' => $item['expect'],
+                    'type'=>$item['type'],
+                    'create_time' => time(),
+                    'goal_id' => $goal_id,
+                    'user_id' => $user_id
+                ]
+            );
+
+        }
+    }
+
 
     public function getGoalWeek($goal_id, Request $request)
     {
@@ -920,6 +963,8 @@ class UserController extends BaseController
         $result['like_count'] = $like_count;
         $result['comment_count'] = $comment_count;
         $result['at_count'] = $at_count;
+        $result['fan_count'] = $fan_count;
+        $result['notice_count'] = $notice_count;
         $result['notice'] = $notice_count;
 
         return $result;
@@ -1023,6 +1068,7 @@ class UserController extends BaseController
             // TODO 移除version字段
             'app_version' => $request->input('app_version'),
             'web_version' => $request->input('web_version'),
+            'contact' => $request->input('contact'),
             'create_time' => time(),
         ];
 
@@ -1732,8 +1778,8 @@ class UserController extends BaseController
                 DB::table('checkin_item')
                     ->insert([
                         'checkin_id' => $checkin->checkin_id,
-                        'item_id' => $item['item_id'],
-                        'item_value' => $item['item_expect']
+                        'item_id' => $item['id'],
+                        'item_value' => $item['value']
                     ]);
             }
         }
@@ -1822,6 +1868,7 @@ class UserController extends BaseController
                 $topic->name = $name;
                 $topic->create_time = time();
                 $topic->create_user = $user_id;
+                $topic->save();
             }
 
             // 插入对应关系
@@ -1946,6 +1993,15 @@ class UserController extends BaseController
         $user->save();
 
         return $this->response->item($user, new UserTransformer);
+    }
+
+
+        public function getUserInfo(Request $request)
+    {
+        $user = $this->auth->user();
+        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
     }
 
     public function bindEmail(Request $request)

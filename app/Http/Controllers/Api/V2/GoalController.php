@@ -300,6 +300,7 @@ class GoalController extends BaseController
             $user->goals()->attach($goal->goal_id, [
                 'goal_name' => trim($goal_name),
                 'goal_desc' => trim($request->input('desc')),
+                'desc' => trim($request->input('desc')),
                 // TODO 删除create_time
                 'start_time' => time(),
                 'start_date' => $start_date,

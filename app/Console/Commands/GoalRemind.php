@@ -60,7 +60,7 @@ class GoalRemind extends Command
         foreach ($goals as $goal) {
 
             $diff_days = ceil((time()-$goal->start_time)/86400);
-            $content = $goal->goal_name."第".$diff_days."天";
+            $content = $goal->goal_name." 打卡提醒";
 
             $jpush = new MyJpush();
             $jpush->pushToSingleUser($goal->user_id,$content);

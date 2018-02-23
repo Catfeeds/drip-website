@@ -9,6 +9,7 @@ use Auth;
 use Validator;
 use API;
 use DB;
+use Illuminate\Support\Collection;
 
 use Carbon\Carbon;
 
@@ -25,6 +26,8 @@ use App\Libs\MyJpush as MyJpush;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Controllers\Api\V2\Transformers\EventTransformer;
+use League\Fractal\Serializer\ArraySerializer;
 
 
 class EventController extends BaseController {
@@ -438,11 +441,15 @@ class EventController extends BaseController {
             ->where('user_follow.user_id','=',$user_id)
             ->where('events.is_public','=',1)
             ->orderBy('events.create_time','desc')
-            ->skip($page*$per_page)
+            ->skip(($page-1)*$per_page)
             ->take($per_page)
             ->get();
 
 //        print_r(DB::getQueryLog());
+//        return $this->response->collection(Collection::make($events), new EventTransformer(),[],function($resource, $fractal){
+//            $fractal->setSerializer(new ArraySerializer());
+//        });
+
 
         $new_events = [];
 
@@ -495,6 +502,24 @@ class EventController extends BaseController {
 
                 $new_events[$key]['attachs'] = $new_attachs;
 
+                $items = DB::table('checkin_item')
+                    ->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
+                    ->where('checkin_id', $event->event_value)
+                    ->get();
+
+                $new_items = [];
+
+                foreach ($items as $k => $item) {
+                    $new_items[$k]['id'] = $item->item_id;
+                    $new_items[$k]['name'] = $item->item_name;
+                    $new_items[$k]['unit'] = $item->item_unit;
+                    $new_items[$k]['type'] = $item->type;
+                    $new_items[$k]['value'] = $item->item_value;
+
+                }
+
+                $new_events[$key]['items'] = $new_items;
+
             }
 
             $new_events[$key]['checkin'] = $new_checkin;
@@ -544,7 +569,10 @@ class EventController extends BaseController {
 	 */
 	public function like($event_id,Request $request)
 	{
-	    $user_id = $this->auth->user()->user_id;
+
+        $user = $this->auth->user();
+
+        $user_id = $this->auth->user()->user_id;
 
 		// 查询Event是否存在
 	    $event = Event::find($event_id);
@@ -586,6 +614,9 @@ class EventController extends BaseController {
                         $energy->obj_id = $event->event_id;
                         $energy->create_time = time();
                         $energy->save();
+
+                        $user->energy_count += 2;
+                        $user->save();
                     }
 
 
@@ -649,23 +680,24 @@ class EventController extends BaseController {
 			$event->save();
 			$user->save();
 
-			//  消息
-			$message = new Message();
-			$message->from_user = $this->auth->user()->user_id;
-			$message->to_user = $event->user_id;
-			$message->type = 2 ;
-			$message->msgable_id = $like_id;
-			$message->msgable_type = 'App\Like';
+			if( $this->auth->user()->user_id != $event->user_id) {
+                //  消息
+                $message = new Message();
+                $message->from_user = $this->auth->user()->user_id;
+                $message->to_user = $event->user_id;
+                $message->type = 2 ;
+                $message->msgable_id = $like_id;
+                $message->msgable_type = 'App\Like';
+                $message->create_time  = time();
+                $message->save();
 
-			$message->create_time  = time();
-			$message->save();
-
-			// TODO 开启推送
-			$name = $this->auth->user()->nickname?$this->auth->user()->nickname:'一个神秘的小伙伴';
-			$content = $name.' 鼓励了你';
+                // TODO 开启推送
+                $name = $this->auth->user()->nickname?$this->auth->user()->nickname:'一个神秘的小伙伴';
+                $content = $name.' 鼓励了你';
 //
-			$push = new MyJpush();
-			$push->pushToSingleUser($event->user_id,$content);
+                $push = new MyJpush();
+                $push->pushToSingleUser($event->user_id,$content);
+            }
 
 		}
 

@@ -107,9 +107,11 @@ class UserController extends Controller
         $feedbacks = DB::table('feedback')
             ->select(['feedback.*',
                 'users.user_avatar',
-                'users.email',
+                'users.nickname',
+                'attachs.attach_id',
                 'attachs.attach_name',
                 'attachs.attach_path'])
+            ->where('feedback.is_del',0)
             ->join('users','users.user_id','=','feedback.user_id')
             ->leftJoin('attachs', function ($join) {
                 $join->on('attachs.attachable_id', '=', 'feedback.id')
@@ -120,10 +122,17 @@ class UserController extends Controller
         return Datatables::of($feedbacks)
             ->addColumn('action', function ($feedback) {
                if($feedback->status == 0) {
-                   return '<button data-id="'.$feedback->id.'" data-content="'.$feedback->content.'" class="btn btn-xs btn-primary btn-feedback-deal"><i class="glyphicon glyphicon-edit"></i> 回复</button>';
+                   return '<button data-id="'.$feedback->id.'" data-content="'.$feedback->content.'" class="btn btn-xs btn-primary btn-feedback-deal"><i class="glyphicon glyphicon-edit"></i>处理</button>
+<button data-id="'.$feedback->id.'" class="btn btn-xs btn-danger btn-feedback-del"><i class="glyphicon glyphicon-delete"></i>删除</button>';
                } else {
                    return '';
                }
+            })
+            ->addColumn('attach', function ($feedback) {
+                if($feedback->attach_id) {
+                    return '<img src="http://drip.growu.me/uploads/images/'.$feedback->attach_path.'/'.$feedback->attach_name.'" class="" width="200" height="200">';
+                }
+                return '';
             })
             ->editColumn('status', function ($feedback) {
                switch ($feedback->status) {
@@ -144,9 +153,11 @@ class UserController extends Controller
             ->editColumn('create_time', function ($feedback) {
                 return date("Y-m-d H:i:s",$feedback->create_time);
             })
-//            ->editColumn('device', function ($feedback) {
-//                return unserialize($feedback->device);
-//            })
+            ->editColumn('device', function ($feedback) {
+//                return $feedback->device;
+                  $device = json_decode($feedback->device);
+                  return $device?$device->manufacturer.' '.$device->model:'';
+            })
             ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
             ->make(true);
     }
@@ -213,7 +224,6 @@ class UserController extends Controller
 
 
     }
-
 
     public function add_coin(Request $request) {
         $user_id = $request->input("user_id");
@@ -299,17 +309,20 @@ class UserController extends Controller
         $feedback->save();
 
 //        // 发送奖励
-        $user = User::find($feedback->user_id);
-        $user->energy_count += 10;
-        $user->save();
+        if($reward>0) {
+            $user = User::find($feedback->user_id);
+            $user->energy_count += 10;
+            $user->save();
 
-        $energy = new Energy();
-        $energy->user_id = $feedback->user_id;
-        $energy->change = 10;
-        $energy->obj_type = 'feedback';
-        $energy->obj_id = $feedback->id;
-        $energy->create_time = time();
-        $energy->save();
+            $energy = new Energy();
+            $energy->user_id = $feedback->user_id;
+            $energy->change = 10;
+            $energy->obj_type = 'feedback';
+            $energy->obj_id = $feedback->id;
+            $energy->create_time = time();
+            $energy->save();
+        }
+
 //
         //发送消息
 //        $message = new Message();
@@ -331,6 +344,23 @@ class UserController extends Controller
 
         return ['status'=>true,'message'=>'操作成功'];
     }
+
+    public function delete_feedback(Request $request) {
+        $id = $request->id;
+
+        // 查询反馈信息
+        $feedback = Feedback::find($id);
+
+        if(!$feedback) {
+            return ['status'=>false,'message'=>'反馈记录不存在'];
+        }
+
+        $feedback->is_del = 1;
+        $feedback->delete();
+
+        return ['status'=>true,'message'=>'操作成功'];
+    }
+
 
     /**
      * 处理用户反馈

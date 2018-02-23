@@ -422,7 +422,33 @@ class AuthController extends BaseController
     {
         $myEmail = new MyEmail();
         $myEmail->sendToSingleUser($email, '欢迎来到水滴打卡', 'app_register_template');
+
     }
+
+    /**
+     * 发送注册站内信
+     * @param $email 邮箱地址
+     */
+    private function _send_register_message($user)
+    {
+        $content = 'hi,欢迎来到水滴打卡，
+            希望你能够在接下来的时间里，能够帮助你完成或实现自己的目标和梦想。
+            
+            为了能够
+        ';
+
+//        $message = new Message();
+//        $message->from_user = 0;
+//        $message->to_user = $user_id;
+//        $message->type = 6 ;
+//        $message->title = '会员奖励' ;
+//        $message->content = $content;
+//        $message->msgable_id = $id;
+//        $message->msgable_type = 'user_vip_log';
+//        $message->create_time  = time();
+//        $message->save();
+    }
+
 
     /**
      * 插入设备信息

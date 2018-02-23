@@ -37,6 +37,7 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 	Route::get('admin/user/feedbacks', 'UserController@feedbacks');
 	Route::get('admin/user/ajax_feedbacks', 'UserController@ajax_feedbacks')->name('admin.user.ajax_feedbacks');
 	Route::post('admin/user/deal_feedback', 'UserController@deal_feedback')->name('admin.user.deal_feedback');
+    Route::post('admin/user/delete_feedback', 'UserController@delete_feedback')->name('admin.user.delete_feedback');
     Route::post('admin/user/add_vip', 'UserController@add_vip')->name('admin.user.add_vip');
     Route::post('admin/user/add_coin', 'UserController@add_coin')->name('admin.user.add_coin');
     Route::get('admin/user/events', 'UserController@events');
@@ -82,6 +83,7 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->post('user/password/change', 'App\Http\Controllers\Api\V2\UserController@changePassword');
     $api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
+    $api->get('user/info', 'App\Http\Controllers\Api\V2\UserController@getUserInfo');
     $api->get('user/{id}/goals', 'App\Http\Controllers\Api\V2\GoalController@getUserGoals');
     $api->get('user/{id}/photos', 'App\Http\Controllers\Api\V2\UserController@getPhotos');
     $api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
@@ -127,7 +129,12 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->post('user/bind/qq', 'App\Http\Controllers\Api\V2\UserController@bindQQ');
     $api->post('vip/buy', 'App\Http\Controllers\Api\V2\UserController@buyVip');
     $api->post('upload/image', 'App\Http\Controllers\Api\V2\UploadController@image');
+    $api->get('top/week', 'App\Http\Controllers\Api\V2\TopController@week');
+    $api->get('top/month', 'App\Http\Controllers\Api\V2\TopController@month');
+    $api->get('top/year', 'App\Http\Controllers\Api\V2\TopController@year');
     $api->get('top/all', 'App\Http\Controllers\Api\V2\TopController@all');
+    $api->get('topic/{name}', 'App\Http\Controllers\Api\V2\TopicController@getTopic');
+    $api->get('topic/{name}/events', 'App\Http\Controllers\Api\V2\TopicController@getTopicEvents');
 });
 
 $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {

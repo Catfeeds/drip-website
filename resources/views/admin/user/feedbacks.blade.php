@@ -32,9 +32,12 @@
                             <thead>
                             <tr>
                                 <th>#ID</th>
-                                <th>用户</th>
+                                <th>用户昵称</th>
+                                <th>联系方式</th>
                                 <th>版本号</th>
+                                <th>设备信息</th>
                                 <th>反馈内容</th>
+                                <th>截图</th>
                                 <th>反馈时间</th>
                                 <th>状态</th>
                                 <th data-sortable="false">操作</th>
@@ -60,6 +63,13 @@
                 <div class="modal-body">
                     <form class="form-horizontal" role="form">
                         <input type="hidden" name="id" value="" id="input-id">
+
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label">奖励</label>
+                            <div class="col-sm-10">
+                                <input type="number" name="reward" value="10" id="feedback-reward">
+                            </div>
+                        </div>
 
                         <div class="form-group">
                             <label class="col-sm-2 control-label">处理意见:</label>
@@ -128,11 +138,15 @@
                 iDisplayLength:100,
                 scrollX:true,
                 responsive:true,
+                autoWidth:true,
                 columns: [
                     {data: 'id', name: 'id'},
-                    {data: 'email', name: 'email'},
+                    {data: 'nickname', name: 'nickname'},
+                    {data: 'contact', name: 'contact'},
                     {data: 'version', name: 'version'},
+                    {data: 'device', name: 'device'},
                     {data: 'content', name: 'content'},
+                    {data: 'attach', name: 'attach'},
                     {data: 'create_time', name: 'create_time'},
                     {data: 'status', name: 'status'},
                     {data: 'action', name: 'action'}
@@ -150,6 +164,40 @@
                 $('#input-id').val(id);
                 $('#feedback-blockquote').html($(this).data('content'))
                 $('#feedback-modal').modal('show');
+            });
+
+            $(document).on('click','.btn-feedback-del',function(){
+                var id = $(this).attr('data-id');
+                if(!id) {
+                    // TODO 提示
+                    toastr.error("ID获取失败");
+                    return;
+                }
+
+                $.ajax({
+                    type: "POST",
+                    url: '{!! route('admin.user.delete_feedback') !!}',
+                    data: {
+                        id:id,
+                    },
+                    dataType: "json",
+                    success: function(response){
+                        if(response.status) {
+                            toastr.success("处理成功");
+                            if(table) {
+                                table.clear();
+                                table.draw();
+                            }
+                        } else {
+                            toastr.error(response.mesasge);
+                        }
+                    },
+                    error:function(error) {
+                        toastr.error("请求接口错误");
+                    }
+                });
+
+
             });
 
 
@@ -177,6 +225,7 @@
                     url: '{!! route('admin.user.deal_feedback') !!}',
                     data: {
                         id:$("#input-id").val(),
+                        reward:$('#feedback-reward').val(),
                         content:CKEDITOR.instances['feedback-content'].getData(),
                     },
                     dataType: "json",
@@ -189,7 +238,7 @@
                                table.draw();
                            }
                        } else {
-                           toastr.error(response.mesasge);
+                           toastr.error(response.message);
                        }
                     },
                     error:function(error) {
