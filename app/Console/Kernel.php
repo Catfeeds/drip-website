@@ -18,7 +18,8 @@ class Kernel extends ConsoleKernel
         Commands\GoalRemind2::class,
         Commands\GoalCheck::class,
         Commands\EmailSend::class,  
-        Commands\EventLike::class,  
+        Commands\EventLike::class,
+        Commands\VipCheck::class,
     ];
 
     /**
@@ -36,6 +37,7 @@ class Kernel extends ConsoleKernel
 //        $schedule->command('event:like')->everyMinute();
 //        $schedule->command('email:send')->dailyAt('23:59');
         $schedule->command('goal:check')->dailyAt('00:01');
+        $schedule->command('vip:check')->dailyAt('01:00');
         $schedule->command('goal:remind2')->dailyAt('22:01');
     }
 }
