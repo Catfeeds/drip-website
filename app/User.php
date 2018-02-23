@@ -6,8 +6,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-
-    protected $primaryKey = 'user_id';
+    protected $primaryKey = 'id';
 
     public $timestamps = false;
     /**
@@ -42,6 +41,12 @@ class User extends Authenticatable
     public function events()
     {
         return $this->hasMany('App\Event');
+    }
+
+    // 获取用户关注列表
+    public function follows()
+    {
+        return $this->hasMany('App\Models\UserFollow');
     }
 
     public function checkinsCount()

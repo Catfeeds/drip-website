@@ -20,7 +20,7 @@ class UserTransformer extends TransformerAbstract
     public function transform(User $user) {
 
         $new_user = [];
-        $new_user['id'] = $user->user_id;
+        $new_user['id'] = $user->id;
         $new_user['email'] = $user->email;
         $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;

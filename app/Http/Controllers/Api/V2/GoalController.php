@@ -41,7 +41,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()->all('</br>:message')])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $goal = Goal::find($request->goal_id);
 
@@ -148,7 +148,7 @@ class GoalController extends BaseController
     public function reorder(Request $request)
     {
         $order = $request->order;
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         if (is_array($order) && !empty($order)) {
             foreach ($order as $k => $v) {
@@ -185,7 +185,7 @@ class GoalController extends BaseController
     {
         $goal_id = $request->goal_id;
         $days = $request->days;
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         // 查询是否已经制定
         $user_goal = DB::table('user_goal')
@@ -351,7 +351,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         $user = User::find($user_id);
         $goal_name = Input::get('goal_name');
 
@@ -402,7 +402,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         // 判断是否已经指定了该目标
         $user_goal = Goal::find($request->goal_id)
@@ -441,7 +441,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $goal_id = Input::get('goal_id');
         $year = Input::get('year');
@@ -554,7 +554,7 @@ class GoalController extends BaseController
 
         $goal_id = Input::get('goal_id');
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $items = DB::table('user_goal_item')
             ->where('goal_id', $goal_id)
@@ -585,7 +585,7 @@ class GoalController extends BaseController
         $goal_id = Input::get('goal_id');
         $day = Input::get('day');
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $checkin = Checkin::where('goal_id', '=', $goal_id)->where('user_id', '=', $user_id)->where('checkin_day', '=', $day)->first();
 
@@ -609,7 +609,7 @@ class GoalController extends BaseController
             'goal_id' => 'required',     // 目标id
         ]);
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         $goal_id = Input::get('goal_id');
 
         // DB::connection()->enableQueryLog();
@@ -650,7 +650,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         $goal_id = Input::get('goal_id');
         $remind_time = Input::get('remind_time');
 
@@ -692,7 +692,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         $goal_id = Input::get('goal_id');
 
         // 获取最近几周的打卡情况
@@ -790,7 +790,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         $goal_id = Input::get('goal_id');
 
         // 获取最近几周的打卡情况
@@ -885,7 +885,7 @@ class GoalController extends BaseController
             return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         $goal_id = Input::get('goal_id');
 
         // 获取最近几周的打卡情况

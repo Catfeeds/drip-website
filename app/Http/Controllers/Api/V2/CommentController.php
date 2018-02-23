@@ -30,7 +30,7 @@ class CommentController extends BaseController
     public function like($comment_id)
     {
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $comment = Comment::find($comment_id);
 
@@ -62,7 +62,7 @@ class CommentController extends BaseController
 //            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
 //        }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $comment = Comment::find($comment_id);
 
@@ -97,7 +97,7 @@ class CommentController extends BaseController
         }
 
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $is_like = false;
 
@@ -129,10 +129,10 @@ class CommentController extends BaseController
         $event->comment_count += 1;
         $event->save();
 
-        if ($event->user_id != $this->auth->user()->user_id) {
+        if ($event->user_id != $this->auth->user()->id) {
             //  消息
             $message = new Message();
-            $message->from_user = $this->auth->user()->user_id;
+            $message->from_user = $this->auth->user()->id;
             $message->to_user = $event->user_id;
             $message->type = 3;
             $message->msgable_id = $comment->comment_id;
@@ -142,7 +142,7 @@ class CommentController extends BaseController
             $message->save();
 
             // 推送
-            $name = $this->auth->user()->nickname ? $this->auth->user()->nickname : 'keeper' . $this->auth->user()->user_id;
+            $name = $this->auth->user()->nickname ? $this->auth->user()->nickname : 'keeper' . $this->auth->user()->id;
             $content = $name . ' 评论了你';
 
 //            $push = new MyJpush();

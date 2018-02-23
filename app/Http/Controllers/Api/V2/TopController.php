@@ -45,7 +45,7 @@ class TopController extends BaseController {
 		// 	->orderBy('count','DESC')
 		// 	->take(10)
 		// 	->get();
-		$user_id  = $this->auth->user()->user_id;
+		$user_id  = $this->auth->user()->id;
 
 		$users = User::join("checkin",'checkin.user_id','=','users.user_id')
 				->select('users.*',DB::raw('count(1) as count'))
@@ -82,7 +82,7 @@ class TopController extends BaseController {
 	}
 
     public function week(){
-        $user_id  = $this->auth->user()->user_id;
+        $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
             ->select('users.*',DB::raw('count(1) as count'))
@@ -128,7 +128,7 @@ class TopController extends BaseController {
     }
 
     public function month() {
-        $user_id  = $this->auth->user()->user_id;
+        $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
             ->select('users.*',DB::raw('count(1) as count'))
@@ -174,7 +174,7 @@ class TopController extends BaseController {
     }
 
     public function year(){
-        $user_id  = $this->auth->user()->user_id;
+        $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
             ->select('users.*',DB::raw('count(1) as count'))
@@ -218,7 +218,7 @@ class TopController extends BaseController {
 
 
 	public function all(){
-        $user_id  = $this->auth->user()->user_id;
+        $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
             ->select('users.*',DB::raw('count(1) as count'))

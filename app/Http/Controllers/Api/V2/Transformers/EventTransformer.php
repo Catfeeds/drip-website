@@ -11,6 +11,7 @@ namespace  App\Http\Controllers\Api\V2\Transformers;
 
 use League\Fractal\TransformerAbstract;
 use App\Event;
+use App\User;
 
 use DB;
 use Carbon\Carbon;
@@ -76,12 +77,10 @@ class EventTransformer extends TransformerAbstract
 
         $new_event['checkin'] = $new_checkin;
 
-        $user = DB::table('users')
-            ->where('user_id', $event->user_id)
-            ->first();
+        $user = User::find($event->user_id);
 
         $new_user = [];
-        $new_user['id'] = $user->user_id;
+        $new_user['id'] = $user->id;
         $new_user['nickname'] = $user->nickname;
         $new_user['avatar_url'] = $user->user_avatar;
         $new_user['is_vip'] = $user->is_vip==1?true:false;

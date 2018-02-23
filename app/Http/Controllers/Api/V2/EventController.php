@@ -9,6 +9,7 @@ use Auth;
 use Validator;
 use API;
 use DB;
+use App\Models\UserFollow;
 use Illuminate\Support\Collection;
 
 use Carbon\Carbon;
@@ -53,7 +54,7 @@ class EventController extends BaseController {
 
 		$result = [];
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
 		$event = Event::with('user')->where('event_id',$event_id)->first();
 
@@ -187,7 +188,7 @@ class EventController extends BaseController {
 		$new_user['nickname'] = $user->nickname;
 		$new_user['avatar_url'] = $user->user_avatar;
 
-        $is_follow = DB::table('user_follow')
+        $is_follow = DB::table('user_follows')
             ->where('user_id',$user_id)
             ->where('follow_user_id',$user->user_id)
             ->first();
@@ -219,7 +220,7 @@ class EventController extends BaseController {
 			'per_page'        =>  ''
 		],$messages);
 
-		$user_id = $this->auth->user()->user_id;
+		$user_id = $this->auth->user()->id;
 
 		$page = $request->input('page',1);
 		$per_page = $request->input('per_page',20);
@@ -238,7 +239,7 @@ class EventController extends BaseController {
 			$user['signature'] = $like->user->signature;
 			$user['avatar_url'] = $like->user->user_avatar;
 
-			$is_follow = DB::table('user_follow')
+			$is_follow = DB::table('user_follows')
 				->where('user_id',$user_id)
 				->where('follow_user_id',$like->user->user_id)
 				->first();
@@ -266,7 +267,7 @@ class EventController extends BaseController {
 		$user_id = Input::get('user_id');
 
 		if($user_id) {
-			if($user_id == $this->auth->user()->user_id) {
+			if($user_id == $this->auth->user()->id) {
 				$events = Event::where('user_id',$user_id)->orderBy('create_time','DESC')->skip($offset)
 					->take($limit)->get();
 			} else {
@@ -277,7 +278,7 @@ class EventController extends BaseController {
 			}
 
 		} else {
-			$user_id = $this->auth->user()->user_id;
+			$user_id = $this->auth->user()->id;
 			if($type == 'hot') {
 				$events = Event::where('is_hot','=',1)
 					->where('is_public','=',1)
@@ -344,86 +345,14 @@ class EventController extends BaseController {
 
 		$events = Event::where('is_hot','=',1)
 			->where('is_public','=',1)
-			->orderBy('create_time','DESC')->skip(($page-1)*$per_page)
-			->take($per_page)->get();
+			->orderBy('create_time','DESC')
+            ->skip(($page-1)*$per_page)
+			->take($per_page)
+            ->get();
 
-		$new_events = [];
-
-		foreach ($events as $key => $event) {
-//			$new_events[$key] = $event;
-
-			$new_events[$key]['id'] = $event->event_id;
-			$new_events[$key]['content'] = $event->event_content;
-			$new_events[$key]['like_count'] = $event->like_count;
-
-
-			$new_checkin = [];
-
-			if($event->type == 'USER_CHECKIN') {
-
-				$checkin = DB::table('checkin')
-					->where('checkin_id', $event->event_value)
-					->first();
-
-				$content = $checkin->checkin_content;
-
-				$new_events[$key]['content'] = $content?mb_substr($content,0,20):'';
-
-                $new_checkin['id'] = $checkin->checkin_id;
-                $new_checkin['total_days'] = $checkin->total_days;
-
-//				$new_events[$key]->checkin->items = DB::table('checkin_item')
-//					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
-//					->where('checkin_id', $event->event_value)
-//					->get();
-				$attachs = DB::table('attachs')
-					->where('attachable_id', $event->event_value)
-					->where('attachable_type','checkin')
-					->get();
-
-				$new_attachs = [];
-
-				foreach($attachs as $k=>$attach) {
-					$new_attachs[$k]['id'] = $attach->attach_id;
-					$new_attachs[$k]['name'] = $attach->attach_name;
-					$new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
-				}
-
-
-				$new_events[$key]['attachs'] = $new_attachs;
-
-			}
-
-            $new_events[$key]['checkin'] = $new_checkin;
-
-			$user = DB::table('users')
-				->where('user_id', $event->user_id)
-				->first();
-
-			$new_user = [];
-            $new_user['id'] = $user->user_id;
-            $new_user['nickname'] = $user->nickname;
-            $new_user['avatar_url'] = $user->user_avatar;
-            $new_user['is_vip'] = $user->is_vip==1?true:false;
-			$new_events[$key]['user'] = $new_user;
-
-            $goal = [];
-            $goal['id'] = $event->goal->goal_id;
-            $goal['name'] = $event->goal->goal_name;
-
-            $new_events[$key]['goal'] = $goal;
-            $new_events[$key]['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
-            $new_events[$key]['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
-
-//
-//			$new_events[$key]->goal =DB::table('goal')
-//				->where('goal_id', $event->goal_id)
-//				->first();
-
-		}
-
-		return $new_events;
-
+        return $this->response->collection($events, new EventTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
 	}
 
     public function getFollowEvents(Request $request) {
@@ -431,136 +360,24 @@ class EventController extends BaseController {
         $page = $request->input('page',1);
         $per_page = $request->input('per_page',20);
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         DB::connection()->enableQueryLog();
 
-        $events =DB::table('events')
-            ->join('user_follow','user_follow.follow_user_id','=','events.user_id')
-            ->select('user_follow.follow_user_id','events.*')
-            ->where('user_follow.user_id','=',$user_id)
-            ->where('events.is_public','=',1)
-            ->orderBy('events.create_time','desc')
+        $followings = UserFollow::where('user_id','=',$user_id)->lists('follow_user_id');
+
+        $events = Event::where('is_public','=','1')
+            ->whereIn('user_id',$followings)
+            ->orderBy('created_at','desc')
             ->skip(($page-1)*$per_page)
             ->take($per_page)
             ->get();
 
-//        print_r(DB::getQueryLog());
-//        return $this->response->collection(Collection::make($events), new EventTransformer(),[],function($resource, $fractal){
-//            $fractal->setSerializer(new ArraySerializer());
-//        });
+//                print_r(DB::getQueryLog());
 
-
-        $new_events = [];
-
-        foreach ($events as $key => $event) {
-//			$new_events[$key] = $event;
-
-            $new_events[$key]['id'] = $event->event_id;
-            $new_events[$key]['content'] = $event->content;
-            $new_events[$key]['like_count'] = $event->like_count;
-
-            $new_checkin = [];
-            $new_goal = [];
-
-            if($event->type == 'USER_CHECKIN') {
-
-                $checkin = DB::table('checkin')
-                    ->where('checkin_id', $event->event_value)
-                    ->first();
-                if($checkin) {
-                    $content = $checkin->checkin_content;
-
-                    $new_events[$key]['content'] = $content;
-
-                    $new_checkin['id'] = $checkin->checkin_id;
-                    $new_checkin['total_days'] = $checkin->total_days;
-                } else {
-                    $new_events[$key]['content'] = "";
-                }
-
-
-//				$new_events[$key]->checkin->items = DB::table('checkin_item')
-//					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
-//					->where('checkin_id', $event->event_value)
-//					->get();
-
-
-
-                $attachs = DB::table('attachs')
-                    ->where('attachable_id', $event->event_value)
-                    ->where('attachable_type','checkin')
-                    ->get();
-
-                $new_attachs = [];
-
-                foreach($attachs as $k=>$attach) {
-                    $new_attachs[$k]['id'] = $attach->attach_id;
-                    $new_attachs[$k]['name'] = $attach->attach_name;
-                    $new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
-                }
-
-                $new_events[$key]['attachs'] = $new_attachs;
-
-                $items = DB::table('checkin_item')
-                    ->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
-                    ->where('checkin_id', $event->event_value)
-                    ->get();
-
-                $new_items = [];
-
-                foreach ($items as $k => $item) {
-                    $new_items[$k]['id'] = $item->item_id;
-                    $new_items[$k]['name'] = $item->item_name;
-                    $new_items[$k]['unit'] = $item->item_unit;
-                    $new_items[$k]['type'] = $item->type;
-                    $new_items[$k]['value'] = $item->item_value;
-
-                }
-
-                $new_events[$key]['items'] = $new_items;
-
-            }
-
-            $new_events[$key]['checkin'] = $new_checkin;
-
-            $user = DB::table('users')
-                ->where('user_id', $event->user_id)
-                ->first();
-
-            $new_user = [];
-            $new_user['id'] = $user->user_id;
-            $new_user['nickname'] = $user->nickname;
-            $new_user['avatar_url'] = $user->user_avatar;
-            $new_user['is_vip'] = $user->is_vip==1?true:false;
-
-            $new_events[$key]['user'] = $new_user;
-
-            $goal = Goal::find($event->goal_id);
-
-            if($goal) {
-                $new_goal['id'] = $goal->goal_id;
-                $new_goal['name'] =$goal->goal_name;
-            }
-
-            $new_events[$key]['goal'] = $new_goal;
-            $new_events[$key]['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();
-            $new_events[$key]['updated_at'] = Carbon::parse($event->updated_at)->toDateTimeString();
-//
-            $is_like = Event::find($event->event_id)
-                ->likes()
-                ->where('user_id', '=', $user_id)
-                ->first();
-
-            $new_events[$key]['is_like'] = $is_like ? true : false;
-
-//			$new_events[$key]->goal =DB::table('goal')
-//				->where('goal_id', $event->goal_id)
-//				->first();
-
-        }
-
-        return $new_events;
+        return $this->response->collection($events, new EventTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
 
     }
 
@@ -572,7 +389,7 @@ class EventController extends BaseController {
 
         $user = $this->auth->user();
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
 		// 查询Event是否存在
 	    $event = Event::find($event_id);
@@ -629,7 +446,7 @@ class EventController extends BaseController {
 
 	public function unLike($event_id,Request $request)
 	{
-		$user_id = $this->auth->user()->user_id;
+		$user_id = $this->auth->user()->id;
 
 		// 查询Event是否存在
 		$event = Event::find($event_id);
@@ -680,10 +497,10 @@ class EventController extends BaseController {
 			$event->save();
 			$user->save();
 
-			if( $this->auth->user()->user_id != $event->user_id) {
+			if( $this->auth->user()->id != $event->user_id) {
                 //  消息
                 $message = new Message();
-                $message->from_user = $this->auth->user()->user_id;
+                $message->from_user = $this->auth->user()->id;
                 $message->to_user = $event->user_id;
                 $message->type = 2 ;
                 $message->msgable_id = $like_id;
@@ -768,7 +585,7 @@ class EventController extends BaseController {
 		$content = $request->input('content');
 		$reply_id = $request->input('reply_id');
 
-		$user_id = $this->auth->user()->user_id;
+		$user_id = $this->auth->user()->id;
 
 		// 判断EVENT是否存在
 		$event = Event::find($event_id);
@@ -790,10 +607,10 @@ class EventController extends BaseController {
 		$event->comment_count += 1;
 		$event->save();
 
-		if($event->user_id != $this->auth->user()->user_id) {
+		if($event->user_id != $this->auth->user()->id) {
 			//  消息
 			$message = new Message();
-			$message->from_user = $this->auth->user()->user_id;
+			$message->from_user = $this->auth->user()->id;
 			$message->to_user = $event->user_id;
 			$message->type = 3 ;
 			$message->msgable_id = $comment->comment_id;

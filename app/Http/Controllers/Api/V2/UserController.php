@@ -52,8 +52,8 @@ class UserController extends BaseController
 
             // 查询是否关注
 
-            $user_follow = DB::table('user_follow')
-                ->where('user_id', $this->auth->user()->user_id)
+            $user_follow = DB::table('user_follows')
+                ->where('user_id', $this->auth->user()->id)
                 ->where('follow_user_id', $user_id)
                 ->first();
 
@@ -63,7 +63,7 @@ class UserController extends BaseController
 
             $new_user['is_follow'] = $is_follow;
 
-            $new_user['id'] = $user->user_id;
+            $new_user['id'] = $user->id;
             $new_user['nickname'] = $user->nickname;
             $new_user['signature'] = $user->signature;
             $new_user['fans_count'] = $user->fans_count;
@@ -95,7 +95,7 @@ class UserController extends BaseController
         $user = User::findOrFail($user_id);
 
         $new_user = [];
-        $new_user['id'] = $user->user_id;
+        $new_user['id'] = $user->id;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
         $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
         $new_user['nickname'] = $user->nickname;
@@ -104,7 +104,7 @@ class UserController extends BaseController
         $new_user['follow_count'] = $user->follow_count;
         $new_user['sex'] = $user->sex;
         $new_user['fans_count'] = $user->fans_count;
-        $event_count = Event::where('user_id', $user->user_id)->count();
+        $event_count = Event::where('user_id', $user->id)->count();
         $new_user['event_count'] = $event_count;
 
         return $new_user;
@@ -125,7 +125,7 @@ class UserController extends BaseController
             return API::response()->error(implode(',', $validation->errors()->all()), 500);
         }
 
-        $current_user_id = $this->auth->user()->user_id;
+        $current_user_id = $this->auth->user()->id;
 
         $page = $request->input('page', 1);
         $per_page = $request->input('per_page', 20);
@@ -227,7 +227,7 @@ class UserController extends BaseController
             return API::response()->error($validation->errors()->all('</br>:message'), 500);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $date = $request->input("day");
 
@@ -321,7 +321,7 @@ class UserController extends BaseController
             return API::response()->error($validation->errors()->all('</br>:message'), 500);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $start_date = $request->input("start_date");
         $format_start_date = Carbon::parse($start_date);;
@@ -341,7 +341,7 @@ class UserController extends BaseController
 
     private function _get_goals_by_day($date)
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         return User::find($user_id)
             ->goals()
@@ -365,7 +365,7 @@ class UserController extends BaseController
 //	      return API::response()->array(['status'=>false,'code' => '2001', 'message' => $validation->errors()]);
 //	    }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $goal = User::find($user_id)->goals()
             ->wherePivot('goal_id', '=', $goal_id)
@@ -456,7 +456,7 @@ class UserController extends BaseController
 //            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
 //        }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         // 判断是否已经指定了该目标
         $user_goal = Goal::find($goal_id)
@@ -543,7 +543,7 @@ class UserController extends BaseController
     public function getGoalWeek($goal_id, Request $request)
     {
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $dt = new Carbon();
 
@@ -586,7 +586,7 @@ class UserController extends BaseController
 
         $day = $request->input('day', date('Y-m-d'));
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $event = Event::where('goal_id', $goal_id)
             ->where('user_id', $user_id)
@@ -650,7 +650,7 @@ class UserController extends BaseController
     public function getGoalCalendar($goal_id, Request $request)
     {
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         // 获取所有的打卡日期
 
@@ -675,7 +675,7 @@ class UserController extends BaseController
 //            'per_page' => ''
 //        ], $messages);
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
 //        $goal = User::find($user_id)->goals()
 //            ->wherePivot('goal_id','=',$goal_id)
@@ -835,7 +835,7 @@ class UserController extends BaseController
             return API::response()->error(implode(',', $validation->errors()->all()), 500);
         }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $page = $request->input('page', 1);
         $per_page = $request->input('per_page', 20);
@@ -926,7 +926,7 @@ class UserController extends BaseController
 
     public function getNewMessages()
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $total_count = Message::where('to_user', $user_id)
             ->where('status', '0')
@@ -980,7 +980,7 @@ class UserController extends BaseController
         //   return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
         // }
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $like_count = Message::where('to_user', $user_id)
             ->where('status', 0)
@@ -1018,7 +1018,7 @@ class UserController extends BaseController
     // 个人资料更新
     public function profile()
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $user = User::find($user_id);
         $nickname = Input::get('nickname');
@@ -1060,7 +1060,7 @@ class UserController extends BaseController
         }
 
         $data = [
-            'user_id' => $this->auth->user()->user_id,
+            'user_id' => $this->auth->user()->id,
             'type_id' => $request->input('type'),
             'content' => $request->input('content'),
             'device' =>  json_encode( $request->input('device')),
@@ -1101,7 +1101,7 @@ class UserController extends BaseController
 
         // TODO 判断用户状态
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         // 判断是否为用户自己
         if ($target_id == $user_id) {
@@ -1109,7 +1109,7 @@ class UserController extends BaseController
         }
 
         // 判断是否关注
-        $is_follow = DB::table('user_follow')
+        $is_follow = DB::table('user_follows')
             ->where('user_id', $user_id)
             ->where('follow_user_id', $target_id)
             ->first();
@@ -1118,7 +1118,7 @@ class UserController extends BaseController
             return $this->response->error('请勿重复关注', 500);
         }
 
-        DB::table('user_follow')->insert([
+        DB::table('user_follows')->insert([
             'user_id' => $user_id,
             'follow_user_id' => $target_id,
             'create_time' => time()
@@ -1164,14 +1164,14 @@ class UserController extends BaseController
 
         // TODO 判断用户状态
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         // 判断是否为用户自己
         if ($target_id == $user_id) {
             return $this->response->error('关注对象不能为自己', 500);
         }
 
         // 判断是否关注
-        $is_follow = DB::table('user_follow')
+        $is_follow = DB::table('user_follows')
             ->where('user_id', $user_id)
             ->where('follow_user_id', $target_id)
             ->first();
@@ -1180,7 +1180,7 @@ class UserController extends BaseController
             return $this->response->error('已取消关注', 500);
         }
 
-        DB::table('user_follow')
+        DB::table('user_follows')
             ->where('user_id', $user_id)
             ->where('follow_user_id', $target_id)
             ->delete();
@@ -1214,7 +1214,7 @@ class UserController extends BaseController
         }
 
         $report = new Report();
-        $report->user_id = $this->auth->user()->user_id;
+        $report->user_id = $this->auth->user()->id;
         $report->reason = $request->reason;
         $report->reportable_type = $request->obj_type;
         $report->reportable_id = $request->obj_id;
@@ -1236,8 +1236,8 @@ class UserController extends BaseController
         $per_page = $request->input('per_page', 20);
 
 
-        $users = DB::table('user_follow')
-            ->join('users', 'users.user_id', '=', 'user_follow.user_id')
+        $users = DB::table('user_follows')
+            ->join('users', 'users.id', '=', 'user_follow.user_id')
             ->where('follow_user_id', '=', $user_id)
             ->orderBy('create_time', 'asc')
             ->skip(($page-1)*$per_page)
@@ -1250,14 +1250,14 @@ class UserController extends BaseController
 
 //            $new_user = [];
 
-            $new_users[$k]['id'] = $user->user_id;
+            $new_users[$k]['id'] = $user->id;
             $new_users[$k]['nickname'] =  $user->nickname;
             $new_users[$k]['signature'] =  $user->signature;
             $new_users[$k]['avatar_url'] =  $user->user_avatar;
 
-            $is_follow = DB::table('user_follow')
+            $is_follow = DB::table('user_follows')
                 ->where('user_id',$user_id)
-                ->where('follow_user_id',$user->user_id)
+                ->where('follow_user_id',$user->id)
                 ->first();
 
             // 判断是否关注该用户
@@ -1279,8 +1279,8 @@ class UserController extends BaseController
         $per_page = $request->per_page;
 
 
-        $users = DB::table('user_follow')
-            ->join('users', 'users.user_id', '=', 'user_follow.follow_user_id')
+        $users = DB::table('user_follows')
+            ->join('users', 'users.id', '=', 'user_follow.follow_user_id')
             ->where('user_follow.user_id', '=', $user_id)
             ->orderBy('create_time', 'asc')
             ->skip($page)
@@ -1294,14 +1294,14 @@ class UserController extends BaseController
 
 //            $new_user = [];
 
-            $new_users[$k]['id'] = $user->user_id;
+            $new_users[$k]['id'] = $user->id;
             $new_users[$k]['nickname'] =  $user->nickname;
             $new_users[$k]['signature'] =  $user->signature;
             $new_users[$k]['avatar_url'] =  $user->user_avatar;
 
-            $is_follow = DB::table('user_follow')
+            $is_follow = DB::table('user_follows')
                 ->where('user_id',$user_id)
-                ->where('follow_user_id',$user->user_id)
+                ->where('follow_user_id',$user->id)
                 ->first();
 
             // 判断是否关注该用户
@@ -1365,7 +1365,7 @@ class UserController extends BaseController
 
     public function getFanMessages(Request $request)
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $page = $request->input('page', 1);
         $per_page = $request->input('per_page', 20);
@@ -1396,9 +1396,9 @@ class UserController extends BaseController
 
             $user = User::find($message->from_user);
 
-            $is_follow = DB::table('user_follow')
+            $is_follow = DB::table('user_follows')
                 ->where('user_id', $user_id)
-                ->where('follow_user_id', $user->user_id)
+                ->where('follow_user_id', $user->id)
                 ->first();
 
             // 判断是否关注该用户
@@ -1406,7 +1406,7 @@ class UserController extends BaseController
             $new_user = [];
 
             $new_user['is_follow'] = $is_follow ? true : false;
-            $new_user['id'] = $user->user_id;
+            $new_user['id'] = $user->id;
             $new_user['nickname'] = $user->nickname;
             $new_user['avatar_url'] = $user->user_avatar;
 
@@ -1440,7 +1440,7 @@ class UserController extends BaseController
 
     public function getCommentMessages(Request $request)
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $page = $request->input('page', 1);
         $per_page = $request->input('per_page', 20);
@@ -1474,7 +1474,7 @@ class UserController extends BaseController
 
             $new_user = [];
 
-            $new_user['id'] = $user->user_id;
+            $new_user['id'] = $user->id;
             $new_user['nickname'] = $user->nickname;
             $new_user['avatar_url'] = $user->user_avatar;
 
@@ -1516,7 +1516,7 @@ class UserController extends BaseController
 
     public function getLikeMessages(Request $request)
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $page = $request->input('page', 1);
         $per_page = $request->input('per_page', 20);
@@ -1571,13 +1571,13 @@ class UserController extends BaseController
             $user = User::find($message->from_user);
 
             $new_user = [];
-            $new_user['id'] = $user->user_id;
+            $new_user['id'] = $user->id;
             $new_user['nickname'] = $user->nickname;
             $new_user['avatar_url'] = $user->user_avatar;
 
-            $is_follow = DB::table('user_follow')
+            $is_follow = DB::table('user_follows')
                 ->where('user_id', $user_id)
-                ->where('follow_user_id', $user->user_id)
+                ->where('follow_user_id', $user->id)
                 ->first();
 
             $new_user['is_follow'] = $is_follow ? true : false;
@@ -1592,7 +1592,7 @@ class UserController extends BaseController
 
     public function getNoticeMessages(Request $request)
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $page = $request->input('page', 1);
         $per_page = $request->input('per_page', 20);
@@ -1637,7 +1637,7 @@ class UserController extends BaseController
     public function deleteGoal($goal_id)
     {
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $user_goal = Goal::find($goal_id)
             ->users()
@@ -1687,7 +1687,7 @@ class UserController extends BaseController
 
         $content = $request->input('content');
 
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
 
         $user_goal = User::find($user_id)
             ->goals()
@@ -1911,7 +1911,7 @@ class UserController extends BaseController
 
     public function getCoinLog(Request $request)
     {
-        $user_id = $this->auth->user()->user_id;
+        $user_id = $this->auth->user()->id;
         $page = $request->input('page');
         $per_page = $request->input('per_page');
 
@@ -2085,7 +2085,7 @@ class UserController extends BaseController
         $user = $this->auth->user();
 
         DB::table('users_bind')->insert([
-            'user_id' => $user->user_id,
+            'user_id' => $user->id,
             'openid' => $params['openid'],
             'access_token' => $params['access_token'],
             'expire_in' => $params['expire_in'],
@@ -2164,7 +2164,7 @@ class UserController extends BaseController
         $user = $this->auth->user();
 
         DB::table('users_bind')->insert([
-            'user_id' => $user->user_id,
+            'user_id' => $user->id,
             'openid' => $params['openid'],
             'access_token' => $params['access_token'],
             'expire_in' => $params['expire_in'],
@@ -2236,7 +2236,7 @@ class UserController extends BaseController
         $user = $this->auth->user();
 
         DB::table('users_bind')->insert([
-            'user_id' => $user->user_id,
+            'user_id' => $user->id,
             'openid' => $params['openid'],
             'access_token' => $params['access_token'],
             'expire_in' => $params['expire_in'],
@@ -2337,7 +2337,7 @@ class UserController extends BaseController
         $user->save();
 
         $energy = new Energy();
-        $energy->user_id = $user->user_id;
+        $energy->user_id = $user->id;
         $energy->change = -($num*1000);
         $energy->obj_type = null;
         $energy->obj_id = null;
