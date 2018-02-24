@@ -83,7 +83,7 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->post('user/password/change', 'App\Http\Controllers\Api\V2\UserController@changePassword');
     $api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
-    $api->get('user/info', 'App\Http\Controllers\Api\V2\UserController@getUserInfo');
+        $api->get('user/info', 'App\Http\Controllers\Api\V2\UserController@getUserInfo');
     $api->get('user/{id}/goals', 'App\Http\Controllers\Api\V2\GoalController@getUserGoals');
     $api->get('user/{id}/photos', 'App\Http\Controllers\Api\V2\UserController@getPhotos');
     $api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');

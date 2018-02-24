@@ -21,7 +21,7 @@ class Event extends Model
 
     public function goal()
     {
-        return $this->hasOne('App\Goal','goal_id','goal_id');
+        return $this->belongsTo('App\Goal');
     }
 
     public function items()

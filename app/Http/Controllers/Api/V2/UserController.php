@@ -406,7 +406,7 @@ class UserController extends BaseController
         $result['series_days'] = $goal->pivot->series_days;
         $result['start_date'] = $goal->pivot->start_date;
         $result['end_date'] = $goal->pivot->end_date;
-        $result['status'] = $goal->pivot->status+1;
+        $result['status'] = $goal->pivot->status;
         $result['items'] = $goal->items;
         $result['is_today_checkin'] = $goal->is_today_checkin;
         $result['is_public'] = (boolean)$goal->pivot->is_public;
@@ -1981,7 +1981,7 @@ class UserController extends BaseController
     }
 
 
-        public function getUserInfo(Request $request)
+    public function getUserInfo(Request $request)
     {
         $user = $this->auth->user();
         return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){

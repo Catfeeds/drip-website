@@ -78,10 +78,10 @@ class AuthController extends BaseController
 
         $user = Auth::user();
 
-        $this->_insert_device($user->user_id, $request->input('device'), $request);
+        $this->_insert_device($user->id, $request->input('device'), $request);
 
         $new_user = [];
-        $new_user['id'] = $user->user_id;
+        $new_user['id'] = $user->id;
         $new_user['email'] = $user->email;
         $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
@@ -95,14 +95,14 @@ class AuthController extends BaseController
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
         $new_user['coin'] = $user->energy_count;
-        $event_count = Event::where('user_id', $user->user_id)->count();
+        $event_count = Event::where('user_id', $user->id)->count();
         $new_user['event_count'] = $event_count;
 
         // 获取第三方账号绑定情况
 
         $wechat = DB::table('users_bind')
             ->where('provider', 'wechat')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_wechat = [];
@@ -111,7 +111,7 @@ class AuthController extends BaseController
 
         $qq = DB::table('users_bind')
             ->where('provider', 'qq')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_qq = [];
@@ -120,7 +120,7 @@ class AuthController extends BaseController
 
         $weibo = DB::table('users_bind')
             ->where('provider', 'weibo')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_weibo = [];
@@ -189,7 +189,7 @@ class AuthController extends BaseController
 
             // 插入绑定信息
             DB::table('users_bind')->insert([
-                'user_id' => $user->user_id,
+                'user_id' => $user->id,
                 'openid' => $params['openid'],
                 'access_token' => $params['access_token'],
                 'expire_in' => $params['expire_in'],
@@ -205,7 +205,7 @@ class AuthController extends BaseController
         }
 
         // 插入设备
-        $this->_insert_device($user->user_id, $request->input('device'), $request);
+        $this->_insert_device($user->id, $request->input('device'), $request);
 
         // token
 //		$token = $user['email']?JWTAuth::fromUser($user):'';
@@ -213,7 +213,7 @@ class AuthController extends BaseController
         $token = JWTAuth::fromUser($user);
 
         $new_user = [];
-        $new_user['id'] = $user->user_id;
+        $new_user['id'] = $user->id;
         $new_user['email'] = $user->email;
         $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
@@ -227,14 +227,14 @@ class AuthController extends BaseController
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
         $new_user['coin'] = $user->energy_count;
-        $event_count = Event::where('user_id', $user->user_id)->count();
+        $event_count = Event::where('user_id', $user->id)->count();
         $new_user['event_count'] = $event_count;
 
         // 获取第三方账号绑定情况
 
         $wechat = DB::table('users_bind')
             ->where('provider', 'wechat')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_wechat = [];
@@ -243,7 +243,7 @@ class AuthController extends BaseController
 
         $qq = DB::table('users_bind')
             ->where('provider', 'qq')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_qq = [];
@@ -252,7 +252,7 @@ class AuthController extends BaseController
 
         $weibo = DB::table('users_bind')
             ->where('provider', 'weibo')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_weibo = [];
@@ -296,8 +296,6 @@ class AuthController extends BaseController
             return $this->response->error('未知的登录方式', 500);
         }
 
-//		DB::enableQueryLog();
-
         // 根据验证码和邮箱查找
         $code = DB::table('verify_code')
             ->where('send_type', $login_type)
@@ -307,11 +305,7 @@ class AuthController extends BaseController
             ->orderBy('create_time', 'desc')
             ->first();
 
-//		$laQuery = DB::getQueryLog();
-//
-//		$lcWhatYouWant = $laQuery[0]['query'];
-
-        // 检验验证吗是否有效
+        // 检验验证码是否有效
 
         if ($code) {
             if ($code->status == 1) {
@@ -348,7 +342,7 @@ class AuthController extends BaseController
         $user->reg_ip = $request->ip();
         $user->save();
 
-        $this->_insert_device($user->user_id, $request->input('device'), $request);
+        $this->_insert_device($user->id, $request->input('device'), $request);
 
         $token = JWTAuth::fromUser($user);
 
@@ -372,14 +366,14 @@ class AuthController extends BaseController
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
         $new_user['coin'] = $user->energy_count;
-        $event_count = Event::where('user_id', $user->user_id)->count();
+        $event_count = Event::where('user_id', $user->id)->count();
         $new_user['event_count'] = $event_count;
 
         // 获取第三方账号绑定情况
 
         $wechat = DB::table('users_bind')
             ->where('provider', 'wechat')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_wechat = [];
@@ -388,7 +382,7 @@ class AuthController extends BaseController
 
         $qq = DB::table('users_bind')
             ->where('provider', 'qq')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_qq = [];
@@ -397,7 +391,7 @@ class AuthController extends BaseController
 
         $weibo = DB::table('users_bind')
             ->where('provider', 'weibo')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_weibo = [];
@@ -853,7 +847,7 @@ class AuthController extends BaseController
         $new_password = md5($request->password . $user->salt);
 
         DB::table('users')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->update(['passwd' => $new_password]);
 
         // 修改验证码状态
