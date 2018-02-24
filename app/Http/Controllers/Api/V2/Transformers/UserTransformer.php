@@ -17,6 +17,13 @@ use DB;
 
 class UserTransformer extends TransformerAbstract
 {
+    private $params = [];
+
+    function __construct($params = [])
+    {
+        $this->params = $params;
+    }
+
     public function transform(User $user) {
 
         $new_user = [];
@@ -63,6 +70,11 @@ class UserTransformer extends TransformerAbstract
         $new_weibo = [];
         $new_weibo['nickname'] = $weibo ? $weibo->nickname : null;
         $new_user['weibo'] = $new_weibo;
+
+        if($this->params) {
+            $this->params['user'] = $new_user;
+            return $this->params;
+        }
 
         return $new_user;
     }

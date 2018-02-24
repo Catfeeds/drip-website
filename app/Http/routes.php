@@ -83,7 +83,7 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->post('user/password/change', 'App\Http\Controllers\Api\V2\UserController@changePassword');
     $api->get('user/goals', 'App\Http\Controllers\Api\V2\UserController@getGoals');
-        $api->get('user/info', 'App\Http\Controllers\Api\V2\UserController@getUserInfo');
+    $api->get('user/info', 'App\Http\Controllers\Api\V2\UserController@getUserInfo');
     $api->get('user/{id}/goals', 'App\Http\Controllers\Api\V2\GoalController@getUserGoals');
     $api->get('user/{id}/photos', 'App\Http\Controllers\Api\V2\UserController@getPhotos');
     $api->get('user/goals/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalsCalendar');
@@ -106,9 +106,9 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->get('user/goal/{id}/day', 'App\Http\Controllers\Api\V2\UserController@getGoalDay');
 	$api->get('user/goal/{id}/week', 'App\Http\Controllers\Api\V2\UserController@getGoalWeek');
 	$api->get('user/goal/{id}/calendar', 'App\Http\Controllers\Api\V2\UserController@getGoalCalendar');
-	$api->post('user/goal/{id}/checkin', 'App\Http\Controllers\Api\V2\UserController@checkinGoal');
+	$api->post('user/goal/{id}/checkin', 'App\Http\Controllers\Api\V2\GoalController@checkin');
 	$api->patch('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@updateGoal');
-	$api->delete('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@deleteGoal');
+	$api->delete('user/goal/{id}', 'App\Http\Controllers\Api\V2\GoalController@delete');
 	$api->post('goal/create', 'App\Http\Controllers\Api\V2\GoalController@create');
 	$api->put('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@follow');
 	$api->delete('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@unFollow');

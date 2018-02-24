@@ -19,6 +19,7 @@ use GuzzleHttp\Client;
 
 use App\User;
 use App\Models\Event;
+use App\Models\Message;
 use App\Models\Device as Device;
 use App\Libs\MyEmail as MyEmail;
 
@@ -26,6 +27,7 @@ use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Controllers\Api\V2\Transformers\UserTransformer;
+use League\Fractal\Serializer\ArraySerializer;
 
 
 class AuthController extends BaseController
@@ -80,57 +82,11 @@ class AuthController extends BaseController
 
         $this->_insert_device($user->id, $request->input('device'), $request);
 
-        $new_user = [];
-        $new_user['id'] = $user->id;
-        $new_user['email'] = $user->email;
-        $new_user['phone'] = $user->phone;
-        $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
-        $new_user['vip_begin_date'] = $user->vip_begin_date;
-        $new_user['vip_end_date'] = $user->vip_end_date;
-        $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
-        $new_user['nickname'] = $user->nickname;
-        $new_user['signature'] = $user->signature;
-        $new_user['sex'] = $user->sex;
-        $new_user['avatar_url'] = $user->user_avatar;
-        $new_user['follow_count'] = $user->follow_count;
-        $new_user['fans_count'] = $user->fans_count;
-        $new_user['coin'] = $user->energy_count;
-        $event_count = Event::where('user_id', $user->id)->count();
-        $new_user['event_count'] = $event_count;
+        $token = JWTAuth::fromUser($user);
 
-        // 获取第三方账号绑定情况
-
-        $wechat = DB::table('users_bind')
-            ->where('provider', 'wechat')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_wechat = [];
-        $new_wechat['nickname'] = $wechat ? $wechat->nickname : null;
-        $new_user['wechat'] = $new_wechat;
-
-        $qq = DB::table('users_bind')
-            ->where('provider', 'qq')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_qq = [];
-        $new_qq['nickname'] = $qq ? $qq->nickname : null;
-        $new_user['qq'] = $new_qq;
-
-        $weibo = DB::table('users_bind')
-            ->where('provider', 'weibo')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_weibo = [];
-        $new_weibo['nickname'] = $weibo ? $weibo->nickname : null;
-        $new_user['weibo'] = $new_weibo;
-
-//        $this->response->item($user, new UserTransformer);
-
-        return $this->response->array(array('token' => $token, 'user' => $new_user));
-
+        return $this->response->item($user, new UserTransformer(array('token' => $token)), [], function ($resource, $fractal) {
+            $fractal->setSerializer(new ArraySerializer());
+        });
     }
 
     /**
@@ -207,59 +163,11 @@ class AuthController extends BaseController
         // 插入设备
         $this->_insert_device($user->id, $request->input('device'), $request);
 
-        // token
-//		$token = $user['email']?JWTAuth::fromUser($user):'';
-
         $token = JWTAuth::fromUser($user);
 
-        $new_user = [];
-        $new_user['id'] = $user->id;
-        $new_user['email'] = $user->email;
-        $new_user['phone'] = $user->phone;
-        $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
-        $new_user['vip_begin_date'] = $user->vip_begin_date;
-        $new_user['vip_end_date'] = $user->vip_end_date;
-        $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
-        $new_user['nickname'] = $user->nickname;
-        $new_user['signature'] = $user->signature;
-        $new_user['sex'] = $user->sex;
-        $new_user['avatar_url'] = $user->user_avatar;
-        $new_user['follow_count'] = $user->follow_count;
-        $new_user['fans_count'] = $user->fans_count;
-        $new_user['coin'] = $user->energy_count;
-        $event_count = Event::where('user_id', $user->id)->count();
-        $new_user['event_count'] = $event_count;
-
-        // 获取第三方账号绑定情况
-
-        $wechat = DB::table('users_bind')
-            ->where('provider', 'wechat')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_wechat = [];
-        $new_wechat['nickname'] = $wechat ? $wechat->nickname : null;
-        $new_user['wechat'] = $new_wechat;
-
-        $qq = DB::table('users_bind')
-            ->where('provider', 'qq')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_qq = [];
-        $new_qq['nickname'] = $qq ? $qq->nickname : null;
-        $new_user['qq'] = $new_qq;
-
-        $weibo = DB::table('users_bind')
-            ->where('provider', 'weibo')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_weibo = [];
-        $new_weibo['nickname'] = $weibo ? $weibo->nickname : null;
-        $new_user['weibo'] = $new_weibo;
-
-        return $this->response->array(array('token' => $token, 'user' => $new_user));
+        return $this->response->item($user, new UserTransformer(array('token' => $token)), [], function ($resource, $fractal) {
+            $fractal->setSerializer(new ArraySerializer());
+        });
 
     }
 
@@ -344,63 +252,17 @@ class AuthController extends BaseController
 
         $this->_insert_device($user->id, $request->input('device'), $request);
 
-        $token = JWTAuth::fromUser($user);
-
         // 发送注册邮件
         if ($login_type == 'email') {
-            $this->_send_register_email($request->input('account'));
+            $this->_send_register_email($user);
         }
 
-        $new_user = [];
-        $new_user['id'] = $user->id;
-        $new_user['email'] = $user->email;
-        $new_user['phone'] = $user->phone;
-        $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
-        $new_user['vip_begin_date'] = $user->vip_begin_date;
-        $new_user['vip_end_date'] = $user->vip_end_date;
-        $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
-        $new_user['nickname'] = $user->nickname;
-        $new_user['signature'] = $user->signature;
-        $new_user['avatar_url'] = $user->user_avatar;
-        $new_user['sex'] = $user->sex;
-        $new_user['follow_count'] = $user->follow_count;
-        $new_user['fans_count'] = $user->fans_count;
-        $new_user['coin'] = $user->energy_count;
-        $event_count = Event::where('user_id', $user->id)->count();
-        $new_user['event_count'] = $event_count;
+        $token = JWTAuth::fromUser($user);
 
-        // 获取第三方账号绑定情况
-
-        $wechat = DB::table('users_bind')
-            ->where('provider', 'wechat')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_wechat = [];
-        $new_wechat['nickname'] = $wechat ? $wechat->nickname : null;
-        $new_user['wechat'] = $new_wechat;
-
-        $qq = DB::table('users_bind')
-            ->where('provider', 'qq')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_qq = [];
-        $new_qq['nickname'] = $qq ? $qq->nickname : null;
-        $new_user['qq'] = $new_qq;
-
-        $weibo = DB::table('users_bind')
-            ->where('provider', 'weibo')
-            ->where('user_id', $user->id)
-            ->first();
-
-        $new_weibo = [];
-        $new_weibo['nickname'] = $weibo ? $weibo->nickname : null;
-        $new_user['weibo'] = $new_weibo;
-
-        return $this->response->array(['token' => $token, 'user' => $new_user]);
+        return $this->response->item($user, new UserTransformer(array('token' => $token)), [], function ($resource, $fractal) {
+            $fractal->setSerializer(new ArraySerializer());
+        });
     }
-
 
     public function refreshToken()
     {
@@ -412,10 +274,11 @@ class AuthController extends BaseController
      * 发送注册欢迎邮件
      * @param $email 邮箱地址
      */
-    private function _send_register_email($email)
+    private function _send_register_email($user)
     {
+        $this->_send_register_message($user);
         $myEmail = new MyEmail();
-        $myEmail->sendToSingleUser($email, '欢迎来到水滴打卡', 'app_register_template');
+        $myEmail->sendToSingleUser($user->email, '欢迎来到水滴打卡', 'app_register_template');
 
     }
 
@@ -425,22 +288,37 @@ class AuthController extends BaseController
      */
     private function _send_register_message($user)
     {
-        $content = 'hi,欢迎来到水滴打卡，
-            希望你能够在接下来的时间里，能够帮助你完成或实现自己的目标和梦想。
-            
-            为了能够
-        ';
+        $content = '<strong>Hi:</strong><br />
+<br />
+&nbsp; &nbsp;欢迎来到水滴打卡。<br />
+<br />
+&nbsp; &nbsp;水滴打卡一直致力于成为一款专业和全面的<strong>习惯养成</strong>和<strong>目标管理</strong>工具。<br />
+<br />
+&nbsp; &nbsp;希望在接下来的时间，水滴打卡能陪伴你一同实现你的目标或者梦想。<br />
+<br />
+&nbsp; &nbsp;我们深知还有许多不完善的地方，但我们一直都在积极地改进。<br />
+<br />
+&nbsp; &nbsp;我们更乐意倾听到你的声音和想法，这对我们很重要。<br />
+<br />
+&nbsp; &nbsp;如果你有任何问题，也可以通过下面的方式联系到我们。<br />
+<br />
+&nbsp; 微信公众号：<strong>格吾社区</strong><br />
+&nbsp; 新浪微博：<strong>格吾社区</strong><br />
+&nbsp; 客服微信号：<strong>growu001</strong><br />
+  邮箱：<strong>drip@growu.me</strong><br />
+&nbsp;
+<div style="text-align:right">水滴打卡团队</div>';
 
-//        $message = new Message();
-//        $message->from_user = 0;
-//        $message->to_user = $user_id;
-//        $message->type = 6 ;
-//        $message->title = '会员奖励' ;
-//        $message->content = $content;
-//        $message->msgable_id = $id;
-//        $message->msgable_type = 'user_vip_log';
-//        $message->create_time  = time();
-//        $message->save();
+        $message = new Message();
+        $message->from_user = 0;
+        $message->to_user = $user->id;
+        $message->type = 6 ;
+        $message->title = '欢迎来到水滴打卡' ;
+        $message->content = $content;
+        $message->msgable_id = $user->id;
+        $message->msgable_type = 'welcome';
+        $message->create_time  = time();
+        $message->save();
     }
 
 
@@ -454,32 +332,35 @@ class AuthController extends BaseController
 //    	Log::info('设备信息');
 //    	Log::info($device_info);
         if ($device_info) {
+            // 非移动设备暂不记录
             if (isset($device_info['platform'])) {
                 if ($device_info['platform'] != 'Android' && $device_info['platform'] != 'iOS') {
                     return;
                 }
             }
 
+            // 根据UUID查找设备
             $device = Device::where('uuid', '=', $device_info['uuid'])->first();
 
             if (!$device) {
                 $device = new Device();
-                $device->create_time = time();
             }
 
+            // 更新或新增设备信息
             $device->user_id = $user_id;
             $device->uuid = $device_info['uuid'];
-            $device->device_version = $device_info['version'];
-            $device->device_platform = $device_info['platform'];
-            $device->device_model = $device_info['model'];
-            $device->device_cordova = $device_info['cordova'];
-            $device->push_id = isset($device_info['push_id']) ? $device_info['push_id'] : '';
-
-            // 修改最后登录时间
-            $device->update_time = time();
+            $device->version = $device_info['version'];
+            $device->platform = $device_info['platform'];
+            $device->model = $device_info['model'];
+            $device->cordova = $device_info['cordova'];
+            if (isset($device_info['push_id']) && !empty($device_info['push_id'])) {
+                $device->push_id = $device_info['push_id'];
+            }
             $device->save();
         }
 
+        // 更新用户信息
+        // TODO 此处更新水滴币判断
         $user = User::find($user_id);
         $user->last_login_ip = $request->ip();
         $user->last_login_time = time();
@@ -500,11 +381,11 @@ class AuthController extends BaseController
 
         $device = $request->device;
 
-        if(isset($device['platform'])&&$device['platform'] == 'iOS') {
+        if (isset($device['platform']) && $device['platform'] == 'iOS') {
             $app_id = 1106192747;
         }
 
-        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token=' . $request->access_token . '&oauth_consumer_key='.$app_id.'&openid=' . $request->userid, []);
+        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token=' . $request->access_token . '&oauth_consumer_key=' . $app_id . '&openid=' . $request->userid, []);
 
         if ($res->getStatusCode() != 200) {
             $this->response->error("获取用户信息失败", 500);
@@ -779,7 +660,6 @@ class AuthController extends BaseController
             }
 
 
-
         }
 
         return $this->response->noContent();
@@ -858,22 +738,5 @@ class AuthController extends BaseController
         $this->response->noContent();
     }
 
-    /*
-     * 手机号绑定
-     */
-    public function bindPhone(Request $request)
-    {
 
-
-        $this->response->noContent();
-    }
-
-    /*
-     * 第三方账号解除绑定
-     */
-    public function unbind()
-    {
-
-        $this->response->noContent();
-    }
 }

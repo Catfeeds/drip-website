@@ -37,7 +37,7 @@ class MyJpush
 
             $device = Device::where('user_id',$user_id)
                 ->whereNotNull('push_id')
-                ->orderBy('update_time','desc')
+                ->orderBy('updated_at','desc')
                 ->first();
 
 //            if($devices) {

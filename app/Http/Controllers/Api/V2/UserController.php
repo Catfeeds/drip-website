@@ -20,17 +20,19 @@ use App\Models\Message as Message;
 use App\Goal;
 use App\Models\Attach as Attach;
 use App\Models\Report as Report;
-use App\Models\Topic as Topic;
+use App\Models\Topic;
+use App\Models\UserGoal;
 use App\Models\Event;
 use App\Like;
-use App\Models\Comment as Comment;
-use App\Models\Energy as Energy;
+use App\Models\Comment;
+use App\Models\Energy;
 
 
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Controllers\Api\V2\Transformers\UserTransformer;
+use App\Http\Controllers\Api\V2\Transformers\UserGoalTransformer;
 use League\Fractal\Serializer\ArraySerializer;
 
 
@@ -212,11 +214,10 @@ class UserController extends BaseController
         return $result;
     }
 
-    // 取出登录用户的目标列表
+    // 获取用户的目标列表
     public function getGoals(Request $request)
     {
         $messages = [
-//            'account.required' => '请输入邮箱地址',
         ];
 
         $validation = Validator::make(Input::all(), [
@@ -224,49 +225,31 @@ class UserController extends BaseController
         ], $messages);
 
         if ($validation->fails()) {
-            return API::response()->error($validation->errors()->all('</br>:message'), 500);
+            return API::response()->error(implode(',', $validation->errors()->all()), 500);
         }
 
         $user_id = $this->auth->user()->id;
 
         $date = $request->input("day");
 
-        DB::enableQueryLog();
+//        DB::enableQueryLog();
 
-        $goals = User::find($user_id)
-            ->goals()
-            ->wherePivot('is_del', '=', 0)
+        $user_goals = UserGoal::where('user_id','=',$user_id)
             ->where(function ($query) use ($date) {
                 if($date) {
-                    $query->where('user_goal.start_date','<=',$date)
-                        ->where('user_goal.end_date', '>=', $date)
-                        ->orWhere('user_goal.end_date', '=', NULL);
+                    $query->where('start_date','<=',$date)
+                        ->where('end_date', '>=', $date)
+                        ->orWhere('end_date', '=', NULL);
                 }
             })
-            ->orderBy('user_goal.status', 'asc')
-            ->orderBy('user_goal.order', 'asc')
+            ->orderBy('user_goals.status', 'asc')
+            ->orderBy('user_goals.order', 'asc')
             ->get();
 
-//        $laQuery = DB::getQueryLog();
-
-        $result = array();
-
-        foreach ($goals as $key => $goal) {
-
-            $result[$key]['id'] = $goal->id;
-            $result[$key]['name'] = $goal->pivot->name;
-            $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
-            $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
-            $result[$key]['expect_days'] = ceil((time() - $goal->pivot->start_time) / 86400);
-            $result[$key]['total_days'] = $goal->pivot->total_days;
-            $result[$key]['order'] = $goal->pivot->order;
-            $result[$key]['status'] = $goal->pivot->status;
-
-        }
-
-        return API::response()->array($result)->statusCode(200);
+        return $this->response->collection($user_goals, new UserGoalTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
     }
-
 
     public function getPhotos($user_id,Request $request)
     {
@@ -329,91 +312,29 @@ class UserController extends BaseController
             ->wherePivot('is_del', '=', 0)
             ->wherePivot('start_date', '<=', $date)
             ->where(function ($query) use ($date) {
-                $query->where('user_goal.end_date', '>=', $date)
-                    ->orWhere('user_goal.end_date', '=', NULL);
+                $query->where('user_goals.end_date', '>=', $date)
+                    ->orWhere('user_goals.end_date', '=', NULL);
             })
             ->count();
     }
 
-    public function getGoal($goal_id, Request $request)
+    // 获取单个目标
+    public function getGoal($goal_id,Request $request)
     {
-//    	$validation = Validator::make(Input::all(), [
-//      		'user_id'		=> 	'required',		// 用户id
-//      		'goal_id'		=>	'required',     // 目标id
-//    	]);
-//
-//    	if($validation->fails()){
-//	      return API::response()->array(['status'=>false,'code' => '2001', 'message' => $validation->errors()]);
-//	    }
-
         $user_id = $this->auth->user()->id;
 
-        $goal = User::find($user_id)->goals()
-            ->wherePivot('goal_id', '=', $goal_id)
-            ->wherePivot('is_del', '=', 0)
+        $user_goal = UserGoal::where('user_id','=',$user_id)
+            ->where('goal_id', '=', $goal_id)
             ->first();
 
-        if (empty($goal)) {
+        if (!$user_goal) {
             return $this->response->error("未制定该目标", 500);
         }
 
-        // 检查今天是否打卡
-        $user_checkin = Checkin::where('user_id', '=', $user_id)
-            ->where('goal_id', '=', $goal_id)
-            ->where('checkin_day', '=', date('Y-m-d'))
-            ->first();
+        return $this->response->item($user_goal, new UserGoalTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
 
-        // 如果存在该条打卡记录
-        if ($user_checkin) {
-            $goal->is_today_checkin = true;
-            $goal->pivot->is_today_checkin = true;
-
-        } else {
-            $goal->is_today_checkin = false;
-            $goal->pivot->is_today_checkin = false;
-        }
-
-        // 检查expect_days
-        if ($goal->pivot->expect_days == 0) {
-            $goal->pivot->expect_days = ceil((time() - $goal->pivot->start_time) / 86400);
-        }
-
-        $items = DB::table('user_goal_item')
-            ->where('goal_id', $goal_id)
-            ->where('user_id', $user_id)
-            ->where('is_del', '0')
-            ->get();
-
-        $new_items = array();
-
-        foreach($items as $k=>$item) {
-            $new_items[$k]['id'] = $item->item_id;
-            $new_items[$k]['name'] = $item->item_name;
-            $new_items[$k]['expect'] = $item->item_expect;
-            $new_items[$k]['unit'] = $item->item_unit;
-            $new_items[$k]['type'] = $item->type;
-        }
-
-        $goal->items = $new_items;
-
-        $result = array();
-
-        $result['id'] = $goal_id;
-        $result['name'] = $goal->pivot->name;
-        $result['desc'] = $goal->pivot->desc;
-        $result['expect_days'] = $goal->pivot->expect_days;
-        $result['total_days'] = $goal->pivot->total_days;
-        $result['series_days'] = $goal->pivot->series_days;
-        $result['start_date'] = $goal->pivot->start_date;
-        $result['end_date'] = $goal->pivot->end_date;
-        $result['status'] = $goal->pivot->status;
-        $result['items'] = $goal->items;
-        $result['is_today_checkin'] = $goal->is_today_checkin;
-        $result['is_public'] = (boolean)$goal->pivot->is_public;
-        $result['remind_time'] = $goal->pivot->remind_time;
-
-
-        return $result;
     }
 
     public function updateGoal($goal_id, Request $request)
@@ -482,7 +403,7 @@ class UserController extends BaseController
 
             unset($input['items']);
 
-            DB::table('user_goal')->where('id', '=', $user_goal->pivot->id)
+            DB::table('user_goals')->where('id', '=', $user_goal->pivot->id)
                 ->update($input);
 
             $this->_insert_items($user_id, $user_goal->pivot->goal_id, $request->input('items'));
@@ -495,9 +416,9 @@ class UserController extends BaseController
 
     private function _insert_items($user_id, $goal_id, $items)
     {
+        if(!$items) return;
 
-        // 删除
-        $result = DB::table('user_goal_item')
+        DB::table('user_goal_item')
             ->where('user_id', $user_id)
             ->where('goal_id', $goal_id)
             ->where('is_del', 0)
@@ -1616,253 +1537,6 @@ class UserController extends BaseController
 
 
         return $new_messages;
-    }
-
-
-    public function deleteGoal($goal_id)
-    {
-
-        $user_id = $this->auth->user()->id;
-
-        $user_goal = Goal::find($goal_id)
-            ->users()
-            ->wherePivot('user_id', '=', $user_id)
-            ->wherePivot('is_del', '=', 0)
-            ->first();
-
-        // var_dump($user_goal);
-
-        // 更改user_goal表的is_del字段
-        if ($user_goal) {
-            User::find($user_id)
-                ->goals()
-                ->wherePivot('is_del', '=', 0)
-                ->updateExistingPivot($goal_id, ['is_del' => 1]);
-
-            return $this->response->noContent();
-
-        } else {
-            return $this->response->error("未设定该目标", 500);
-        }
-    }
-
-    public function checkinGoal($goal_id, Request $request)
-    {
-        Log::info("打卡信息");
-        Log::info($request);
-
-        $validation = Validator::make(Input::all(), [
-            'content' => '',    // 备注
-            'is_public' => '',          // 是否公开
-            'day' => 'date',        // 打卡类型
-            'items' => '',          // 项目
-            'attaches' => '',
-        ]);
-
-        if ($validation->fails()) {
-            return $this->response->error(implode(',', $validation->errors()), 500);
-        }
-
-        $isReCheckin = false;
-        $day = $request->input('day', date('Y-m-d'));
-
-        if($day<date('Y-m-d')) {
-            $isReCheckin = true;
-        }
-
-        $content = $request->input('content');
-
-        $user_id = $this->auth->user()->id;
-
-        $user_goal = User::find($user_id)
-            ->goals()
-            ->wherePivot('goal_id', '=', $goal_id)
-            ->wherePivot('is_del', '=', 0)
-            ->first();
-
-        if (empty($user_goal)) {
-            return $this->response->error('未设定该目标', 500);
-        }
-
-        if($user_goal['start_date'] > date('Y-m-d')) {
-            return $this->response->error('目标还未开始', 500);
-        }
-
-        if($user_goal['end_date']) {
-            if($user_goal['end_date'] < date('Y-m-d')) {
-                return $this->response->error('目标已结束', 500);
-            }
-        }
-
-        $series_days = $user_goal->pivot->series_days;
-
-        // 获取当天的打卡记录
-        $user_checkin = Checkin::where('user_id', '=', $user_id)
-            ->where('goal_id', '=', $goal_id)
-            ->where('checkin_day', '=', $day)
-            ->first();
-
-
-        // 如果存在该条打卡记录
-        if ($user_checkin) {
-            return $this->response->error('今日已打卡', 500);
-        }
-
-        $checkin = new Checkin();
-        $checkin->checkin_content = nl2br($content);
-        $checkin->checkin_day = $day;
-        $checkin->obj_id = $goal_id;
-        $checkin->goal_id = $goal_id;
-        $checkin->obj_type = 'GOAL';
-        $checkin->user_id = $user_id;
-        $checkin->is_public = $request->is_public?(int)$request->is_public:$user_goal->pivot->is_public;
-        $checkin->checkin_time = time();
-        $checkin->save();
-
-        // 单次打卡奖励
-        $single_add_coin = 0;
-
-        if(!$isReCheckin) {
-            // TODO 判断当前目标今天是否打卡
-            $single_add_coin = 2;
-        }
-
-        // 连续打卡奖励
-        $series_add_coin = 0;
-
-        if(!$isReCheckin) {
-            if ($series_days>=5&&$series_days<10) {
-                $series_add_coin = 5;
-            } else if ($series_days>=10&&$series_days<20) {
-                $series_add_coin = 10;
-            }else if ($series_days>=20) {
-                $series_add_coin = 20;
-            }
-        }
-
-        // 如果存在该条打卡记录
-        if (date('Y-m-d', $user_goal->pivot->last_checkin_time) == date("Y-m-d", strtotime("-1 day", strtotime($day)))) {
-            $series_days += 1;
-        } else {
-            $series_days = 1;
-        }
-
-        $total_days = $user_goal->pivot->total_days;
-
-        $total_days++;
-
-        $checkin->total_days = $total_days;
-        $checkin->series_days = $series_days;
-
-        $checkin->save();
-
-        // 插入items
-        $items = Input::get('items');
-        if (!empty($items)) {
-            foreach ($items as $item) {
-                DB::table('checkin_item')
-                    ->insert([
-                        'checkin_id' => $checkin->checkin_id,
-                        'item_id' => $item['id'],
-                        'item_value' => $item['value']
-                    ]);
-            }
-        }
-
-        // 更新附件
-        if ($attachs = $request->input('attachs')) {
-            foreach ($attachs as $attach) {
-                $attach = Attach::find($attach['id']);
-                $attach->attachable_id = $checkin->checkin_id;
-                $attach->attachable_type = 'checkin';
-                $attach->save();
-            }
-        }
-
-//            $data = [
-//                'series_days'=>$series_days,
-//                'total_days'=>$total_days,
-//            ];
-
-        $user_goal->pivot->total_days = $total_days;
-        $user_goal->pivot->series_days = $series_days;
-        $user_goal->pivot->last_checkin_time = $day < date('Y-m-d') ? strtotime($day) + 86439 : time();
-        $user_goal->pivot->save();
-        // $user_goal->updateExistingPivot();
-//
-//            User::find($user_id)
-//                ->goals()
-//                ->wherePivot('is_del','=',0)
-//                ->updateExistingPivot($obj_id,$data);
-
-        User::find($user_id)->increment('checkin_count', 1);
-        User::find($user_id)->increment('energy_count', 1);
-
-        if($single_add_coin > 0) {
-            $energy = new Energy();
-            $energy->user_id = $user_id;
-            $energy->change = $single_add_coin;
-            $energy->obj_type = 'checkin';
-            $energy->obj_id = $checkin->checkin_id;
-            $energy->create_time = time();
-            $energy->save();
-        }
-
-        if($series_add_coin > 0) {
-            $energy = new Energy();
-            $energy->user_id = $user_id;
-            $energy->change = $series_add_coin;
-            $energy->obj_type = 'series_checkin';
-            $energy->obj_id = $checkin->checkin_id;
-            $energy->create_time = time();
-            $energy->save();
-        }
-
-        $event = new Event();
-        $event->goal_id = $goal_id;
-        $event->user_id = $user_id;
-        $event->event_value = $checkin->checkin_id;
-        $event->type = 'USER_CHECKIN';
-        $event->is_public = $request->is_public?(int)$request->is_public:$user_goal->pivot->is_public;
-        $event->create_time = time();
-
-        $event->save();
-
-        //更新用户目标表
-        if ($content) {
-            $this->_parse_content($content, $user_id, $event->event_id);
-        }
-        return compact('series_add_coin','single_add_coin');
-//        return response()->json($checkin);
-
-    }
-
-    private function _parse_content($content, $user_id, $event_id)
-    {
-        $topic_pattern = "/\#([^\#|.]+)\#/";
-        preg_match_all($topic_pattern, $content, $topic_array);
-        foreach ($topic_array[0] as $v) {
-            // 查找是否存在
-
-            $name = str_replace('#', '', $v);
-
-            $topic = Topic::where('name', '=', $name)->first();
-
-            if (!$topic) {
-                $topic = new Topic();
-                $topic->name = $name;
-                $topic->create_time = time();
-                $topic->create_user = $user_id;
-                $topic->save();
-            }
-
-            // 插入对应关系
-            DB::table('event_topic')->insert(['topic_id' => $topic->id, 'event_id' => $event_id]);
-
-            $topic->follow_count += 1;
-            $topic->save();
-        }
-
     }
 
     public function changePassword(Request $request)

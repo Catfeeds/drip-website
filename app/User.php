@@ -28,15 +28,9 @@ class User extends Authenticatable
 
     public function goals()
     {
-        return $this->belongsToMany('App\Goal','user_goal')
+        return $this->belongsToMany('App\Goal','user_goals')
                     ->withPivot('start_date','end_date','status','total_days', 'series_days','energy','expect_days','is_del','start_time','last_checkin_time','is_push','is_public','remind_time','order','name','desc');
     }
-
-//
-//    public function goals()
-//    {
-//
-//    }
 
 
     public function checkins()
