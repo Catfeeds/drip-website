@@ -134,7 +134,7 @@
                 order: [[0, "desc"]],
                 type:'POST',
                 columns: [
-                    { data: 'user_id', name: 'user_id' },
+                    { data: 'id', name: 'id' },
                     { data: 'nickname', name: 'nickname' },
                     { data: 'email', name: 'email' },
                     { data: 'reg_time', name: 'reg_time' },

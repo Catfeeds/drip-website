@@ -37,7 +37,7 @@ class UserController extends Controller
     {
         return Datatables::of(User::query())
             ->addColumn('action', function ($user) {
-                return ' <a class="btn btn-xs btn-primary add-coin-btn"  data-toggle="modal" data-target="#add-coin-modal" data-userid="'.$user->user_id.'"><i class="glyphicon glyphicon-add"></i>赠送水滴币</a>';
+                return ' <a class="btn btn-xs btn-primary add-coin-btn"  data-toggle="modal" data-target="#add-coin-modal" data-userid="'.$user->id.'"><i class="glyphicon glyphicon-add"></i>赠送水滴币</a>';
             })
             ->editColumn('reg_time', function ($user) {
                 return $user->reg_time>0?date("Y-m-d H:i:s",$user->reg_time):'';
@@ -438,7 +438,7 @@ class UserController extends Controller
                 'attachs.attach_name',
                 'attachs.attach_path'
             ])
-            ->join('users','users.user_id','=','events.user_id')
+            ->join('users','users.id','=','events.user_id')
             ->join('checkin','checkin.checkin_id','=','events.event_value')
             ->leftJoin('attachs','attachs.attachable_id','=','events.event_value')
             ->where('attachs.attachable_type', '=', 'checkin')

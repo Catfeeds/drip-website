@@ -123,9 +123,9 @@ class EventController extends BaseController {
 
 		foreach($comments as $k=>$comment) {
 
-			$new_comments[$k]['id'] = $comment['comment_id'];
-			$new_comments[$k]['content'] = $comment['content'];
-			$new_comments[$k]['like_count'] = $comment['like_count'];
+            $new_comments[$k]['id'] = $comment['comment_id'];
+            $new_comments[$k]['content'] = $comment['content'];
+            $new_comments[$k]['like_count'] = $comment['like_count'];
 
 			$user = [];
 
@@ -144,7 +144,7 @@ class EventController extends BaseController {
                 $new_reply['content'] = $reply->content;
 
                 $new_user = [];
-                $new_user['id'] = $reply->user->user_id;
+                $new_user['id'] = $reply->user->id;
                 $new_user['nickname'] = $reply->user->nickname;
 
                 $new_reply['user'] = $new_user;
@@ -170,7 +170,7 @@ class EventController extends BaseController {
 
 			$user = [];
 
-			$user['id'] = $like->user->user_id;
+			$user['id'] = $like->user->id;
 			$user['nickname'] = $like->user->nickname;
 			$user['avatar_url'] = $like->user->user_avatar;
 
@@ -179,12 +179,10 @@ class EventController extends BaseController {
 
 		$result['likes'] = $new_likes;
 
-		$user = DB::table('users')
-			->where('user_id', $event->user_id)
-			->first();
+		$user = User::find($event->user_id);
 
 		$new_user = [];
-		$new_user['id'] = $user->user_id;
+		$new_user['id'] = $user->id;
 		$new_user['nickname'] = $user->nickname;
 		$new_user['avatar_url'] = $user->user_avatar;
 
@@ -196,7 +194,6 @@ class EventController extends BaseController {
         $new_user['is_follow'] = $is_follow?true:false;
 
 		$result['user'] = $new_user;
-
 
         $is_like = Event::find($event_id)
             ->likes()
