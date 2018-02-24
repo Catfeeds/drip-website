@@ -10,7 +10,7 @@
 namespace  App\Http\Controllers\Api\V2\Transformers;
 
 use League\Fractal\TransformerAbstract;
-use App\Event;
+use App\Models\Event;
 use App\User;
 
 use DB;

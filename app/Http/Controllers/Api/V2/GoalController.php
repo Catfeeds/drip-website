@@ -11,7 +11,7 @@ use Validator;
 use App\User;
 use App\Goal;
 use App\Checkin;
-use App\Event;
+use App\Models\Event;
 use Carbon\Carbon;
 
 

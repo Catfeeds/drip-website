@@ -15,7 +15,7 @@ use Auth;
 
 use App\User;
 use App\Checkin;
-use App\Event;
+use App\Models\Event;
 use App\Models\Attach as Attach;
 
 use Validator;

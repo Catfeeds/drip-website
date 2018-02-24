@@ -21,7 +21,7 @@ use App\Goal;
 use App\Models\Attach as Attach;
 use App\Models\Report as Report;
 use App\Models\Topic as Topic;
-use App\Event;
+use App\Models\Event;
 use App\Like;
 use App\Models\Comment as Comment;
 use App\Models\Energy as Energy;

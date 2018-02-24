@@ -14,7 +14,7 @@ use Validator;
 use API;
 use DB;
 
-use App\Event;
+use App\Models\Event;
 use App\Checkin;
 use App\User;
 use App\Models\Message as Message;

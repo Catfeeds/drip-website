@@ -18,7 +18,7 @@ use GuzzleHttp\Client;
 
 
 use App\User;
-use App\Event;
+use App\Models\Event;
 use App\Models\Device as Device;
 use App\Libs\MyEmail as MyEmail;
 

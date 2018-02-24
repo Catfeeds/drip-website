@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
 
-use App\Event;
+use App\Models\Event;
 use App\Checkin;
 use App\User;
 use App\Goal;

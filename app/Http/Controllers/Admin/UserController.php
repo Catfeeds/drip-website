@@ -16,7 +16,7 @@ use App\Models\Energy as Energy;
 use App\Libs\MyJpush as MyJpush;
 use App\Libs\MyEmail as MyEmail;
 
-use App\Event;
+use App\Models\Event;
 
 use Yajra\Datatables\Datatables;
 
