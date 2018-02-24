@@ -51,38 +51,37 @@ class GoalCheck extends Command
     {
         $yesterday = date('Y-m-d',strtotime('-1 day'));
 
-        // 更改结束日期为前一天的目标的状态为1
+        // 修改到期目标的状态
         $user_goals = DB::table('user_goal')
             ->where('is_del','=',0)
-            ->where('status','=',0)
-            ->where('expect_days','>',0)
+            ->whereNotNull('end_date')
             ->where('end_date','<=',$yesterday)
             ->get();
 
         foreach($user_goals as $user_goal) {
-            $user_goal->status = 1;
+            $user_goal->status = 2;
             $user_goal->save();
-
-            $goal = Goal::find($user_goal->goal_id);
-
-            // 给用户发送message
-            $message = new Message();
-            $message->from_user = $user_goal->user_id;
-            $message->to_user = $user_goal->user_id;
-            $message->type = 6;
-            $message->msgable_id = $user_goal->goal_id;
-            $message->msgable_type = 'goal_expire';
-            $message->title = '目标到期通知' ;
-            $message->content = '你制定的目标"'+$goal->goal_name+'"已达到结束日期，由系统自动关闭，你可以删除或重新制定该目标~<a href="#/goal/'.$user_goal->goal_id.'">点击查看详情</a>' ;
-            $message->status = 0;
-            $message->create_time = time();
-            $message->update_time = time();
-            $message->save();
-
-            $content = "目标到期通知";
-            $jpush = new MyJpush();
-            $jpush->pushToSingleUser($user_goal->user_id,$content);
         }
+
+//            $goal = Goal::find($user_goal->goal_id);
+
+//            // 给用户发送message
+//            $message = new Message();
+//            $message->from_user = $user_goal->user_id;
+//            $message->to_user = $user_goal->user_id;
+//            $message->type = 6;
+//            $message->msgable_id = $user_goal->goal_id;
+//            $message->msgable_type = 'goal_expire';
+//            $message->title = '目标到期通知' ;
+//            $message->content = '你制定的目标"'+$goal->goal_name+'"已达到结束日期，由系统自动关闭，你可以删除或重新制定该目标~<a href="#/goal/'.$user_goal->goal_id.'">点击查看详情</a>' ;
+//            $message->status = 0;
+//            $message->create_time = time();
+//            $message->update_time = time();
+//            $message->save();
+//
+//            $content = "目标到期通知";
+//            $jpush = new MyJpush();
+//            $jpush->pushToSingleUser($user_goal->user_id,$content);
 
         // 更改开始日期为今天的目标状态为0
         $user_goals = DB::table('user_goal')
@@ -129,7 +128,5 @@ class GoalCheck extends Command
 //            $jpush->pushToSingleUser($user_goal->user_id,$content);
 //        }
 
-
-        echo "Done!";
     }
 }

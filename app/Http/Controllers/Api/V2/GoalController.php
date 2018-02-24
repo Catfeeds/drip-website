@@ -1,7 +1,4 @@
 <?php
-/**
- * 订单控制器
- */
 
 namespace App\Http\Controllers\Api\V2;
 
@@ -74,7 +71,7 @@ class GoalController extends BaseController
     {
 
         if ($request->q) {
-            $goals = Goal::where('goal_name', 'like', '%' . $request->q . '%')
+            $goals = Goal::where('name', 'like', '%' . $request->q . '%')
                 ->orderBy('follow_nums', 'desc')
                 ->take(20)->get();
         } else {
@@ -115,10 +112,8 @@ class GoalController extends BaseController
 
         foreach ($goals as $key => $goal) {
 
-            $result[$key]['id'] = $goal->goal_id;
-            // TODO
-            // $goals[$key]['name'] = $goal->pivot->name;
-            $result[$key]['name'] = $goal->pivot->name?$goal->pivot->name:$goal->goal_name;
+            $result[$key]['id'] = $goal->id;
+            $result[$key]['name'] = $goal->pivot->name;
             $result[$key]['desc'] = $goal->pivot->desc?$goal->pivot->desc:$goal->goal_desc;
             $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
             $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
@@ -250,7 +245,7 @@ class GoalController extends BaseController
         }
 
         $user = $this->auth->user();
-        $user_id = $user->user_id;
+        $user_id = $user->id;
 
         $start_date = $request->input('start_date', date('Y-m-d'));
 
@@ -263,12 +258,12 @@ class GoalController extends BaseController
         $goal_name = $request->input('name');
 
         // 判断目标是否存在
-        $goal = Goal::where('goal_name', '=', $goal_name)->first();
+        $goal = Goal::where('name', '=', $goal_name)->first();
 
         // 若不存在新建
         if (empty($goal)) {
             $goal = new Goal();
-            $goal->goal_name = $goal_name;
+            $goal->name = $goal_name;
             $goal->create_user = $user_id;
             $goal->follow_nums = 1;
             //TODO 删除create_time
@@ -277,7 +272,7 @@ class GoalController extends BaseController
         }
 
         // 判断是否已经指定了该目标
-        $user_goal = Goal::find($goal->goal_id)
+        $user_goal = Goal::find($goal->id)
             ->users()
             ->wherePivot('user_id', '=', $user_id)
             ->wherePivot('is_del', '=', 0)
@@ -297,9 +292,8 @@ class GoalController extends BaseController
                 $expect_days = $start_dt->diffInDays($end_dt);
             }
 
-            $user->goals()->attach($goal->goal_id, [
-                'goal_name' => trim($goal_name),
-                'goal_desc' => trim($request->input('desc')),
+            $user->goals()->attach($goal->ids, [
+                'name' => trim($goal_name),
                 'desc' => trim($request->input('desc')),
                 // TODO 删除create_time
                 'start_time' => time(),
@@ -311,13 +305,13 @@ class GoalController extends BaseController
             ]);
 
             User::find($user_id)->increment('goal_count', 1);
-            Goal::find($goal->goal_id)->increment('follow_nums', 1);
+            Goal::find($goal->id)->increment('follow_nums', 1);
         }
 
 //        $goal = User::find($user_id)->goals()->wherePivot('goal_id', '=', $goal->goal_id)->first();
 
         $new_goal = [];
-        $new_goal['id'] = $goal->goal_id;
+        $new_goal['id'] = $goal->id;
 
         return $new_goal;
     }

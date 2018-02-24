@@ -191,8 +191,8 @@ class UserController extends BaseController
             $result[$key]['user'] = $new_user;
 
             $goal = [];
-            $goal['id'] = $event->goal->goal_id;
-            $goal['name'] = $event->goal->goal_name;
+            $goal['id'] = $event->goal->id;
+            $goal['name'] = $event->goal->name;
 
             $result[$key]['goal'] = $goal;
 
@@ -242,44 +242,25 @@ class UserController extends BaseController
                         ->where('user_goal.end_date', '>=', $date)
                         ->orWhere('user_goal.end_date', '=', NULL);
                 }
-
             })
             ->orderBy('user_goal.status', 'asc')
             ->orderBy('user_goal.order', 'asc')
-
             ->get();
 
-        $laQuery = DB::getQueryLog();
-
-//		$lcWhatYouWant = $laQuery[0]['query'];
-
-//		return $laQuery;
+//        $laQuery = DB::getQueryLog();
 
         $result = array();
 
         foreach ($goals as $key => $goal) {
 
-            $result[$key]['id'] = $goal->goal_id;
-            // TODO
-            // $goals[$key]['name'] = $goal->pivot->name;
-            $result[$key]['name'] = $goal->pivot->name?$goal->pivot->name:$goal->goal_name;
+            $result[$key]['id'] = $goal->id;
+            $result[$key]['name'] = $goal->pivot->name;
             $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
             $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
             $result[$key]['expect_days'] = ceil((time() - $goal->pivot->start_time) / 86400);
             $result[$key]['total_days'] = $goal->pivot->total_days;
             $result[$key]['order'] = $goal->pivot->order;
-
-
-            // TODO 修改status 0未开始 1进行中 2已结束
-//            if($goal->pivot->status==0) {
-//                $result[$key]['status'] = 1;
-//            } else if ($goal->pivot->status==1) {
-//                $result[$key]['status'] = 2;
-//            } else if ($goal->pivot->status== -1) {
-//                $result[$key]['status'] = 0;
-//            }
-
-            $result[$key]['status'] = $goal->pivot->status+1;
+            $result[$key]['status'] = $goal->pivot->status;
 
         }
 
@@ -418,7 +399,7 @@ class UserController extends BaseController
         $result = array();
 
         $result['id'] = $goal_id;
-        $result['name'] = $goal->pivot->name?$goal->pivot->name:$goal->goal_name;
+        $result['name'] = $goal->pivot->name;
         $result['desc'] = $goal->pivot->desc;
         $result['expect_days'] = $goal->pivot->expect_days;
         $result['total_days'] = $goal->pivot->total_days;
@@ -903,8 +884,8 @@ class UserController extends BaseController
             $result[$key]['user'] = $new_user;
 
             $goal = [];
-            $goal['id'] = $event->goal->goal_id;
-            $goal['name'] = $event->goal->goal_name;
+            $goal['id'] = $event->goal->id;
+            $goal['name'] = $event->goal->name;
 
             $result[$key]['goal'] = $goal;
 
@@ -924,6 +905,10 @@ class UserController extends BaseController
         return $result;
     }
 
+    /**
+     * 获取最新的消息
+     * @return array
+     */
     public function getNewMessages()
     {
         $user_id = $this->auth->user()->id;

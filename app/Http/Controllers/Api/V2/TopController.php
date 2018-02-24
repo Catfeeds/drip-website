@@ -120,8 +120,6 @@ class TopController extends BaseController {
 
         $rank = count($rank_users)+1;
 
-        // User::find(8)->checkins;
-
         $week = date('w');
 
         return compact('week','users','count','rank');

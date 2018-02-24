@@ -104,8 +104,8 @@ class EventController extends BaseController {
             $result['attachs'] = $new_attachs;
 
 			$new_goal = [];
-            $new_goal['id'] = $event->goal->goal_id;
-            $new_goal['name'] = $event->goal->goal_name;
+            $new_goal['id'] = $event->goal->id;
+            $new_goal['name'] = $event->goal->name;
 
             $result['goal'] =  $new_goal;
 		}

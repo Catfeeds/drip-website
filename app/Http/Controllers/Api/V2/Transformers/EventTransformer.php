@@ -87,8 +87,8 @@ class EventTransformer extends TransformerAbstract
         $new_event['user'] = $new_user;
 
         $goal = [];
-        $goal['id'] = $event->goal->goal_id;
-        $goal['name'] = $event->goal->goal_name;
+        $goal['id'] = $event->goal->id;
+        $goal['name'] = $event->goal->name;
 
         $new_event['goal'] = $goal;
         $new_event['created_at'] = Carbon::parse($event->created_at)->toDateTimeString();

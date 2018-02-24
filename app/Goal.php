@@ -6,10 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Goal extends Model
 {
-    protected $table = 'goal';
-    protected $primaryKey = 'goal_id';
-    public $timestamps = true;
-
     public function events()
     {
         return $this->hasMany('App\Event');

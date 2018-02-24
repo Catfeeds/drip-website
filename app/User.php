@@ -8,7 +8,6 @@ class User extends Authenticatable
 {
     protected $primaryKey = 'id';
 
-    public $timestamps = false;
     /**
      * The attributes that are mass assignable.
      *
@@ -32,6 +31,13 @@ class User extends Authenticatable
         return $this->belongsToMany('App\Goal','user_goal')
                     ->withPivot('start_date','end_date','status','total_days', 'series_days','energy','expect_days','is_del','start_time','last_checkin_time','is_push','is_public','remind_time','order','name','desc');
     }
+
+//
+//    public function goals()
+//    {
+//
+//    }
+
 
     public function checkins()
     {
