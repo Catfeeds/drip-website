@@ -11,9 +11,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attach extends Model
 {
-    protected $table = 'attachs';
-    protected $primaryKey = 'attach_id';
-    public $timestamps = false;
-
 
 }

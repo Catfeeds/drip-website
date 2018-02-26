@@ -27,12 +27,12 @@ class MallController extends Controller
     public function create(Request $request) {
         $type = $request->type;
         $no = $request->no;
-        $content = $request->content;
+//        $content = $request->content;
 
         $version  = new Version();
         $version->type = $type;
         $version->no = $no;
-        $version->content = nl2br($content);
+//        $version->content = nl2br($content);
         $version->create_time = time();
         $version->save();
 

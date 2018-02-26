@@ -108,9 +108,9 @@ class UserController extends Controller
             ->select(['feedback.*',
                 'users.user_avatar',
                 'users.nickname',
-                'attachs.attach_id',
-                'attachs.attach_name',
-                'attachs.attach_path'])
+                'attachs.id',
+                'attachs.name',
+                'attachs.path'])
             ->where('feedback.is_del',0)
             ->join('users','users.user_id','=','feedback.user_id')
             ->leftJoin('attachs', function ($join) {
@@ -129,8 +129,8 @@ class UserController extends Controller
                }
             })
             ->addColumn('attach', function ($feedback) {
-                if($feedback->attach_id) {
-                    return '<img src="http://drip.growu.me/uploads/images/'.$feedback->attach_path.'/'.$feedback->attach_name.'" class="" width="200" height="200">';
+                if($feedback->id) {
+                    return '<img src="http://drip.growu.me/uploads/images/'.$feedback->path.'/'.$feedback->name.'" class="" width="200" height="200">';
                 }
                 return '';
             })
@@ -434,9 +434,9 @@ class UserController extends Controller
                 'users.email',
                 'users.nickname',
                 'checkin.checkin_content',
-                'attachs.attach_id',
-                'attachs.attach_name',
-                'attachs.attach_path'
+                'attachs.id',
+                'attachs.name',
+                'attachs.path'
             ])
             ->join('users','users.id','=','events.user_id')
             ->join('checkin','checkin.checkin_id','=','events.event_value')
@@ -453,8 +453,8 @@ class UserController extends Controller
                 return '<button data-id="'.$event->event_id.'" class="btn btn-xs btn-primary btn-event-hot"><i class="glyphicon glyphicon-edit"></i>设为精选</button>';
             })
             ->addColumn('attach', function ($event) {
-                if($event->attach_id) {
-                    return '<img src="http://drip.growu.me/uploads/images/'.$event->attach_path.'/'.$event->attach_name.'" class="" width="200" height="200">';
+                if($event->id) {
+                    return '<img src="http://drip.growu.me/uploads/images/'.$event->path.'/'.$event->name.'" class="" width="200" height="200">';
                }
                 return '无';
             })

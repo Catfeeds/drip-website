@@ -67,9 +67,9 @@ class EventTransformer extends TransformerAbstract
             $new_attachs = [];
 
             foreach ($attachs as $k => $attach) {
-                $new_attachs[$k]['id'] = $attach->attach_id;
-                $new_attachs[$k]['name'] = $attach->attach_name;
-                $new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/" . $attach->attach_path . '/' . $attach->attach_name;
+                $new_attachs[$k]['id'] = $attach->id;
+                $new_attachs[$k]['name'] = $attach->name;
+                $new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/" . $attach->path . '/' . $attach->name;
             }
 
             $new_event['attachs'] = $new_attachs;

@@ -62,13 +62,12 @@ class UploadController extends BaseController
                 $file->move($destinationPath, $fileName);
 
                 $attach = new Attach();
-                $attach->attach_name = $fileName;
-                $attach->attach_type = $mineType;
-                $attach->attach_size = $size;
-                $attach->attach_hash = $hash;
-                $attach->attach_extension = $extension;
-                $attach->attach_path = date('Y-m-d');
-                $attach->create_time = time();
+                $attach->name = $fileName;
+                $attach->mine_type = $mineType;
+                $attach->size = $size;
+                $attach->hash = $hash;
+                $attach->extension = $extension;
+                $attach->path = date('Y-m-d');
                 $attach->create_user = $this->auth->user()->id;
 
                 $attach->save();
@@ -87,9 +86,9 @@ class UploadController extends BaseController
                     return $this->response->error('图片类型不合法',500);
                 }
 
-//                $data = ['url'=> url('/'.$destinationPath).'/'.$fileName,'id'=>$attach->attach_id];
+//                $data = ['url'=> url('/'.$destinationPath).'/'.$fileName,'id'=>$attach->id];
 
-                $data = ['url'=> 'http://file.growu.me/'.$ret['key'],'id'=>$attach->attach_id];
+                $data = ['url'=> 'http://file.growu.me/'.$ret['key'],'id'=>$attach->id];
 
                 return $data;
 

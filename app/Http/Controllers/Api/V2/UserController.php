@@ -49,7 +49,6 @@ class UserController extends BaseController
 
         if ($user) {
 
-
             $is_follow = false;
 
             // 查询是否关注
@@ -168,9 +167,9 @@ class UserController extends BaseController
                 $new_attachs = [];
 
                 foreach($attachs as $k=>$attach) {
-                    $new_attachs[$k]['id'] = $attach->attach_id;
-                    $new_attachs[$k]['name'] = $attach->attach_name;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+                    $new_attachs[$k]['id'] = $attach->id;
+                    $new_attachs[$k]['name'] = $attach->name;
+                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->path.'/'.$attach->name;
                 }
 
                 $result[$key]['attachs'] = $new_attachs;
@@ -262,8 +261,8 @@ class UserController extends BaseController
         $new_attachs = [];
 
         foreach($attachs as $k=>$attach) {
-            $new_attachs[$k]['id'] = $attach->attach_id;
-            $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/'.$attach->attach_path.'/'.$attach->attach_name;
+            $new_attachs[$k]['id'] = $attach->id;
+            $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/'.$attach->path.'/'.$attach->name;
         }
 
         return $new_attachs;
@@ -529,10 +528,10 @@ class UserController extends BaseController
                 $new_attachs = [];
 
                 foreach ($attachs as $k => $attach) {
-                    $new_attachs[$k]['id'] = $attach->attach_id;
-                    $new_attachs[$k]['name'] = $attach->attach_name;
-                    $new_attachs[$k]['path'] = $attach->attach_path;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/" . $attach->attach_path . '/' . $attach->attach_name;
+                    $new_attachs[$k]['id'] = $attach->id;
+                    $new_attachs[$k]['name'] = $attach->name;
+                    $new_attachs[$k]['path'] = $attach->path;
+                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/" . $attach->path . '/' . $attach->name;
 
                 }
 
@@ -779,9 +778,9 @@ class UserController extends BaseController
                 $new_attachs = [];
 
                 foreach($attachs as $k=>$attach) {
-                    $new_attachs[$k]['id'] = $attach->attach_id;
-                    $new_attachs[$k]['name'] = $attach->attach_name;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->attach_path.'/'.$attach->attach_name;
+                    $new_attachs[$k]['id'] = $attach->id;
+                    $new_attachs[$k]['name'] = $attach->name;
+                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->path.'/'.$attach->name;
                 }
 
                 $result[$key]['attachs'] = $new_attachs;
