@@ -82,7 +82,7 @@ class EventTransformer extends TransformerAbstract
         $new_user = [];
         $new_user['id'] = $user->id;
         $new_user['nickname'] = $user->nickname;
-        $new_user['avatar_url'] = $user->user_avatar;
+        $new_user['avatar_url'] = $user->avatar_url;
         $new_user['is_vip'] = $user->is_vip==1?true:false;
         $new_event['user'] = $new_user;
 

@@ -33,10 +33,10 @@ class UserTransformer extends TransformerAbstract
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
         $new_user['vip_begin_date'] = $user->vip_begin_date;
         $new_user['vip_end_date'] = $user->vip_end_date;
-        $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
+        $new_user['created_at'] =$user->created_at;
         $new_user['nickname'] = $user->nickname;
         $new_user['signature'] = $user->signature;
-        $new_user['avatar_url'] = $user->user_avatar;
+        $new_user['avatar_url'] = $user->avatar_url;
         $new_user['sex'] = $user->sex;
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;

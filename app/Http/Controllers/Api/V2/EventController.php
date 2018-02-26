@@ -131,7 +131,7 @@ class EventController extends BaseController {
 
 			$user['id'] = $comment->user->user_id;
 			$user['nickname'] = $comment->user->nickname;
-			$user['avatar_url'] = $comment->user->user_avatar;
+			$user['avatar_url'] = $comment->user->avatar_url;
 
 			$new_comments[$k]['user'] = $user;
 
@@ -172,7 +172,7 @@ class EventController extends BaseController {
 
 			$user['id'] = $like->user->id;
 			$user['nickname'] = $like->user->nickname;
-			$user['avatar_url'] = $like->user->user_avatar;
+			$user['avatar_url'] = $like->user->avatar_url;
 
 			$new_likes[$k]['user'] = $user;
 		}
@@ -184,7 +184,7 @@ class EventController extends BaseController {
 		$new_user = [];
 		$new_user['id'] = $user->id;
 		$new_user['nickname'] = $user->nickname;
-		$new_user['avatar_url'] = $user->user_avatar;
+		$new_user['avatar_url'] = $user->avatar_url;
 
         $is_follow = DB::table('user_follows')
             ->where('user_id',$user_id)
@@ -234,7 +234,7 @@ class EventController extends BaseController {
 			$user['id'] = $like->user->user_id;
 			$user['nickname'] = $like->user->nickname;
 			$user['signature'] = $like->user->signature;
-			$user['avatar_url'] = $like->user->user_avatar;
+			$user['avatar_url'] = $like->user->avatar_url;
 
 			$is_follow = DB::table('user_follows')
 				->where('user_id',$user_id)
@@ -639,7 +639,7 @@ class EventController extends BaseController {
 
         $user['id'] = $comment->user->user_id;
         $user['nickname'] = $comment->user->nickname;
-        $user['avatar_url'] = $comment->user->user_avatar;
+        $user['avatar_url'] = $comment->user->avatar_url;
 
         $new_comment['user'] = $user;
 

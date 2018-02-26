@@ -36,7 +36,7 @@ class EventServiceProvider extends ServiceProvider
             $user = JWTAuth::parseToken()->toUser();
 
             // 判断是否是今日首次登录
-            if(date('Y-m-d',$user->last_login_time)<date('Y-m-d')) {
+            if(date('Y-m-d',strtotime($user->last_login_at))<date('Y-m-d')) {
                 // 发送首次登录奖励
                 $energy = new Energy();
                 $energy->user_id = $user->user_id;
@@ -49,7 +49,7 @@ class EventServiceProvider extends ServiceProvider
                 $user->increment('energy_count',10);
             }
 
-            $user->last_login_time = time();
+            $user->last_login_at = date('Y-m-d H:i:s');
             $user->save();
 
         });

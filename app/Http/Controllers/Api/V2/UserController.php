@@ -70,7 +70,7 @@ class UserController extends BaseController
             $new_user['signature'] = $user->signature;
             $new_user['fans_count'] = $user->fans_count;
             $new_user['follow_count'] = $user->follow_count;
-            $new_user['avatar_url'] = $user->user_avatar;
+            $new_user['avatar_url'] = $user->avatar_url;
             $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
 
         }
@@ -99,10 +99,10 @@ class UserController extends BaseController
         $new_user = [];
         $new_user['id'] = $user->id;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
-        $new_user['created_at'] = date('Y-m-d H:i:s', $user->reg_time);
+        $new_user['created_at'] = $user->created_at;
         $new_user['nickname'] = $user->nickname;
         $new_user['signature'] = $user->signature;
-        $new_user['avatar_url'] = $user->user_avatar;
+        $new_user['avatar_url'] = $user->avatar_url;
         $new_user['follow_count'] = $user->follow_count;
         $new_user['sex'] = $user->sex;
         $new_user['fans_count'] = $user->fans_count;
@@ -188,7 +188,7 @@ class UserController extends BaseController
             $new_user = [];
             $new_user['id'] = $event->user->user_id;
             $new_user['nickname'] = $event->user->nickname;
-            $new_user['avatar_url'] = $event->user->user_avatar;
+            $new_user['avatar_url'] = $event->user->avatar_url;
 
             $result[$key]['user'] = $new_user;
 
@@ -799,7 +799,7 @@ class UserController extends BaseController
             $new_user = [];
             $new_user['id'] = $event->user->user_id;
             $new_user['nickname'] = $event->user->nickname;
-            $new_user['avatar_url'] = $event->user->user_avatar;
+            $new_user['avatar_url'] = $event->user->avatar_url;
             $new_user['is_vip'] = $event->user->is_vip==1?true:false;
 
             $result[$key]['user'] = $new_user;
@@ -929,11 +929,11 @@ class UserController extends BaseController
         $user = User::find($user_id);
         $nickname = Input::get('nickname');
         $signature = Input::get('signature');
-        $user_avatar = Input::get('user_avatar');
+        $avatar_url = Input::get('avatar_url');
 
         $user->nickname = $nickname;
         $user->signature = $signature;
-        $user->user_avatar = $user_avatar;
+        $user->avatar_url = $avatar_url;
         $user->save();
 
         return API::response()->array(['status' => true, 'message' => '', 'data' => ''])->statusCode(200);
@@ -1159,7 +1159,7 @@ class UserController extends BaseController
             $new_users[$k]['id'] = $user->id;
             $new_users[$k]['nickname'] =  $user->nickname;
             $new_users[$k]['signature'] =  $user->signature;
-            $new_users[$k]['avatar_url'] =  $user->user_avatar;
+            $new_users[$k]['avatar_url'] =  $user->avatar_url;
 
             $is_follow = DB::table('user_follows')
                 ->where('user_id',$user_id)
@@ -1203,7 +1203,7 @@ class UserController extends BaseController
             $new_users[$k]['id'] = $user->id;
             $new_users[$k]['nickname'] =  $user->nickname;
             $new_users[$k]['signature'] =  $user->signature;
-            $new_users[$k]['avatar_url'] =  $user->user_avatar;
+            $new_users[$k]['avatar_url'] =  $user->avatar_url;
 
             $is_follow = DB::table('user_follows')
                 ->where('user_id',$user_id)
@@ -1314,7 +1314,7 @@ class UserController extends BaseController
             $new_user['is_follow'] = $is_follow ? true : false;
             $new_user['id'] = $user->id;
             $new_user['nickname'] = $user->nickname;
-            $new_user['avatar_url'] = $user->user_avatar;
+            $new_user['avatar_url'] = $user->avatar_url;
 
             $new_messages[$k]['user'] = $new_user;
 
@@ -1382,7 +1382,7 @@ class UserController extends BaseController
 
             $new_user['id'] = $user->id;
             $new_user['nickname'] = $user->nickname;
-            $new_user['avatar_url'] = $user->user_avatar;
+            $new_user['avatar_url'] = $user->avatar_url;
 
             $new_messages[$k]['user'] = $new_user;
 
@@ -1479,7 +1479,7 @@ class UserController extends BaseController
             $new_user = [];
             $new_user['id'] = $user->id;
             $new_user['nickname'] = $user->nickname;
-            $new_user['avatar_url'] = $user->user_avatar;
+            $new_user['avatar_url'] = $user->avatar_url;
 
             $is_follow = DB::table('user_follows')
                 ->where('user_id', $user_id)

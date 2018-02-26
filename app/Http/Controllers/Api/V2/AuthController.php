@@ -133,12 +133,11 @@ class AuthController extends BaseController
         } else {
             // 创建临时用户
             $user = new User();
-            $user->user_avatar = $params['avatar'];
+            $user->avatar_url = $params['avatar'];
             $user->province = $params['province'];
             $user->nickname = $params['nickname'];
             $user->sex = $params['sex'];
             $user->city = $params['city'];
-            $user->reg_time = time();
             $user->reg_ip = $request->ip();
 
             $user->save();
@@ -246,7 +245,6 @@ class AuthController extends BaseController
             $user->phone = $request->input('account');
         }
         $user->salt = $salt;
-        $user->reg_time = time();
         $user->reg_ip = $request->ip();
         $user->save();
 
@@ -363,7 +361,7 @@ class AuthController extends BaseController
         // TODO 此处更新水滴币判断
         $user = User::find($user_id);
         $user->last_login_ip = $request->ip();
-        $user->last_login_time = time();
+        $user->last_login_at = date('Y-m-d H:i:s');
         $user->save();
 
     }

@@ -46,7 +46,8 @@ class UserGoalTransformer extends TransformerAbstract
         $result['is_checkin'] = date('Y-m-d',strtotime($user_goal->last_checkin_at)) >= date('Y-m-d') ? true : false;
         $result['is_today_checkin'] = date('Y-m-d',strtotime($user_goal->last_checkin_at)) >= date('Y-m-d') ? true : false;
         $result['remind_time'] = $user_goal->remind_time ? substr($user_goal->remind_time, 0, 5) : null;
-        $result['expect_days'] = ceil((time() -strtotime($user_goal->created_at)) / 86400);
+        $result['expect_days'] =  $user_goal->expect_days>0?$user_goal->expect_days:ceil((time() -strtotime($user_goal->start_date)) / 86400);
+        //        $result['expect_days'] = ceil((time() -strtotime($user_goal->created_at)) / 86400)+1;
         $result['total_days'] = $user_goal->total_days;
         $result['series_days'] = $user_goal->series_days;
         $result['start_date'] = $user_goal->start_date;
