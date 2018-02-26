@@ -11,6 +11,8 @@ namespace  App\Http\Controllers\Api\V2\Transformers;
 
 use League\Fractal\TransformerAbstract;
 use App\Models\Event;
+use App\Models\Attach;
+use App\Checkin;
 use App\User;
 
 use DB;
@@ -30,9 +32,11 @@ class EventTransformer extends TransformerAbstract
 
         if ($event->type == 'USER_CHECKIN') {
 
-            $checkin = DB::table('checkin')
-                ->where('checkin_id', $event->event_value)
-                ->first();
+            $checkin = Checkin::find($event->event_value);
+
+//            $checkin = DB::table('checkin')
+//                ->where('checkin_id',$event->event_value)
+//                ->first();
 
             $content = $checkin->checkin_content;
 
@@ -54,19 +58,18 @@ class EventTransformer extends TransformerAbstract
                 $new_items[$k]['unit'] = $item->item_unit;
                 $new_items[$k]['type'] = $item->item_type;
                 $new_items[$k]['value'] = $item->item_value;
-
             }
 
             $new_event['items'] = $new_items;
 
-            $attachs = DB::table('attachs')
-                ->where('attachable_id', $event->event_value)
-                ->where('attachable_type', 'checkin')
-                ->get();
+//            $attachs = DB::table('attachs')
+//                ->where('attachable_id', $event->event_value)
+//                ->where('attachable_type', 'checkin')
+//                ->get();
 
             $new_attachs = [];
 
-            foreach ($attachs as $k => $attach) {
+            foreach ($checkin->attaches as $k => $attach) {
                 $new_attachs[$k]['id'] = $attach->id;
                 $new_attachs[$k]['name'] = $attach->name;
                 $new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/" . $attach->path . '/' . $attach->name;

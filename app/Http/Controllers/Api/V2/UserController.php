@@ -144,9 +144,7 @@ class UserController extends BaseController
             $new_checkin = [];
 
             if ($event['type'] == 'USER_CHECKIN') {
-                $checkin = DB::table('checkin')
-                    ->where('checkin_id', $event->event_value)
-                    ->first();
+                $checkin = Checkin::find($event->event_value);
 
                 if($checkin) {
                     $result[$key]['content'] = $checkin->checkin_content;
@@ -159,14 +157,9 @@ class UserController extends BaseController
                     ->where('checkin_id', $event->event_value)
                     ->get();
 
-                $attachs = DB::table('attachs')
-                    ->where('attachable_id', $event->event_value)
-                    ->where('attachable_type','checkin')
-                    ->get();
-
                 $new_attachs = [];
 
-                foreach($attachs as $k=>$attach) {
+                foreach($checkin->attaches as $k=>$attach) {
                     $new_attachs[$k]['id'] = $attach->id;
                     $new_attachs[$k]['name'] = $attach->name;
                     $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->path.'/'.$attach->name;
@@ -252,15 +245,16 @@ class UserController extends BaseController
 
     public function getPhotos($user_id,Request $request)
     {
-        $attachs = DB::table('attachs')
-            ->join('checkin', 'checkin.checkin_id','=','attachs.attachable_id')
-            ->where('checkin.user_id','=',$user_id)
-            ->where('attachs.attachable_type','=',"checkin")
+
+        $attaches = User::find($user_id)
+            ->attaches()
+            ->where('attachable_id','>',0)
+            ->orderBy('created_at','desc')
             ->get();
 
         $new_attachs = [];
 
-        foreach($attachs as $k=>$attach) {
+        foreach($attaches as $k=>$attach) {
             $new_attachs[$k]['id'] = $attach->id;
             $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/'.$attach->path.'/'.$attach->name;
         }
@@ -520,14 +514,11 @@ class UserController extends BaseController
                     ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
                     ->where('checkin_id', $event->event_value)
                     ->get();
-                $attachs = DB::table('attachs')
-                    ->where('attachable_id', $event->event_value)
-                    ->where('attachable_type', 'checkin')
-                    ->get();
+
 
                 $new_attachs = [];
 
-                foreach ($attachs as $k => $attach) {
+                foreach ($checkin->attaches as $k => $attach) {
                     $new_attachs[$k]['id'] = $attach->id;
                     $new_attachs[$k]['name'] = $attach->name;
                     $new_attachs[$k]['path'] = $attach->path;
@@ -770,14 +761,9 @@ class UserController extends BaseController
                     ->where('checkin_id', $event->event_value)
                     ->get();
 
-                $attachs = DB::table('attachs')
-                    ->where('attachable_id', $event->event_value)
-                    ->where('attachable_type','checkin')
-                    ->get();
-
                 $new_attachs = [];
 
-                foreach($attachs as $k=>$attach) {
+                foreach($checkin->attaches as $k=>$attach) {
                     $new_attachs[$k]['id'] = $attach->id;
                     $new_attachs[$k]['name'] = $attach->name;
                     $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->path.'/'.$attach->name;

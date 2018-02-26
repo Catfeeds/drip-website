@@ -38,20 +38,6 @@ class EventController extends BaseController {
 	 */
 	public function getEventDetail($event_id,Request $request)
 	{
-//		$messages = [
-//			'required' => '缺少参数 :attribute',
-//		];
-//
-//		$validation = Validator::make(Input::all(), [
-//			'event_id'		=> 	'required',		// 动态id
-//		],$messages);
-//
-//		if($validation->fails()){
-//			return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-//		}
-
-//		$event_id = Input::get('event_id');
-
 		$result = [];
 
         $user_id = $this->auth->user()->id;
@@ -87,15 +73,9 @@ class EventController extends BaseController {
 //				->where('checkin_id', $event->event_value)
 //				->get();
 
-			// 获取附件
-			$attachs = DB::table('attachs')
-				->where('attachable_id', $event->event_value)
-				->where('attachable_type','checkin')
-				->get();
-
 			$new_attachs = [];
 
-			foreach($attachs as $k=>$attach) {
+			foreach($checkin->attaches as $k=>$attach) {
 				$new_attachs[$k]['id'] = $attach->id;
 				$new_attachs[$k]['name'] = $attach->name;
 				$new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->path.'/'.$attach->name;
@@ -252,88 +232,6 @@ class EventController extends BaseController {
 		return $new_likes;
 
 	}
-	/**
-	 * 获取动态
-	 */
-	public function all()
-	{
-		$offset = Input::get('offset')?Input::get('offset'):0;
-		$limit = Input::get('limit')?Input::get('limit'):20;
-		$type = Input::get('type')?Input::get('type'):'new';
-
-		$user_id = Input::get('user_id');
-
-		if($user_id) {
-			if($user_id == $this->auth->user()->id) {
-				$events = Event::where('user_id',$user_id)->orderBy('create_time','DESC')->skip($offset)
-					->take($limit)->get();
-			} else {
-				$events = Event::where('user_id',$user_id)
-					->where('is_public','=',1)
-					->orderBy('create_time','DESC')->skip($offset)
-					->take($limit)->get();
-			}
-
-		} else {
-			$user_id = $this->auth->user()->id;
-			if($type == 'hot') {
-				$events = Event::where('is_hot','=',1)
-					->where('is_public','=',1)
-					->orderBy('create_time','DESC')->skip($offset)
-					->take($limit)->get();
-			} else if($type == 'follow') {
-				$events =DB::table('events')
-					->join('user_follow','user_follow.follow_user_id','=','events.user_id')
-					->select('user_follow.follow_user_id','events.*')
-					->where('user_follow.user_id','=',$user_id)
-					->where('events.is_public','=',1)
-					->orderBy('events.create_time','desc')
-					->skip($offset)
-					->take($limit)
-					->get();
-			} else {
-				$events =
-					Event::where('is_public','=',1)
-					->orderBy('create_time','DESC')->skip($offset)
-					->take($limit)->get();
-			}
-
-		}
-
-		$new_events = [];
-
-		foreach ($events as $key => $event) {
-			$new_events[$key] = $event;
-
-			if($event->type == 'USER_CHECKIN') {
-				$new_events[$key]->checkin = DB::table('checkin')
-					->where('checkin_id', $event->event_value)
-					->first();
-				$new_events[$key]->checkin->items = DB::table('checkin_item')
-					->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
-					->where('checkin_id', $event->event_value)
-					->get();
-				$new_events[$key]->checkin->attaches = DB::table('attachs')
-					->where('attachable_id', $event->event_value)
-					->where('attachable_type','checkin')
-					->get();
-			}
-
-
-			$new_events[$key]->user = DB::table('users')
-					->where('user_id', $event->user_id)
-					->first();
-
-
-			$new_events[$key]->goal =DB::table('goal')
-				->where('goal_id', $event->goal_id)
-				->first();
-
-		}
-
-		return API::response()->array(['status' => true, 'message' =>'','data'=>$new_events])->statusCode(200);
-	}
-
 
 	public function getHotEvents(Request $request) {
 

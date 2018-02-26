@@ -47,11 +47,11 @@ class TopController extends BaseController {
 		// 	->get();
 		$user_id  = $this->auth->user()->id;
 
-		$users = User::join("checkin",'checkin.user_id','=','users.user_id')
+		$users = User::join("checkin",'checkin.user_id','=','users.id')
 				->select('users.*',DB::raw('count(1) as count'))
 				->where(DB::raw('YEAR(checkin_day)'),date('Y'))
 				->where(DB::raw('MONTH(checkin_day)'),date('m'))
-				->groupBy('users.user_id')
+				->groupBy('users.id')
 				->orderBy('count','DESC')
 				->take(10)
 				->get();
@@ -84,11 +84,11 @@ class TopController extends BaseController {
     public function week(){
         $user_id  = $this->auth->user()->id;
 
-        $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
+        $pre_users = User::join("checkin",'checkin.user_id','=','users.id')
             ->select('users.*',DB::raw('count(1) as count'))
             ->where(DB::raw('YEAR(checkin_day)'),date('Y'))
             ->where(DB::raw('WEEK(checkin_day,1)'),date('w'))
-            ->groupBy('users.user_id')
+            ->groupBy('users.id')
             ->orderBy('count','DESC')
             ->take(10)
             ->get();
@@ -128,11 +128,11 @@ class TopController extends BaseController {
     public function month() {
         $user_id  = $this->auth->user()->id;
 
-        $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
+        $pre_users = User::join("checkin",'checkin.user_id','=','users.id')
             ->select('users.*',DB::raw('count(1) as count'))
             ->where(DB::raw('YEAR(checkin_day)'),date('Y'))
             ->where(DB::raw('MONTH(checkin_day)'),date('m'))
-            ->groupBy('users.user_id')
+            ->groupBy('users.id')
             ->orderBy('count','DESC')
             ->take(10)
             ->get();
@@ -174,10 +174,10 @@ class TopController extends BaseController {
     public function year(){
         $user_id  = $this->auth->user()->id;
 
-        $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
+        $pre_users = User::join("checkin",'checkin.user_id','=','users.id')
             ->select('users.*',DB::raw('count(1) as count'))
             ->where(DB::raw('YEAR(checkin_day)'),date('Y'))
-            ->groupBy('users.user_id')
+            ->groupBy('users.id')
             ->orderBy('count','DESC')
             ->take(10)
             ->get();
@@ -218,9 +218,9 @@ class TopController extends BaseController {
 	public function all(){
         $user_id  = $this->auth->user()->id;
 
-        $pre_users = User::join("checkin",'checkin.user_id','=','users.user_id')
+        $pre_users = User::join("checkin",'checkin.user_id','=','users.id')
             ->select('users.*',DB::raw('count(1) as count'))
-            ->groupBy('users.user_id')
+            ->groupBy('users.id')
             ->orderBy('count','DESC')
             ->take(10)
             ->get();

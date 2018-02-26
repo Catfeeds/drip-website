@@ -68,8 +68,7 @@ class UploadController extends BaseController
                 $attach->hash = $hash;
                 $attach->extension = $extension;
                 $attach->path = date('Y-m-d');
-                $attach->create_user = $this->auth->user()->id;
-
+                $attach->user_id = $this->auth->user()->id;
                 $attach->save();
 
                 // 同步到七牛

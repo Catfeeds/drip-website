@@ -19,6 +19,6 @@ class Goal extends Model
     public function users()
     {
         return $this->belongsToMany('App\User', 'user_goals')
-                    ->withPivot('id','total_days', 'series_days','energy','expect_days','is_del','name','desc','is_public');;
+                    ->withPivot('id','total_days', 'series_days','expect_days','name','desc','is_public');
     }
 }

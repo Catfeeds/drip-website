@@ -11,5 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Attach extends Model
 {
-
+    public function attachable()
+    {
+        return $this->morphTo();
+    }
 }

@@ -20,7 +20,8 @@ use Log;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
-
+use App\Http\Controllers\Api\V2\Transformers\UserGoalTransformer;
+use League\Fractal\Serializer\ArraySerializer;
 
 class GoalController extends BaseController
 {
@@ -90,52 +91,20 @@ class GoalController extends BaseController
 
         $date = $request->input("day", date('Y-m-d'));
 
-//        DB::enableQueryLog();
-
-        $goals = User::find($user_id)
-            ->goals()
-            ->wherePivot('is_del', '=', 0)
-            ->wherePivot('is_public', '=', 1)
-            ->wherePivot('start_date', '<=', $date)
+        $user_goals = UserGoal::where('user_id','=',$user_id)
+            ->where('is_public','=',1)
+            ->where('start_date', '<=', $date)
             ->where(function ($query) use ($date) {
                 $query->where('user_goals.end_date', '>=', $date)
                     ->orWhere('user_goals.end_date', '=', NULL);
             })
-            ->orderBy('remind_time', 'asc')
+            ->orderBy('user_goals.status', 'asc')
+            ->orderBy('user_goals.order', 'asc')
             ->get();
 
-//        $laQuery = DB::getQueryLog();
-
-//		$lcWhatYouWant = $laQuery[0]['query'];
-
-//		return $laQuery;
-
-        $result = array();
-
-        foreach ($goals as $key => $goal) {
-
-            $result[$key]['id'] = $goal->id;
-            $result[$key]['name'] = $goal->pivot->name;
-            $result[$key]['desc'] = $goal->pivot->desc?$goal->pivot->desc:$goal->goal_desc;
-            $result[$key]['is_checkin'] = $goal->pivot->last_checkin_time >= strtotime(date('Y-m-d')) ? true : false;
-            $result[$key]['remind_time'] = $goal->pivot->remind_time ? substr($goal->pivot->remind_time, 0, 5) : null;
-            $result[$key]['total_days'] = $goal->pivot->total_days;
-            $result[$key]['expect_days'] = $goal->pivot->expect_days;
-
-            // TODO 修改status 0未开始 1进行中 2已结束
-//            if($goal->pivot->status==0) {
-//                $result[$key]['status'] = 1;
-//            } else if ($goal->pivot->status==1) {
-//                $result[$key]['status'] = 2;
-//            } else if ($goal->pivot->status== -1) {
-//                $result[$key]['status'] = 0;
-//            }
-
-            $result[$key]['status'] = $goal->pivot->status+1;
-
-        }
-
-        return API::response()->array($result)->statusCode(200);
+        return $this->response->collection($user_goals, new UserGoalTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
     }
 
 
@@ -423,7 +392,7 @@ class GoalController extends BaseController
 
         $content = trim($request->input('content'));
 
-        $user_id = $this->auth->user()->id;
+            $user_id = $this->auth->user()->id;
 
         $user_goal = UserGoal::where('user_id','=',$user_id)
             ->where('goal_id', '=', $goal_id)
@@ -644,90 +613,6 @@ class GoalController extends BaseController
         $this->_insert_items($user_id, $user_goal->pivot->goal_id, $request->items);
 
         return API::response()->array(['status' => true, 'message' => "更新成功", "data" => []]);
-
-    }
-
-
-    public function checkins()
-    {
-        $validation = Validator::make(Input::all(), [
-            'goal_id' => 'required',     // 目标id
-            'year' => 'required',     // 年数
-            'month' => 'required',     // 月数
-        ]);
-
-        if ($validation->fails()) {
-            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-        }
-
-        $user_id = $this->auth->user()->id;
-
-        $goal_id = Input::get('goal_id');
-        $year = Input::get('year');
-        $month = Input::get('month');
-
-        $checkins = Checkin::where('goal_id', '=', $goal_id)
-            ->where('user_id', '=', $user_id)
-            ->whereRaw('YEAR(checkin_day)=' . $year)
-            ->whereRaw('MONTH(checkin_day)=' . $month)
-            ->get();
-
-//        print_r($checkins);
-
-        foreach ($checkins as $k => $checkin) {
-            $items = DB::table("checkin_item")
-                ->join('user_goal_item', 'checkin_item.item_id', '=', 'user_goal_item.item_id')
-                ->where('checkin_id', $checkin->checkin_id)
-                ->get();
-
-            $checkins[$k]['items'] = $items;
-
-            // 获取附件
-            $checkins[$k]['attaches'] = DB::table('attachs')
-                ->where('attachable_id', $checkin->checkin_id)
-                ->where('attachable_type', 'checkin')
-                ->get();
-        }
-
-        return API::response()->array(['status' => true, 'message' => '', 'data' => $checkins]);
-
-
-    }
-
-    public function events()
-    {
-        $validation = Validator::make(Input::all(), [
-            'goal_id' => 'required',     // 目标id
-        ]);
-
-        if ($validation->fails()) {
-            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-        }
-
-        $goal_id = Input::get('goal_id');
-
-        $events = Event::where('goal_id', $goal_id)->orderBy('create_time', 'DESC')->skip(10)
-            ->take(20)->get();
-
-        foreach ($events as $key => $event) {
-            if ($event['type'] == 'USER_CHECKIN') {
-                $events[$key]['checkin'] = $event->checkin;
-                $events[$key]['checkin']['items'] = DB::table('checkin_item')
-                    ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
-                    ->where('checkin_id', $event->event_value)
-                    ->get();
-                $events[$key]['checkin']['attaches'] = DB::table('attachs')
-                    ->where('attachable_id', $event->event_value)
-                    ->where('attachable_type', 'checkin')
-                    ->get();
-            }
-            $events[$key]['user'] = $event->user;
-            $events[$key]['goal'] = $event->goal;
-        }
-
-
-        return API::response()->array(['status' => true, 'message' => '', 'data' => $events]);
-
 
     }
 
