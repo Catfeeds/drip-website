@@ -11,7 +11,7 @@ class Event extends Model
 
     public function checkin()
     {
-        return $this->hasOne('App\Checkin','checkin_id','event_value');
+        return $this->hasOne('App\Checkin','id','event_value');
     }
 
     public function user()

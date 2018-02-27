@@ -11,6 +11,7 @@ use App\Checkin;
 use App\Models\Event;
 use App\Models\UserGoal;
 use App\Models\Energy;
+use App\Models\Attach;
 use Carbon\Carbon;
 
 use API;
@@ -280,67 +281,6 @@ class GoalController extends BaseController
     }
 
     /**
-     * 更新目标
-     */
-    public function update(Request $request)
-    {
-        $messages = [
-            'days.numeric' => '天数需为正整数',
-            'days.required' => '请输入天数',
-            'days.min' => '天数不能为负',
-            'days.max' => '超过最大设定天数',
-            'desc.max' => '简介内容过长',
-        ];
-
-
-        $validation = Validator::make(Input::all(), [
-            'goal_id' => 'required',     // 目标id
-            'goal_name' => '',     // 目标名称
-            'expect_days' => 'required|numeric|min:0|max:9999',  // 天数           // 天数
-            'goal_desc' => 'max:255',             // 描述
-//			'items'		=>  [],             // 统计项目
-//			'is_public' =>  '',             // 是否公开
-//			'is_push'   =>  '',				// 是否推送
-//			'push_time' =>  '',             // 推送时间
-        ], $messages);
-
-        if ($validation->fails()) {
-            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-        }
-
-        $user_id = $this->auth->user()->id;
-        $user = User::find($user_id);
-        $goal_name = Input::get('goal_name');
-
-//		// 判断目标是否存在
-//		$goal = Goal::where('goal_name','=',$goal_name)->first();
-//
-//		// 若不存在新建
-//		if(empty($goal)) {
-//			$goal = new Goal();
-//			$goal->goal_name = $goal_name;
-//			$goal->save();
-//		}
-
-        // 判断是否已经指定了该目标
-        $user_goal = Goal::find($request->goal_id)
-            ->users()
-            ->wherePivot('user_id', '=', $user_id)
-            ->wherePivot('is_del', '=', 0)
-            ->first();
-
-//		$pivot = Input::get('pivot');
-
-//		if(!$user_goal) {
-//			return API::response()->array(['status' => true, 'message' =>"更新成功","data"=>['goal_id'=>$goal->goal_id]]);
-
-//		} else {
-
-
-//		return API::response()->array(['status' => true, 'message' =>"更新成功","data"=>['goal_id'=>$goal->goal_id]]);
-    }
-
-    /**
      * 删除目标
      */
     public function delete($goal_id,Request $request)
@@ -426,14 +366,13 @@ class GoalController extends BaseController
         }
 
         $checkin = new Checkin();
-        $checkin->checkin_content = nl2br($content);
+        $checkin->content = nl2br($content);
         $checkin->checkin_day = $day;
         $checkin->obj_id = $goal_id;
         $checkin->goal_id = $goal_id;
         $checkin->obj_type = 'GOAL';
         $checkin->user_id = $user_id;
         $checkin->is_public = $request->is_public?(int)$request->is_public:$user_goal->is_public;
-        $checkin->checkin_time = time();
         $checkin->save();
 
         // 单次打卡奖励
@@ -479,9 +418,9 @@ class GoalController extends BaseController
             foreach ($items as $item) {
                 DB::table('checkin_item')
                     ->insert([
-                        'checkin_id' => $checkin->checkin_id,
+                        'checkin_id' => $checkin->id,
                         'item_id' => $item['id'],
-                        'item_value' => $item['value']
+                        'item_value' => $item['expect']
                     ]);
             }
         }
@@ -490,7 +429,7 @@ class GoalController extends BaseController
         if ($attachs = $request->input('attachs')) {
             foreach ($attachs as $attach) {
                 $attach = Attach::find($attach['id']);
-                $attach->attachable_id = $checkin->checkin_id;
+                $attach->attachable_id = $checkin->id;
                 $attach->attachable_type = 'checkin';
                 $attach->save();
             }
@@ -509,7 +448,7 @@ class GoalController extends BaseController
             $energy->user_id = $user_id;
             $energy->change = $single_add_coin;
             $energy->obj_type = 'checkin';
-            $energy->obj_id = $checkin->checkin_id;
+            $energy->obj_id = $checkin->id;
             $energy->create_time = time();
             $energy->save();
         }
@@ -519,7 +458,7 @@ class GoalController extends BaseController
             $energy->user_id = $user_id;
             $energy->change = $series_add_coin;
             $energy->obj_type = 'series_checkin';
-            $energy->obj_id = $checkin->checkin_id;
+            $energy->obj_id = $checkin->id;
             $energy->create_time = time();
             $energy->save();
         }
@@ -527,7 +466,7 @@ class GoalController extends BaseController
         $event = new Event();
         $event->goal_id = $goal_id;
         $event->user_id = $user_id;
-        $event->event_value = $checkin->checkin_id;
+        $event->event_value = $checkin->id;
         $event->type = 'USER_CHECKIN';
         $event->is_public = $request->is_public?(int)$request->is_public:$user_goal->is_public;
         $event->create_time = time();
@@ -754,7 +693,7 @@ class GoalController extends BaseController
             if ($i <= 0) {
                 $weeks = date("W", mktime(0, 0, 0, 12, 28, $current_year - 1));
                 array_unshift($x, '第' . ($weeks + $i) . '周');
-                $count = DB::table('checkin')
+                $count = DB::table('checkins')
                     ->where('goal_id', Input::get('goal_id'))
                     ->where('user_id', $user_id)
                     ->whereRaw('YEAR(checkin_day)=' . ($current_year - 1))
@@ -764,8 +703,8 @@ class GoalController extends BaseController
 
                 if ($items) {
                     foreach ($items as $key => $item) {
-                        $sum = DB::table('checkin')
-                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkin.checkin_id')
+                        $sum = DB::table('checkins')
+                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkins.id')
                             ->where('goal_id', Input::get('goal_id'))
                             ->where('user_id', $user_id)
                             ->where('item_id', $item['item_id'])
@@ -782,7 +721,7 @@ class GoalController extends BaseController
 
             } else {
                 array_unshift($x, '第' . $i . '周');
-                $count = DB::table('checkin')
+                $count = DB::table('checkins')
                     ->where('goal_id', Input::get('goal_id'))
                     ->where('user_id', $user_id)
                     ->whereRaw('YEAR(checkin_day)=' . $current_year)
@@ -792,8 +731,8 @@ class GoalController extends BaseController
 
                 if ($items) {
                     foreach ($items as $key => $item) {
-                        $sum = DB::table('checkin')
-                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkin.checkin_id')
+                        $sum = DB::table('checkins')
+                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkins.id')
                             ->where('goal_id', Input::get('goal_id'))
                             ->where('user_id', $user_id)
                             ->where('item_id', $item['item_id'])
@@ -852,7 +791,7 @@ class GoalController extends BaseController
         for ($i = $current_month; $i >= $current_month - 5; $i--) {
             if ($i <= 0) {
                 array_unshift($x, (12 + $i) . '月');
-                $count = DB::table('checkin')
+                $count = DB::table('checkins')
                     ->where('goal_id', Input::get('goal_id'))
                     ->where('user_id', $user_id)
                     ->whereRaw('YEAR(checkin_day)=' . ($current_year - 1))
@@ -861,8 +800,8 @@ class GoalController extends BaseController
                 array_unshift($y, $count);
                 if ($items) {
                     foreach ($items as $key => $item) {
-                        $sum = DB::table('checkin')
-                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkin.checkin_id')
+                        $sum = DB::table('checkins')
+                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkins.id')
                             ->where('goal_id', Input::get('goal_id'))
                             ->where('user_id', $user_id)
                             ->where('item_id', $item['item_id'])
@@ -877,7 +816,7 @@ class GoalController extends BaseController
                 }
             } else {
                 array_unshift($x, $i . '月');
-                $count = DB::table('checkin')
+                $count = DB::table('checkins')
                     ->where('goal_id', Input::get('goal_id'))
                     ->where('user_id', $user_id)
                     ->whereRaw('YEAR(checkin_day)=' . $current_year)
@@ -888,8 +827,8 @@ class GoalController extends BaseController
 
                 if ($items) {
                     foreach ($items as $key => $item) {
-                        $sum = DB::table('checkin')
-                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkin.checkin_id')
+                        $sum = DB::table('checkins')
+                            ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkins.id')
                             ->where('goal_id', Input::get('goal_id'))
                             ->where('user_id', $user_id)
                             ->where('item_id', $item['item_id'])
@@ -943,7 +882,7 @@ class GoalController extends BaseController
 
         for ($i = $current_year; $i >= $current_year - 5; $i--) {
             array_unshift($x, $i);
-            $count = DB::table('checkin')
+            $count = DB::table('checkins')
                 ->where('goal_id', Input::get('goal_id'))
                 ->where('user_id', $user_id)
                 ->whereRaw('YEAR(checkin_day)=' . $i)
@@ -951,8 +890,8 @@ class GoalController extends BaseController
             array_unshift($y, $count);
             if ($items) {
                 foreach ($items as $key => $item) {
-                    $sum = DB::table('checkin')
-                        ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkin.checkin_id')
+                    $sum = DB::table('checkins')
+                        ->join('checkin_item', 'checkin_item.checkin_id', '=', 'checkins.id')
                         ->where('goal_id', Input::get('goal_id'))
                         ->where('user_id', $user_id)
                         ->where('item_id', $item['item_id'])

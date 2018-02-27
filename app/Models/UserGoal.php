@@ -23,4 +23,8 @@ class UserGoal extends Model
      * @var array
      */
     protected $dates = ['deleted_at'];
+
+    protected $fillable = [
+        'name','desc','start_date','end_date','remind_time','is_public'
+    ];
 }

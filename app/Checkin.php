@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Checkin extends Model
 {
-    protected $table = 'checkin';
-    protected $primaryKey = 'checkin_id';
 
     public function user()
     {

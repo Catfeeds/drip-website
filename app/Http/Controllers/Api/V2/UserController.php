@@ -80,7 +80,12 @@ class UserController extends BaseController
 
     }
 
-
+    /**
+     * 更新用户信息
+     * @param $user_id
+     * @param Request $request
+     * @return array
+     */
     public function updateUser($user_id, Request $request)
     {
         Log::info('更新用户信息');
@@ -88,12 +93,17 @@ class UserController extends BaseController
 
         $input = $request->all();
 
-        if ($input) {
-            DB::table('users')->where('user_id', '=', $user_id)
-                ->update($input);
+        //TODO 兼容老版本
+        if(isset($input['user_avatar'])) {
+            $input['avatar_url'] = $input['user_avatar'];
+            unset($input['user_avatar']);
         }
 
-        $user = User::findOrFail($user_id);
+        if ($input) {
+            User::find($user_id)->update($input);
+        }
+
+        $user = User::find($user_id);
 
         $new_user = [];
         $new_user['id'] = $user->id;
@@ -111,7 +121,7 @@ class UserController extends BaseController
         return $new_user;
     }
 
-    public function getUserEvents($user_id,Request $request)
+    public function getUserEvents($user_id, Request $request)
     {
         $messages = [
             'required' => '缺少参数 :attribute',
@@ -133,7 +143,7 @@ class UserController extends BaseController
 
         $events = Event::where('user_id', $user_id)
             ->where('is_public', '=', 1)
-            ->orderBy('create_time', 'DESC')->skip(($page-1)* $per_page)
+            ->orderBy('create_time', 'DESC')->skip(($page - 1) * $per_page)
             ->take($per_page)->get();
 
         $result = [];
@@ -146,10 +156,18 @@ class UserController extends BaseController
             if ($event['type'] == 'USER_CHECKIN') {
                 $checkin = Checkin::find($event->event_value);
 
-                if($checkin) {
-                    $result[$key]['content'] = $checkin->checkin_content;
+                $new_attachs = [];
+
+                if ($checkin) {
+                    $result[$key]['content'] = $checkin->content;
                     $new_checkin['total_days'] = $checkin->total_days;
-                    $new_checkin['id'] = $checkin->checkin_id;
+                    $new_checkin['id'] = $checkin->id;
+
+                    foreach ($checkin->attaches as $k => $attach) {
+                        $new_attachs[$k]['id'] = $attach->id;
+                        $new_attachs[$k]['name'] = $attach->name;
+                        $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/" . $attach->path . '/' . $attach->name;
+                    }
                 }
 
                 $items = DB::table('checkin_item')
@@ -157,13 +175,8 @@ class UserController extends BaseController
                     ->where('checkin_id', $event->event_value)
                     ->get();
 
-                $new_attachs = [];
 
-                foreach($checkin->attaches as $k=>$attach) {
-                    $new_attachs[$k]['id'] = $attach->id;
-                    $new_attachs[$k]['name'] = $attach->name;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->path.'/'.$attach->name;
-                }
+
 
                 $result[$key]['attachs'] = $new_attachs;
             }
@@ -226,10 +239,10 @@ class UserController extends BaseController
 
 //        DB::enableQueryLog();
 
-        $user_goals = UserGoal::where('user_id','=',$user_id)
+        $user_goals = UserGoal::where('user_id', '=', $user_id)
             ->where(function ($query) use ($date) {
-                if($date) {
-                    $query->where('start_date','<=',$date)
+                if ($date) {
+                    $query->where('start_date', '<=', $date)
                         ->where('end_date', '>=', $date)
                         ->orWhere('end_date', '=', NULL);
                 }
@@ -238,25 +251,25 @@ class UserController extends BaseController
             ->orderBy('user_goals.order', 'asc')
             ->get();
 
-        return $this->response->collection($user_goals, new UserGoalTransformer(),[],function($resource, $fractal){
+        return $this->response->collection($user_goals, new UserGoalTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
     }
 
-    public function getPhotos($user_id,Request $request)
+    public function getPhotos($user_id, Request $request)
     {
 
         $attaches = User::find($user_id)
             ->attaches()
-            ->where('attachable_id','>',0)
-            ->orderBy('created_at','desc')
+            ->where('attachable_id', '>', 0)
+            ->orderBy('created_at', 'desc')
             ->get();
 
         $new_attachs = [];
 
-        foreach($attaches as $k=>$attach) {
+        foreach ($attaches as $k => $attach) {
             $new_attachs[$k]['id'] = $attach->id;
-            $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/'.$attach->path.'/'.$attach->name;
+            $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/' . $attach->path . '/' . $attach->name;
         }
 
         return $new_attachs;
@@ -312,11 +325,11 @@ class UserController extends BaseController
     }
 
     // 获取单个目标
-    public function getGoal($goal_id,Request $request)
+    public function getGoal($goal_id, Request $request)
     {
         $user_id = $this->auth->user()->id;
 
-        $user_goal = UserGoal::where('user_id','=',$user_id)
+        $user_goal = UserGoal::where('user_id', '=', $user_id)
             ->where('goal_id', '=', $goal_id)
             ->first();
 
@@ -324,7 +337,7 @@ class UserController extends BaseController
             return $this->response->error("未制定该目标", 500);
         }
 
-        return $this->response->item($user_goal, new UserGoalTransformer(),[],function($resource, $fractal){
+        return $this->response->item($user_goal, new UserGoalTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
 
@@ -335,29 +348,11 @@ class UserController extends BaseController
 
         $goal = Goal::findOrFail($goal_id);
 
-//        $messages = [
-//            'goal_id.required' => '缺少目标ID参数',
-//        ];
-//
-//        $validation = Validator::make(Input::all(), [
-//            'goal_id' => 'required',     // 目标id
-//            'items' => [],             // 统计项目
-//            'is_public' => '',             // 是否公开
-//            'is_push' => '',                // 是否推送
-//            'push_time' => '',             // 推送时间
-//        ], $messages);
-//
-//        if ($validation->fails()) {
-//            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-//        }
-
         $user_id = $this->auth->user()->id;
 
         // 判断是否已经指定了该目标
-        $user_goal = Goal::find($goal_id)
-            ->users()
-            ->wherePivot('user_id', '=', $user_id)
-            ->wherePivot('is_del', '=', 0)
+        $user_goal = UserGoal::where('user_id', '=', $user_id)
+            ->where('goal_id', '=', $goal_id)
             ->first();
 
         if (!$user_goal) {
@@ -368,20 +363,20 @@ class UserController extends BaseController
 
         if ($input) {
 
-            if($request->has('start_date')) {
+            if ($request->has('start_date')) {
                 $start_date = $request->input('start_date');
             } else {
                 $start_date = $request->input('start_date');
             }
 
-            if($request->has('end_date')) {
+            if ($request->has('end_date')) {
                 $end_date = $request->input('end_date');
             } else {
                 $end_date = $request->input('end_date');
             }
 
-            if($end_date) {
-                if($start_date > $end_date) {
+            if ($end_date) {
+                if ($start_date > $end_date) {
                     return $this->response->error("开始时间不得大于结束时间", 500);
                 }
 
@@ -393,13 +388,11 @@ class UserController extends BaseController
                 $input['expect_days'] = $expect_days;
             }
 
-
             unset($input['items']);
 
-            DB::table('user_goals')->where('id', '=', $user_goal->pivot->id)
-                ->update($input);
+            $user_goal->update($input);
 
-            $this->_insert_items($user_id, $user_goal->pivot->goal_id, $request->input('items'));
+            $this->_insert_items($user_id, $goal_id, $request->input('items'));
 
         }
 
@@ -409,7 +402,7 @@ class UserController extends BaseController
 
     private function _insert_items($user_id, $goal_id, $items)
     {
-        if(!$items) return;
+        if (!$items) return;
 
         DB::table('user_goal_item')
             ->where('user_id', $user_id)
@@ -424,7 +417,7 @@ class UserController extends BaseController
                     'item_name' => $item['name'],
                     'item_unit' => $item['unit'],
                     'item_expect' => $item['expect'],
-                    'type'=>$item['type'],
+                    'type' => $item['type'],
                     'create_time' => time(),
                     'goal_id' => $goal_id,
                     'user_id' => $user_id
@@ -452,11 +445,11 @@ class UserController extends BaseController
                 $dt->addDay();
             }
 
-            $is_checkin = DB::table('checkin')
-                ->where('goal_id', $goal_id)
+            $is_checkin = Checkin::where('goal_id', $goal_id)
                 ->where('user_id', $user_id)
                 ->where('checkin_day', $dt->toDateString())
                 ->get();
+
             $result[$i] = $is_checkin ? true : false;
         }
 
@@ -499,7 +492,7 @@ class UserController extends BaseController
                 $checkin = $event->checkin;
 
                 if ($checkin) {
-                    $new_event->content = $checkin->checkin_content;
+                    $new_event->content = $checkin->content;
 
                     $new_checkin = [];
 
@@ -546,7 +539,7 @@ class UserController extends BaseController
 
         // 获取所有的打卡日期
 
-        $days = DB::table('checkin')
+        $days = DB::table('checkins')
             ->where('goal_id', $goal_id)
             ->where('user_id', $user_id)
             ->select('checkin_day')
@@ -603,7 +596,7 @@ class UserController extends BaseController
                 $data[$i]['end_date'] = $end_day;
 
                 // 获取日期范围内的打卡次数
-                $count = DB::table('checkin')
+                $count = DB::table('checkins')
                     ->where('goal_id', $goal_id)
                     ->where('user_id', $user_id)
                     ->whereRaw('YEAR(checkin_day)=' . $year)
@@ -640,7 +633,7 @@ class UserController extends BaseController
                 $data[$i]['end_date'] = $end_day;
 
                 // 获取日期范围内的打卡次数
-                $count = DB::table('checkin')
+                $count = DB::table('checkins')
                     ->where('goal_id', $goal_id)
                     ->where('user_id', $user_id)
                     ->whereRaw('YEAR(checkin_day)=' . $year)
@@ -675,7 +668,7 @@ class UserController extends BaseController
                 $data[$i]['end_date'] = $end_day;
 
                 // 获取日期范围内的打卡次数
-                $count = DB::table('checkin')
+                $count = DB::table('checkins')
                     ->where('goal_id', $goal_id)
                     ->where('user_id', $user_id)
                     ->whereRaw('YEAR(checkin_day)=' . $year)
@@ -734,8 +727,8 @@ class UserController extends BaseController
 
         $events = Event::where('goal_id', $goal_id)
             ->where('is_public', '=', 1)
-            ->where('user_id',$user_id)
-            ->orderBy('create_time', 'DESC')->skip(($page-1)* $per_page)
+            ->where('user_id', $user_id)
+            ->orderBy('create_time', 'DESC')->skip(($page - 1) * $per_page)
             ->take($per_page)->get();
 
         $result = [];
@@ -746,14 +739,20 @@ class UserController extends BaseController
             $new_checkin = [];
 
             if ($event['type'] == 'USER_CHECKIN') {
-                $checkin = DB::table('checkin')
-                    ->where('checkin_id', $event->event_value)
-                    ->first();
+                $checkin = Checkin::find($event->event_value);
 
-                if($checkin) {
-                    $result[$key]['content'] = $checkin->checkin_content;
+                $new_attachs = [];
+
+                if ($checkin) {
+                    $result[$key]['content'] = $checkin->content;
                     $new_checkin['total_days'] = $checkin->total_days;
-                    $new_checkin['id'] = $checkin->checkin_id;
+                    $new_checkin['id'] = $checkin->id;
+
+                    foreach ($checkin->attaches as $k => $attach) {
+                        $new_attachs[$k]['id'] = $attach->id;
+                        $new_attachs[$k]['name'] = $attach->name;
+                        $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/" . $attach->path . '/' . $attach->name;
+                    }
                 }
 
                 $items = DB::table('checkin_item')
@@ -761,13 +760,6 @@ class UserController extends BaseController
                     ->where('checkin_id', $event->event_value)
                     ->get();
 
-                $new_attachs = [];
-
-                foreach($checkin->attaches as $k=>$attach) {
-                    $new_attachs[$k]['id'] = $attach->id;
-                    $new_attachs[$k]['name'] = $attach->name;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/".$attach->path.'/'.$attach->name;
-                }
 
                 $result[$key]['attachs'] = $new_attachs;
             }
@@ -785,7 +777,7 @@ class UserController extends BaseController
             $new_user['id'] = $event->user->user_id;
             $new_user['nickname'] = $event->user->nickname;
             $new_user['avatar_url'] = $event->user->avatar_url;
-            $new_user['is_vip'] = $event->user->is_vip==1?true:false;
+            $new_user['is_vip'] = $event->user->is_vip == 1 ? true : false;
 
             $result[$key]['user'] = $new_user;
 
@@ -954,7 +946,7 @@ class UserController extends BaseController
             'user_id' => $this->auth->user()->id,
             'type_id' => $request->input('type'),
             'content' => $request->input('content'),
-            'device' =>  json_encode( $request->input('device')),
+            'device' => json_encode($request->input('device')),
             'version' => $request->input('app_version'),
             // TODO 移除version字段
             'app_version' => $request->input('app_version'),
@@ -1118,7 +1110,7 @@ class UserController extends BaseController
     }
 
 
-    public function getFans($user_id,Request $request)
+    public function getFans($user_id, Request $request)
     {
         // 关注时间排序
 
@@ -1131,28 +1123,28 @@ class UserController extends BaseController
             ->join('users', 'users.id', '=', 'user_follow.user_id')
             ->where('follow_user_id', '=', $user_id)
             ->orderBy('create_time', 'asc')
-            ->skip(($page-1)*$per_page)
+            ->skip(($page - 1) * $per_page)
             ->limit($per_page)
             ->get();
 
         $new_users = [];
 
-        foreach($users as $k=>$user) {
+        foreach ($users as $k => $user) {
 
 //            $new_user = [];
 
             $new_users[$k]['id'] = $user->id;
-            $new_users[$k]['nickname'] =  $user->nickname;
-            $new_users[$k]['signature'] =  $user->signature;
-            $new_users[$k]['avatar_url'] =  $user->avatar_url;
+            $new_users[$k]['nickname'] = $user->nickname;
+            $new_users[$k]['signature'] = $user->signature;
+            $new_users[$k]['avatar_url'] = $user->avatar_url;
 
             $is_follow = DB::table('user_follows')
-                ->where('user_id',$user_id)
-                ->where('follow_user_id',$user->id)
+                ->where('user_id', $user_id)
+                ->where('follow_user_id', $user->id)
                 ->first();
 
             // 判断是否关注该用户
-            $new_users[$k]['is_follow'] = $is_follow?true:false;
+            $new_users[$k]['is_follow'] = $is_follow ? true : false;
 
 //            $new_users[$k]['user'] = $new_user;
 
@@ -1162,7 +1154,7 @@ class UserController extends BaseController
 
     }
 
-    public function getFollowings($user_id,Request $request)
+    public function getFollowings($user_id, Request $request)
     {
         // 关注时间排序
 
@@ -1181,22 +1173,22 @@ class UserController extends BaseController
 
         $new_users = [];
 
-        foreach($users as $k=>$user) {
+        foreach ($users as $k => $user) {
 
 //            $new_user = [];
 
             $new_users[$k]['id'] = $user->id;
-            $new_users[$k]['nickname'] =  $user->nickname;
-            $new_users[$k]['signature'] =  $user->signature;
-            $new_users[$k]['avatar_url'] =  $user->avatar_url;
+            $new_users[$k]['nickname'] = $user->nickname;
+            $new_users[$k]['signature'] = $user->signature;
+            $new_users[$k]['avatar_url'] = $user->avatar_url;
 
             $is_follow = DB::table('user_follows')
-                ->where('user_id',$user_id)
-                ->where('follow_user_id',$user->id)
+                ->where('user_id', $user_id)
+                ->where('follow_user_id', $user->id)
                 ->first();
 
             // 判断是否关注该用户
-            $new_users[$k]['is_follow'] = $is_follow?true:false;
+            $new_users[$k]['is_follow'] = $is_follow ? true : false;
 
 //            $new_users[$k]['user'] = $new_user;
 
@@ -1319,7 +1311,7 @@ class UserController extends BaseController
         $new_message = array();
 
 
-        if($message) {
+        if ($message) {
             $new_message['id'] = $message->message_id;
             $new_message['title'] = $message->title;
             $new_message['content'] = $message->content;
@@ -1381,7 +1373,7 @@ class UserController extends BaseController
             if ($comment->parent_id == 0) {
                 $event = Event::findOrFail($comment->event_id);
                 if ($event->type == 'USER_CHECKIN') {
-                    $new_comment['source'] = $event->checkin->checkin_content;
+                    $new_comment['source'] = $event->checkin->content;
                 } else {
                     $new_comment['source'] = $event->event_content;
                 }
@@ -1447,7 +1439,7 @@ class UserController extends BaseController
             if ($event->type == 'USER_CHECKIN') {
 
                 if (!$event->checkin) continue;
-                $new_like['source'] = $event->checkin->checkin_content;
+                $new_like['source'] = $event->checkin->content;
             } else {
                 $new_like['source'] = $event->event_content;
             }
@@ -1514,7 +1506,7 @@ class UserController extends BaseController
             $new_message = [];
             $new_message['id'] = $message->message_id;
             $new_message['title'] = $message->title;
-                $new_message['content'] = $message->content?mb_substr(strip_tags($message->content),0,150):'';
+            $new_message['content'] = $message->content ? mb_substr(strip_tags($message->content), 0, 150) : '';
             $new_message['created_at'] = date('Y-m-d H:i:s', $message->create_time);
 
             array_push($new_messages, $new_message);
@@ -1560,19 +1552,19 @@ class UserController extends BaseController
         $per_page = $request->input('per_page');
 
         $logs = DB::table('energy')
-            ->join('energy_type','energy_type.name','=','energy.obj_type')
-            ->where('user_id','=',$user_id)
-            ->orderBy('create_time','desc')
-            ->skip(($page-1)*$per_page)
+            ->join('energy_type', 'energy_type.name', '=', 'energy.obj_type')
+            ->where('user_id', '=', $user_id)
+            ->orderBy('create_time', 'desc')
+            ->skip(($page - 1) * $per_page)
             ->limit($per_page)
             ->get();
 
         $new_logs = [];
 
-        foreach($logs as $k=>$log) {
+        foreach ($logs as $k => $log) {
             $new_logs[$k]['id'] = $log->id;
-            $new_logs[$k]['created_at'] = date('Y-m-d H:i:s',$log->create_time);
-            $new_logs[$k]['change'] =  $log->change;
+            $new_logs[$k]['created_at'] = date('Y-m-d H:i:s', $log->create_time);
+            $new_logs[$k]['change'] = $log->change;
             $new_logs[$k]['name'] = $log->name2;
 
         }
@@ -1601,24 +1593,24 @@ class UserController extends BaseController
         $code = $request->input('code');
         $user = $this->auth->user();
 
-        if (!preg_match("/^1[34578]\d{9}$/",$phone)) {
+        if (!preg_match("/^1[34578]\d{9}$/", $phone)) {
             return $this->response->error('手机号格式不正确', 500);
         }
 
         // 查找手机号是否被绑定
-        $is_bind = User::where('phone',$phone)->first();
+        $is_bind = User::where('phone', $phone)->first();
 
-        if($is_bind) {
+        if ($is_bind) {
             return $this->response->error('手机号已被绑定', 500);
         }
 
         $code = DB::table('verify_code')
-        ->where('send_type', 'phone')
-        ->where('send_object', $phone)
-        ->where('type', 'bind')
-        ->where('code', $code)
-        ->orderBy('create_time', 'desc')
-        ->first();
+            ->where('send_type', 'phone')
+            ->where('send_object', $phone)
+            ->where('type', 'bind')
+            ->where('code', $code)
+            ->orderBy('create_time', 'desc')
+            ->first();
 
         if ($code) {
             if ($code->status == 1) {
@@ -1643,7 +1635,7 @@ class UserController extends BaseController
     public function getUserInfo(Request $request)
     {
         $user = $this->auth->user();
-        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+        return $this->response->item($user, new UserTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
     }
@@ -1673,9 +1665,9 @@ class UserController extends BaseController
         }
 
         // 查找手机号是否被绑定
-        $is_bind = User::where('email',$email)->first();
+        $is_bind = User::where('email', $email)->first();
 
-        if($is_bind) {
+        if ($is_bind) {
             return $this->response->error('邮箱已被绑定', 500);
         }
 
@@ -1703,12 +1695,13 @@ class UserController extends BaseController
 
         $user->save();
 
-        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+        return $this->response->item($user, new UserTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
     }
 
-    public function bindWechat(Request $request) {
+    public function bindWechat(Request $request)
+    {
 
         $params = $this->_parse_wechat($request);
 
@@ -1722,7 +1715,7 @@ class UserController extends BaseController
             ->where('provider', 'wechat')
             ->first();
 
-        if($provider) {
+        if ($provider) {
             return $this->response->error('该微信号已绑定', 500);
         }
 
@@ -1792,7 +1785,8 @@ class UserController extends BaseController
         ];
     }
 
-    public function bindWeibo(Request $request) {
+    public function bindWeibo(Request $request)
+    {
 
         $params = $this->_parse_weibo($request);
 
@@ -1801,7 +1795,7 @@ class UserController extends BaseController
             ->where('provider', 'weibo')
             ->first();
 
-        if($provider) {
+        if ($provider) {
             return $this->response->error('该微博已绑定', 500);
         }
 
@@ -1821,7 +1815,7 @@ class UserController extends BaseController
             'unionid' => isset($params['unionid']) ? $params['unionid'] : '',
         ]);
 
-        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+        return $this->response->item($user, new UserTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
 
@@ -1864,7 +1858,8 @@ class UserController extends BaseController
         ];
     }
 
-    public function bindQQ(Request $request) {
+    public function bindQQ(Request $request)
+    {
 
         $params = $this->_parse_qq($request);
 
@@ -1873,7 +1868,7 @@ class UserController extends BaseController
             ->where('provider', 'qq')
             ->first();
 
-        if($provider) {
+        if ($provider) {
             return $this->response->error('该QQ已绑定', 500);
         }
 
@@ -1893,7 +1888,7 @@ class UserController extends BaseController
             'unionid' => isset($params['unionid']) ? $params['unionid'] : '',
         ]);
 
-        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+        return $this->response->item($user, new UserTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
     }
@@ -1908,11 +1903,11 @@ class UserController extends BaseController
 
         $device = $request->device;
 
-        if(isset($device['platform'])&&$device['platform'] == 'iOS') {
+        if (isset($device['platform']) && $device['platform'] == 'iOS') {
             $app_id = 1106192747;
         }
 
-        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token=' . $request->access_token . '&oauth_consumer_key='.$app_id.'&openid=' . $request->userid, []);
+        $res = $client->request('GET', 'https://graph.qq.com/user/get_user_info?access_token=' . $request->access_token . '&oauth_consumer_key=' . $app_id . '&openid=' . $request->userid, []);
 
         if ($res->getStatusCode() != 200) {
             $this->response->error("获取用户信息失败", 500);
@@ -1947,7 +1942,8 @@ class UserController extends BaseController
     }
 
 
-    public function buyVip(Request $request) {
+    public function buyVip(Request $request)
+    {
         $messages = [
             'required' => '缺少参数 :attribute',
             'integer' => '月数必须为正整数',
@@ -1963,33 +1959,33 @@ class UserController extends BaseController
 
         $user = $this->auth->user();
 
-        $num = $request->input("num",0);
+        $num = $request->input("num", 0);
 
-        if($user->energy_count < $num*1000) {
+        if ($user->energy_count < $num * 1000) {
             return API::response()->error("水滴币数量不足", 500);
         }
 
-        if($user->is_vip == 1) {
-            $user->vip_end_date = date('Y-m-d', strtotime($user->vip_end_date. ' + '.($num*30).' days'));
+        if ($user->is_vip == 1) {
+            $user->vip_end_date = date('Y-m-d', strtotime($user->vip_end_date . ' + ' . ($num * 30) . ' days'));
         } else {
             $user->is_vip = 1;
             $user->vip_begin_date = date('Y-m-d');
-            $user->vip_end_date = date('Y-m-d', strtotime(date('Y-m-d'). ' + '.($num*30).' days'));
+            $user->vip_end_date = date('Y-m-d', strtotime(date('Y-m-d') . ' + ' . ($num * 30) . ' days'));
         }
 
-        $user->energy_count -= $num*1000;
+        $user->energy_count -= $num * 1000;
         $user->save();
 
         $energy = new Energy();
         $energy->user_id = $user->id;
-        $energy->change = -($num*1000);
+        $energy->change = -($num * 1000);
         $energy->obj_type = null;
         $energy->obj_id = null;
         $energy->create_time = time();
         $energy->save();
 
 //        return $this->response->item($user, new UserTransformer());
-        return $this->response->item($user, new UserTransformer(),[],function($resource, $fractal){
+        return $this->response->item($user, new UserTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
 

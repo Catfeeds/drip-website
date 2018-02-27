@@ -9,6 +9,7 @@
 
 namespace  App\Http\Controllers\Api\V2\Transformers;
 
+use Carbon\Carbon;
 use League\Fractal\TransformerAbstract;
 use App\User;
 use App\Models\Event;
@@ -33,7 +34,7 @@ class UserTransformer extends TransformerAbstract
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
         $new_user['vip_begin_date'] = $user->vip_begin_date;
         $new_user['vip_end_date'] = $user->vip_end_date;
-        $new_user['created_at'] =$user->created_at;
+        $new_user['created_at'] = Carbon::parse($user->created_at)->toDateTimeString();
         $new_user['nickname'] = $user->nickname;
         $new_user['signature'] = $user->signature;
         $new_user['avatar_url'] = $user->avatar_url;
@@ -41,12 +42,12 @@ class UserTransformer extends TransformerAbstract
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
         $new_user['coin'] = $user->energy_count;
-        $event_count = Event::where('user_id', $user->user_id)->count();
+        $event_count = Event::where('user_id', $user->id)->count();
         $new_user['event_count'] = $event_count;
 
         $wechat = DB::table('users_bind')
             ->where('provider', 'wechat')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_wechat = [];
@@ -55,7 +56,7 @@ class UserTransformer extends TransformerAbstract
 
         $qq = DB::table('users_bind')
             ->where('provider', 'qq')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_qq = [];
@@ -64,7 +65,7 @@ class UserTransformer extends TransformerAbstract
 
         $weibo = DB::table('users_bind')
             ->where('provider', 'weibo')
-            ->where('user_id', $user->user_id)
+            ->where('user_id', $user->id)
             ->first();
 
         $new_weibo = [];

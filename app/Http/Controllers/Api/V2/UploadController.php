@@ -63,7 +63,7 @@ class UploadController extends BaseController
 
                 $attach = new Attach();
                 $attach->name = $fileName;
-                $attach->mine_type = $mineType;
+                $attach->mime_type = $mineType;
                 $attach->size = $size;
                 $attach->hash = $hash;
                 $attach->extension = $extension;

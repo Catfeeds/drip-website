@@ -50,18 +50,6 @@ class CommentController extends BaseController
 
     public function unLike($comment_id)
     {
-//        $messages = [
-//            'required' => '缺少参数 :attribute',
-//        ];
-//
-//        $validation = Validator::make(Input::all(), [
-//            'comment_id'		=> 	'required',		// 评论id
-//        ],$messages);
-//
-//        if($validation->fails()){
-//            return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-//        }
-
         $user_id = $this->auth->user()->id;
 
         $comment = Comment::find($comment_id);

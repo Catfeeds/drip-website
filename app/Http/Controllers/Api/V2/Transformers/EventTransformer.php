@@ -34,15 +34,11 @@ class EventTransformer extends TransformerAbstract
 
             $checkin = Checkin::find($event->event_value);
 
-//            $checkin = DB::table('checkin')
-//                ->where('checkin_id',$event->event_value)
-//                ->first();
-
-            $content = $checkin->checkin_content;
+            $content = $checkin->content;
 
             $new_event['content'] = $content ? mb_substr($content, 0, 20) : '';
 
-            $new_checkin['id'] = $checkin->checkin_id;
+            $new_checkin['id'] = $checkin->id;
             $new_checkin['total_days'] = $checkin->total_days;
 
 			$items = DB::table('checkin_item')

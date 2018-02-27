@@ -62,9 +62,9 @@ class EventController extends BaseController {
 			// 获取对应的信息
 			$checkin = Checkin::find($event->event_value);
 
-			$result['content'] = $checkin->checkin_content;
+			$result['content'] = $checkin->content;
 
-            $new_checkin['id'] = $checkin->checkin_id;
+            $new_checkin['id'] = $checkin->id;
             $new_checkin['total_days'] = $checkin->total_days;
 
 //			// 获取项目

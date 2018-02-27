@@ -108,14 +108,14 @@ class UserController extends Controller
             ->select(['feedback.*',
                 'users.user_avatar',
                 'users.nickname',
-                'attachs.id',
-                'attachs.name',
-                'attachs.path'])
+                'attaches.id',
+                'attaches.name',
+                'attaches.path'])
             ->where('feedback.is_del',0)
             ->join('users','users.user_id','=','feedback.user_id')
-            ->leftJoin('attachs', function ($join) {
-                $join->on('attachs.attachable_id', '=', 'feedback.id')
-                    ->where('attachs.attachable_type', '=', 'feedback');
+            ->leftJoin('attaches', function ($join) {
+                $join->on('attaches.attachable_id', '=', 'feedback.id')
+                    ->where('attaches.attachable_type', '=', 'feedback');
             })
             ->orderBy('feedback.create_time','desc');
 
@@ -433,18 +433,18 @@ class UserController extends Controller
                 'users.user_avatar',
                 'users.email',
                 'users.nickname',
-                'checkin.checkin_content',
-                'attachs.id',
-                'attachs.name',
-                'attachs.path'
+                'checkins.content',
+                'attaches.id',
+                'attaches.name',
+                'attaches.path'
             ])
             ->join('users','users.id','=','events.user_id')
-            ->join('checkin','checkin.checkin_id','=','events.event_value')
-            ->leftJoin('attachs','attachs.attachable_id','=','events.event_value')
-            ->where('attachs.attachable_type', '=', 'checkin')
+            ->join('checkins','checkins.id','=','events.event_value')
+            ->leftJoin('attachs','attaches.attachable_id','=','events.event_value')
+            ->where('attaches.attachable_type', '=', 'checkin')
 //            ->leftJoin('attachs', function ($join) {
-//                $join->on('attachs.attachable_id', '=', 'events.event_value')
-//                    ->where('attachs.attachable_type', '=', 'checkin');
+//                $join->on('attaches.attachable_id', '=', 'events.event_value')
+//                    ->where('attaches.attachable_type', '=', 'checkin');
 //            })
             ->orderBy('events.create_time','desc');
 
