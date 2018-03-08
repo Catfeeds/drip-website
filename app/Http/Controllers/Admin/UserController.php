@@ -429,18 +429,23 @@ class UserController extends Controller
     public function ajax_events()
     {
         $events = DB::table('events')
-            ->select(['events.*',
-                'users.user_avatar',
+            ->select(['events.user_id',
+                'events.event_id',
+                'events.event_value',
+                'events.is_public',
+                'events.is_hot',
+                'events.create_time',
+                'checkins.content',
+                'users.avatar_url',
                 'users.email',
                 'users.nickname',
-                'checkins.content',
                 'attaches.id',
                 'attaches.name',
                 'attaches.path'
             ])
             ->join('users','users.id','=','events.user_id')
             ->join('checkins','checkins.id','=','events.event_value')
-            ->leftJoin('attachs','attaches.attachable_id','=','events.event_value')
+            ->leftJoin('attaches','attaches.attachable_id','=','events.event_value')
             ->where('attaches.attachable_type', '=', 'checkin')
 //            ->leftJoin('attachs', function ($join) {
 //                $join->on('attaches.attachable_id', '=', 'events.event_value')
@@ -467,7 +472,7 @@ class UserController extends Controller
             ->editColumn('create_time', function ($event) {
                 return date("Y-m-d H:i:s",$event->create_time);
             })
-            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" class="img-circle" width="48" height="48">')
+//            ->editColumn('avatar_url', '<img src="{{avatar_url}}" class="img-circle" width="48" height="48">')
             ->make(true);
     }
 

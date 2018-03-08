@@ -27,6 +27,7 @@ class EventTransformer extends TransformerAbstract
         $new_event['id'] = $event->event_id;
         $new_event['content'] = $event->event_content;
         $new_event['like_count'] = $event->like_count;
+        $new_event['is_hot'] = (boolean)$event->is_hot;
 
         $new_checkin = [];
 
@@ -83,6 +84,7 @@ class EventTransformer extends TransformerAbstract
         $new_user['nickname'] = $user->nickname;
         $new_user['avatar_url'] = $user->avatar_url;
         $new_user['is_vip'] = $user->is_vip==1?true:false;
+        $new_user['verified_type'] = $user->verified_type;
         $new_event['user'] = $new_user;
 
         $new_event['goal'] = $event->goal;

@@ -39,6 +39,8 @@ class UserTransformer extends TransformerAbstract
         $new_user['signature'] = $user->signature;
         $new_user['avatar_url'] = $user->avatar_url;
         $new_user['sex'] = $user->sex;
+        $new_user['verified_type'] = $user->verified_type;
+        $new_user['verified_reason'] = $user->verified_reason;
         $new_user['follow_count'] = $user->follow_count;
         $new_user['fans_count'] = $user->fans_count;
         $new_user['coin'] = $user->energy_count;

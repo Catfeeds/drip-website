@@ -70,6 +70,10 @@ class UserController extends BaseController
             $new_user['fans_count'] = $user->fans_count;
             $new_user['follow_count'] = $user->follow_count;
             $new_user['avatar_url'] = $user->avatar_url;
+            $new_user['sex'] = $user->sex;
+            $new_user['verified_type'] = $user->verified_type;
+            $new_user['verified_reason'] = $user->verified_reason;
+
             $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
 
         }
@@ -313,13 +317,13 @@ class UserController extends BaseController
     {
         $user_id = $this->auth->user()->id;
 
-        return User::find($user_id)
-            ->goals()
-            ->wherePivot('is_del', '=', 0)
-            ->wherePivot('start_date', '<=', $date)
+        return UserGoal::where('user_id', '=', $user_id)
             ->where(function ($query) use ($date) {
-                $query->where('user_goals.end_date', '>=', $date)
-                    ->orWhere('user_goals.end_date', '=', NULL);
+                if ($date) {
+                    $query->where('start_date', '<=', $date)
+                        ->where('end_date', '>=', $date)
+                        ->orWhere('end_date', '=', NULL);
+                }
             })
             ->count();
     }
@@ -359,36 +363,35 @@ class UserController extends BaseController
             return $this->response->error("未制定该目标", 500);
         }
 
+        $date_type = $request->input('date_type',1);
+        $start_date = $request->input('start_date');
+        $end_date = $request->input('end_date');
+        $days = $request->input('expect_days',0);
+
         $input = $request->all();
+
+        if($date_type == 2) {
+            if ($end_date < $start_date) {
+                return $this->response->error("结束日期不得小于开始日期", 500);
+            }
+
+            $start_dt = Carbon::parse($start_date);
+            $end_dt = Carbon::parse($end_date);
+            $max_days = $start_dt->diffInDays($end_dt);
+
+            if($days > $max_days) {
+                return $this->response->error("目标天数大于日期范围", 500);
+            }
+        }
 
         if ($input) {
 
-            if ($request->has('start_date')) {
-                $start_date = $request->input('start_date');
-            } else {
-                $start_date = $request->input('start_date');
-            }
-
-            if ($request->has('end_date')) {
-                $end_date = $request->input('end_date');
-            } else {
-                $end_date = $request->input('end_date');
-            }
-
-            if ($end_date) {
-                if ($start_date > $end_date) {
-                    return $this->response->error("开始时间不得大于结束时间", 500);
-                }
-
-                $start_dt = Carbon::parse($start_date);
-                $end_dt = Carbon::parse($end_date);
-
-                $expect_days = $start_dt->diffInDays($end_dt);
-
-                $input['expect_days'] = $expect_days;
-            }
-
             unset($input['items']);
+
+            if($request->has('weeks')) {
+                $input['weekday'] = implode(';',$input['weeks']);
+                unset($input['weeks']);
+            }
 
             $user_goal->update($input);
 

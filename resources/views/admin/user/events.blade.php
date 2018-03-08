@@ -113,7 +113,7 @@
                 columns: [
                     {data: 'event_id', name: 'event_id'},
                     {data: 'nickname', name: 'nickname'},
-                    {data: 'checkin_content', name: 'checkin_content'},
+                    {data: 'content', name: 'content'},
                     {data: 'attach', name: 'attach'},
                     {data: 'is_public', name: 'is_public'},
                     {data: 'is_hot', name: 'is_hot'},

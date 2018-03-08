@@ -190,10 +190,9 @@ class GoalController extends BaseController
         $messages = [
             'name.required' => '请输入名称',
             'name.max' => '名称不得超过30个字符',
-//            'days.numeric' => '天数需为正整数',
-//            'days.required' => '请输入天数',
-//            'days.min' => '天数不能为负',
-//            'days.max' => '超过最大设定天数',
+            'days.numeric' => '天数需为正整数',
+            'days.min' => '天数不能为负',
+            'days.max' => '超过最大设定天数',
             'start_date.date_format' => '开始日期格式错误',
             'end_date.date_format' => '结束日期格式错误',
             'start_date.after' => '开始日期不得小于今天',
@@ -203,12 +202,11 @@ class GoalController extends BaseController
 
         $validation = Validator::make(Input::all(), [
             'name' => 'required|max:30',     // 名称
-//            'days' => 'required|numeric|min:0',  // 天数
+            'days' => 'numeric|min:0|max:9999',  // 天数
             'start_date' => 'date|date_format:Y-m-d|after:today',    //开始日期
             'end_date' => 'date|date_format:Y-m-d|after:today',      //结束日期
             'desc' => 'max:255',             // 描述
-            'is_public' => '',             // 描述
-            'remind_time' => '',             // 描述
+            'is_public' => '',             // 是否公开
 
         ], $messages);
 
@@ -219,11 +217,30 @@ class GoalController extends BaseController
         $user_id = $this->auth->user()->id;
 
         $start_date = $request->input('start_date', date('Y-m-d'));
-        $end_date = $request->input('end_date');
 
-        if ($end_date && $end_date < $start_date) {
-            return $this->response->error("结束日期不得小于开始日期", 500);
+        if(!$start_date) {
+            $start_date = date('Y-m-d');
         }
+
+        $end_date = $request->input('end_date');
+        $date_type =  $request->input('date_type',1);
+        $days =  $request->input('days',0);
+
+        // 检查目标天数和日期范围
+        if($date_type == 2) {
+            if ($end_date < $start_date) {
+                return $this->response->error("结束日期不得小于开始日期", 500);
+            }
+
+            $start_dt = Carbon::parse($start_date);
+            $end_dt = Carbon::parse($end_date);
+            $max_days = $start_dt->diffInDays($end_dt);
+
+            if($days > $max_days) {
+                return $this->response->error("目标天数大于日期范围", 500);
+            }
+        }
+
 
         $goal_name = trim($request->input('name'));
         $goal_desc = trim($request->input('desc'));
@@ -249,24 +266,16 @@ class GoalController extends BaseController
             return $this->response->error("你已经制定过该目标,请勿重复添加", 500);
         }
 
-        $expect_days = 0;
-
-        if (!empty($end_date)) {
-            $start_dt = Carbon::parse($start_date);
-            $end_dt = Carbon::parse($end_date);
-            $expect_days = $start_dt->diffInDays($end_dt);
-        }
-
         $user_goal = new UserGoal();
         $user_goal->user_id = $user_id;
         $user_goal->goal_id = $goal->id;
         $user_goal->name = $goal_name;
         $user_goal->desc = $goal_desc;
+        $user_goal->date_type = $date_type;
         $user_goal->start_date = $start_date;
         $user_goal->end_date = $end_date;
-        $user_goal->expect_days = $expect_days;
+        $user_goal->expect_days = $days;
         $user_goal->status = ($start_date > date('Y-m-d')) ? 0:1;
-        $user_goal->remind_time = $request->input('remind_time');
         $user_goal->save();
 
         // 更新用户信息
@@ -346,9 +355,17 @@ class GoalController extends BaseController
             return $this->response->error('目标还未开始', 500);
         }
 
-        if($user_goal->end_date) {
+        if($user_goal->date_type == 2) {
             if($user_goal->end_date < date('Y-m-d')) {
                 return $this->response->error('目标已结束', 500);
+            }
+        }
+
+        // TODO
+        if($user_goal->weekday) {
+            $weekdays = explode(';',$user_goal->weekday);
+            if(!in_array(date('w'),$weekdays)) {
+                return $this->response->error('不在打卡周期内', 500);
             }
         }
 
