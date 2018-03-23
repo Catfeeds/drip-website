@@ -52,7 +52,6 @@ class GoalRemind2 extends Command
     {
         // DB::connection()->enableQueryLog();
 
-
         // 获取所有需要推送的目标
         // 7 天 14天 30天各推送一次
         $users = DB::table('user_goal')

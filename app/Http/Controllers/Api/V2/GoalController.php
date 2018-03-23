@@ -341,7 +341,7 @@ class GoalController extends BaseController
 
         $content = trim($request->input('content'));
 
-            $user_id = $this->auth->user()->id;
+        $user_id = $this->auth->user()->id;
 
         $user_goal = UserGoal::where('user_id','=',$user_id)
             ->where('goal_id', '=', $goal_id)
@@ -362,6 +362,7 @@ class GoalController extends BaseController
         }
 
         // TODO
+        // 判断是否在打卡周期内
         if($user_goal->weekday) {
             $weekdays = explode(';',$user_goal->weekday);
             if(!in_array(date('w'),$weekdays)) {
@@ -371,62 +372,27 @@ class GoalController extends BaseController
 
         $series_days = $user_goal->series_days;
 
-        // 获取当天的打卡记录
-        $user_checkin = Checkin::where('user_id', '=', $user_id)
+        // 获取当天的打卡次数
+        $today_checkin_count = Checkin::where('user_id', '=', $user_id)
             ->where('goal_id', '=', $goal_id)
             ->where('checkin_day', '=', $day)
-            ->first();
+            ->count();
 
-        // 如果存在该条打卡记录
-        if ($user_checkin) {
-            return $this->response->error('今日已打卡', 500);
+        if ($today_checkin_count >= $user_goal->max_daily_count) {
+            return $this->response->error('超过当日打卡最大次数', 500);
         }
 
+        // 保存打卡记录
         $checkin = new Checkin();
         $checkin->content = nl2br($content);
         $checkin->checkin_day = $day;
         $checkin->obj_id = $goal_id;
         $checkin->goal_id = $goal_id;
         $checkin->obj_type = 'GOAL';
+        $checkin->checkinable_id = $goal_id;
+        $checkin->checkinable_type = 'goal';
         $checkin->user_id = $user_id;
         $checkin->is_public = $request->is_public?(int)$request->is_public:$user_goal->is_public;
-        $checkin->save();
-
-        // 单次打卡奖励
-        $single_add_coin = 0;
-
-        if(!$isReCheckin) {
-            // TODO 判断当前目标今天是否打卡
-            $single_add_coin = 2;
-        }
-
-        // 连续打卡奖励
-        $series_add_coin = 0;
-
-        if(!$isReCheckin) {
-            if ($series_days>=5&&$series_days<10) {
-                $series_add_coin = 5;
-            } else if ($series_days>=10&&$series_days<20) {
-                $series_add_coin = 10;
-            }else if ($series_days>=20) {
-                $series_add_coin = 20;
-            }
-        }
-
-        // 如果存在该条打卡记录
-        if (date('Y-m-d', strtotime($user_goal->last_checkin_at)) == date("Y-m-d", strtotime("-1 day", strtotime($day)))) {
-            $series_days += 1;
-        } else {
-            $series_days = 1;
-        }
-
-        $total_days = $user_goal->total_days;
-
-        $total_days++;
-
-        $checkin->total_days = $total_days;
-        $checkin->series_days = $series_days;
-
         $checkin->save();
 
         // 插入items
@@ -452,13 +418,48 @@ class GoalController extends BaseController
             }
         }
 
+        // 单次打卡奖励
+        $single_add_coin = 0;
+        // 连续打卡奖励
+        $series_add_coin = 0;
+
+        if($today_checkin_count == 0) {
+            $single_add_coin = 2;
+
+            // 计算连续打卡奖励
+            if(!$isReCheckin) {
+                if ($series_days>=5&&$series_days<10) {
+                    $series_add_coin = 5;
+                } else if ($series_days>=10&&$series_days<20) {
+                    $series_add_coin = 10;
+                }else if ($series_days>=20) {
+                    $series_add_coin = 20;
+                }
+            }
+        }
+
+        // 计算连续打卡天数
+        if (date('Y-m-d', strtotime($user_goal->last_checkin_at)) == date("Y-m-d", strtotime("-1 day", strtotime($day)))) {
+            $series_days += 1;
+        } else {
+            $series_days = 1;
+        }
+
+        $total_days = $user_goal->total_days;
+
+        $total_days++;
+
+        $checkin->total_days = $total_days;
+        $checkin->series_days = $series_days;
+
+        $checkin->save();
+
         $user_goal->total_days = $total_days;
         $user_goal->series_days = $series_days;
         $user_goal->last_checkin_at = $day < date('Y-m-d') ? $day.' 23:59:59' : date('Y-m-d H:i:s');
         $user_goal->save();
 
         User::find($user_id)->increment('checkin_count', 1);
-        User::find($user_id)->increment('energy_count', 1);
 
         if($single_add_coin > 0) {
             $energy = new Energy();
@@ -468,6 +469,7 @@ class GoalController extends BaseController
             $energy->obj_id = $checkin->id;
             $energy->create_time = time();
             $energy->save();
+            User::find($user_id)->increment('energy_count', $single_add_coin);
         }
 
         if($series_add_coin > 0) {
@@ -478,23 +480,26 @@ class GoalController extends BaseController
             $energy->obj_id = $checkin->id;
             $energy->create_time = time();
             $energy->save();
+            User::find($user_id)->increment('energy_count', $series_add_coin);
         }
 
+        // 发表动态
         $event = new Event();
         $event->goal_id = $goal_id;
         $event->user_id = $user_id;
         $event->event_value = $checkin->id;
+        $event->eventable_id = $checkin->id;
+        $event->eventable_type = 'checkin';
         $event->type = 'USER_CHECKIN';
         $event->is_public = $request->is_public?(int)$request->is_public:$user_goal->is_public;
         $event->create_time = time();
-
         $event->save();
 
-        //更新用户目标表
+        // 处理动态内容
         if ($content) {
             $this->_parse_content($content, $user_id, $event->event_id);
         }
-        return compact('series_add_coin','single_add_coin');
+        return compact('series_add_coin','single_add_coin','total_days');
     }
 
     private function _parse_content($content, $user_id, $event_id)

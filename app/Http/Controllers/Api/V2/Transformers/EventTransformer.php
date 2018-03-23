@@ -47,13 +47,14 @@ class EventTransformer extends TransformerAbstract
 					->where('checkin_id', $event->event_value)
 					->get();
 
+
 			$new_items = [];
 
             foreach ($items as $k => $item) {
                 $new_items[$k]['id'] = $item->item_id;
                 $new_items[$k]['name'] = $item->item_name;
                 $new_items[$k]['unit'] = $item->item_unit;
-                $new_items[$k]['type'] = $item->item_type;
+                $new_items[$k]['type'] = $item->type;
                 $new_items[$k]['value'] = $item->item_value;
             }
 
@@ -69,7 +70,8 @@ class EventTransformer extends TransformerAbstract
             foreach ($checkin->attaches as $k => $attach) {
                 $new_attachs[$k]['id'] = $attach->id;
                 $new_attachs[$k]['name'] = $attach->name;
-                $new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/" . $attach->path . '/' . $attach->name;
+//                $new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/" . $attach->path . '/' . $attach->name;
+                $new_attachs[$k]['url'] = "http://file.growu.me/".$attach->name."?imageslim";
             }
 
             $new_event['attachs'] = $new_attachs;

@@ -73,7 +73,7 @@ class TopController extends BaseController {
         $users = [];
 
         foreach($pre_users as $k=>$user) {
-            $users[$k]['id'] = $user->user_id;
+            $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
             $users[$k]['checkin_count'] = $user->count;
@@ -117,7 +117,7 @@ class TopController extends BaseController {
         $users = [];
 
         foreach($pre_users as $k=>$user) {
-            $users[$k]['id'] = $user->user_id;
+            $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
             $users[$k]['checkin_count'] = $user->count;
@@ -162,7 +162,7 @@ class TopController extends BaseController {
         $users = [];
 
         foreach($pre_users as $k=>$user) {
-            $users[$k]['id'] = $user->user_id;
+            $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
             $users[$k]['checkin_count'] = $user->count;
@@ -205,7 +205,7 @@ class TopController extends BaseController {
         $users = [];
 
         foreach($pre_users as $k=>$user) {
-            $users[$k]['id'] = $user->user_id;
+            $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
             $users[$k]['checkin_count'] = $user->count;

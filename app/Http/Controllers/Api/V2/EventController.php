@@ -78,8 +78,9 @@ class EventController extends BaseController {
 			foreach($checkin->attaches as $k=>$attach) {
 				$new_attachs[$k]['id'] = $attach->id;
 				$new_attachs[$k]['name'] = $attach->name;
-				$new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->path.'/'.$attach->name;
-			}
+//				$new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->path.'/'.$attach->name;
+                $new_attachs[$k]['url'] = "http://file.growu.me/".$attach->name."?imageslim";
+            }
 
             $result['attachs'] = $new_attachs;
 
@@ -236,11 +237,11 @@ class EventController extends BaseController {
 	public function getHotEvents(Request $request) {
 
 		$page = $request->input('page',1);
-		$per_page = $request->input('per_page',20);
+		$per_page = $request->input('per_page',10);
 
 		$events = Event::where('is_hot','=',1)
 			->where('is_public','=',1)
-			->orderBy('create_time','DESC')
+			->orderBy('created_at','DESC')
             ->skip(($page-1)*$per_page)
 			->take($per_page)
             ->get();

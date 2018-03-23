@@ -25,6 +25,22 @@ class UserGoal extends Model
     protected $dates = ['deleted_at'];
 
     protected $fillable = [
-        'name','desc','expect_days','date_type','start_date','end_date','is_remind','remind_time','is_public','weekday','checkin_model','time_type','start_time','end_time','order'
+        'name',
+        'desc',
+        'expect_days',
+        'date_type',
+        'start_date',
+        'end_date',
+        'is_remind',
+        'remind_time',
+        'is_public',
+        'weekday',
+        'checkin_model',
+        'max_daily_count',
+        'time_type',
+        'start_time',
+        'end_time',
+        'order',
+        'status'
     ];
 }

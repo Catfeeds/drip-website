@@ -12,6 +12,12 @@ class Checkin extends Model
         return $this->belongsTo('App\User');
     }
 
+    // 获取对应的动态
+    public function event()
+    {
+        return $this->hasOne('App\Models\Event');
+    }
+
     public function items()
     {
         return $this->belongsToMany('App\Item','checkin_item','checkin_id','item_id')->withPivot('item_value');

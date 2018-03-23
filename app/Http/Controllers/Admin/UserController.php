@@ -98,26 +98,24 @@ class UserController extends Controller
      */
     public function feedbacks()
     {
-        $feedbacks = Feedback::paginate(100);;
-        return view('admin.user.feedbacks', ['feedbacks' => $feedbacks]);
+        return view('admin.user.feedbacks', []);
     }
 
     public function ajax_feedbacks()
     {
-        $feedbacks = DB::table('feedback')
-            ->select(['feedback.*',
-                'users.user_avatar',
+        $feedbacks = DB::table('feedbacks')
+            ->select(['feedbacks.*',
+                'users.avatar_url',
                 'users.nickname',
-                'attaches.id',
                 'attaches.name',
                 'attaches.path'])
-            ->where('feedback.is_del',0)
-            ->join('users','users.user_id','=','feedback.user_id')
+            ->where('feedbacks.is_del',0)
+            ->join('users','users.id','=','feedbacks.user_id')
             ->leftJoin('attaches', function ($join) {
-                $join->on('attaches.attachable_id', '=', 'feedback.id')
-                    ->where('attaches.attachable_type', '=', 'feedback');
+                $join->on('attaches.attachable_id', '=', 'feedbacks.id')
+                    ->where('attaches.attachable_type', '=', 'feedbacks');
             })
-            ->orderBy('feedback.create_time','desc');
+            ->orderBy('feedbacks.create_time','desc');
 
         return Datatables::of($feedbacks)
             ->addColumn('action', function ($feedback) {
@@ -158,7 +156,7 @@ class UserController extends Controller
                   $device = json_decode($feedback->device);
                   return $device?$device->manufacturer.' '.$device->model:'';
             })
-            ->editColumn('user_avatar', '<img src="{{$user_avatar}}" width="48" height="48">')
+            ->editColumn('avatar_url', '<img src="{{$avatar_url}}" width="48" height="48">')
             ->make(true);
     }
 

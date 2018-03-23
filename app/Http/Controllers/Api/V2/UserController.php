@@ -255,6 +255,8 @@ class UserController extends BaseController
             ->orderBy('user_goals.order', 'asc')
             ->get();
 
+//                print_r(DB::getQueryLog());
+
         return $this->response->collection($user_goals, new UserGoalTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
@@ -273,7 +275,9 @@ class UserController extends BaseController
 
         foreach ($attaches as $k => $attach) {
             $new_attachs[$k]['id'] = $attach->id;
-            $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/' . $attach->path . '/' . $attach->name;
+//            $new_attachs[$k]['url'] = 'http://drip.growu.me/uploads/images/' . $attach->path . '/' . $attach->name;
+            $new_attachs[$k]['url'] = 'http://file.growu.me/' . $attach->name.'?imageslim';
+
         }
 
         return $new_attachs;
@@ -364,7 +368,7 @@ class UserController extends BaseController
         }
 
         $date_type = $request->input('date_type',1);
-        $start_date = $request->input('start_date');
+        $start_date = $request->input('start_date',date('Y-m-d'));
         $end_date = $request->input('end_date');
         $days = $request->input('expect_days',0);
 
@@ -392,6 +396,24 @@ class UserController extends BaseController
                 $input['weekday'] = implode(';',$input['weeks']);
                 unset($input['weeks']);
             }
+
+            // 修改目标状态
+            if($date_type == 1) {
+                $input['status'] = 1;
+                $input['start_date'] = date('Y-m-d');
+            } else {
+                if($start_date <= date('Y-m-d')) {
+                    $input['status'] = 1;
+                } else {
+                    $input['status'] = 0;
+                }
+            }
+
+            if(!$input['is_remind']) {
+                $input['remind_time'] = null;
+            }
+
+            unset($input['is_remind']);
 
             $user_goal->update($input);
 
@@ -445,13 +467,13 @@ class UserController extends BaseController
         for ($i = 0; $i < 7; $i++) {
 
             if ($i > 0) {
-                $dt->addDay();
+                $start_day->addDay();
             }
 
             $is_checkin = Checkin::where('goal_id', $goal_id)
                 ->where('user_id', $user_id)
-                ->where('checkin_day', $dt->toDateString())
-                ->get();
+                ->where('checkin_day', $start_day->toDateString())
+                ->first();
 
             $result[$i] = $is_checkin ? true : false;
         }
@@ -460,6 +482,7 @@ class UserController extends BaseController
 
     }
 
+    // 根据日期获取打卡
     public function getGoalDay($goal_id, Request $request)
     {
 
@@ -479,60 +502,29 @@ class UserController extends BaseController
 
         $user_id = $this->auth->user()->id;
 
-        $event = Event::where('goal_id', $goal_id)
+        // 获取当日打卡
+        $checkins = Checkin::where('checkin_day','=',$day)
             ->where('user_id', $user_id)
-            ->whereRaw("DATE_FORMAT(created_at,'%Y-%m-%d') = '" . $day . "'")
-            ->first();
+            ->where('goal_id', $goal_id)
+            ->orderBy('created_at','desc')
+            ->get();
 
+        $result = [];
 
-        $new_event = (object)[];
+        foreach ($checkins as $k=>$checkin) {
+            $result[$k]['id'] = $checkin->id;
+            $result[$k]['content'] = $checkin->content;
+            $result[$k]['created_at']  = Carbon::parse($checkin->created_at)->toDateTimeString();
 
-        if ($event) {
-            $new_event->id = $event->event_id;
-            $new_event->content = $event->event_content;
+            // 获取EVENT
+            $event = Event::where('eventable_id',$checkin->id)
+                ->where('eventable_type','checkin')
+                ->first();
 
-            if ($event['type'] == 'USER_CHECKIN') {
-                $checkin = $event->checkin;
-
-                if ($checkin) {
-                    $new_event->content = $checkin->content;
-
-                    $new_checkin = [];
-
-                    $new_checkin['day'] = $checkin->checkin_day;
-                    $new_checkin['total_days'] = $checkin->total_days;
-
-                    $new_event->checkin = $new_checkin;
-                }
-
-
-                $items = DB::table('checkin_item')
-                    ->join('user_goal_item', 'user_goal_item.item_id', '=', 'checkin_item.item_id')
-                    ->where('checkin_id', $event->event_value)
-                    ->get();
-
-
-                $new_attachs = [];
-
-                foreach ($checkin->attaches as $k => $attach) {
-                    $new_attachs[$k]['id'] = $attach->id;
-                    $new_attachs[$k]['name'] = $attach->name;
-                    $new_attachs[$k]['path'] = $attach->path;
-                    $new_attachs[$k]['url'] = "http://www.keepdays.com/uploads/images/" . $attach->path . '/' . $attach->name;
-
-                }
-
-                $new_event->attachs = $new_attachs;
-
-                $new_event->user = $event->user;
-                $new_event->goal = $event->goal;
-            }
+            $result[$k]['event_id'] = is_null($event)?null:$event->event_id;
         }
 
-        return response()->json($new_event);
-
-//        return $new_event;
-
+        return $result;
     }
 
     public function getGoalCalendar($goal_id, Request $request)
@@ -602,7 +594,7 @@ class UserController extends BaseController
                 $count = DB::table('checkins')
                     ->where('goal_id', $goal_id)
                     ->where('user_id', $user_id)
-                    ->whereRaw('YEAR(checkin_day)=' . $year)
+                    ->whereYear('checkin_day','=',$year)
                     ->whereRaw('WEEK(checkin_day)=' . $week)
                     ->count();
 
@@ -639,8 +631,8 @@ class UserController extends BaseController
                 $count = DB::table('checkins')
                     ->where('goal_id', $goal_id)
                     ->where('user_id', $user_id)
-                    ->whereRaw('YEAR(checkin_day)=' . $year)
-                    ->whereRaw('MONTH(checkin_day)=' . $month)
+                    ->whereYear('checkin_day','=',$year)
+                    ->whereMonth('checkin_day','=',$month)
                     ->count();
 
                 $total_checkin_days += $count;
@@ -674,7 +666,7 @@ class UserController extends BaseController
                 $count = DB::table('checkins')
                     ->where('goal_id', $goal_id)
                     ->where('user_id', $user_id)
-                    ->whereRaw('YEAR(checkin_day)=' . $year)
+                    ->whereYear('checkin_day','=',$year)
                     ->count();
 
                 $total_checkin_days += $count;
@@ -958,7 +950,7 @@ class UserController extends BaseController
             'create_time' => time(),
         ];
 
-        $feedback_id = DB::table('feedback')->insertGetId($data);
+        $feedback_id = DB::table('feedbacks')->insertGetId($data);
 
         // 更新附件
         if ($attaches = $request->input('attaches')) {

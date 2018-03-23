@@ -5,6 +5,7 @@ use App\Libs\MyJpush;
 use Illuminate\Console\Command;
 use DB;
 use Jpush;
+use App\Models\UserGoal;
 
 use App\Goal;
 use App\Models\Device as Device;
@@ -45,25 +46,18 @@ class GoalRemind extends Command
     {
          DB::connection()->enableQueryLog();
 
-        // 获取所有需要推送的目标
-        $goals = DB::table('user_goal')
-            ->join('users', 'users.user_id', '=', 'user_goal.user_id')
-            ->join('goal', 'goal.goal_id', '=', 'user_goal.goal_id')
-            ->where('user_goal.is_del','=',0)
-            ->where('remind_time','=',date('H:i').':00')
-            ->select('users.*', 'goal.goal_name','user_goal.*')
-            ->get();
 
-        $bar = $this->output->createProgressBar(count($goals));
+         $user_goals = UserGoal::where('remind_time','=',date('H:i').':00')
+                        ->get();
 
+        $bar = $this->output->createProgressBar(count($user_goals));
 
-        foreach ($goals as $goal) {
+        foreach ($user_goals as $user_goal) {
 
-            $diff_days = ceil((time()-$goal->start_time)/86400);
-            $content = $goal->goal_name." 打卡提醒";
+            $content = "打卡提醒: ".$user_goal->name;
 
             $jpush = new MyJpush();
-            $jpush->pushToSingleUser($goal->user_id,$content);
+            $jpush->pushToSingleUser($user_goal->user_id,$content);
 
             $bar->advance();
 

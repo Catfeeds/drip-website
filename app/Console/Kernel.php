@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         Commands\EmailSend::class,  
         Commands\EventLike::class,
         Commands\VipCheck::class,
+        Commands\DailyStat::class,
     ];
 
     /**
@@ -38,6 +39,7 @@ class Kernel extends ConsoleKernel
 //        $schedule->command('email:send')->dailyAt('23:59');
         $schedule->command('goal:check')->dailyAt('00:01');
         $schedule->command('vip:check')->dailyAt('01:00');
+        $schedule->command('stat:daily')->dailyAt('23:59');
         $schedule->command('goal:remind2')->dailyAt('22:01');
     }
 }

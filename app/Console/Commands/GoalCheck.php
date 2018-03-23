@@ -53,39 +53,48 @@ class GoalCheck extends Command
         $yesterday = date('Y-m-d',strtotime('-1 day'));
 
         // 修改到期目标的状态
-        $user_goals = UserGoal::where('end_date','<=',$yesterday)
+        UserGoal::where('end_date','<=',$yesterday)
+            ->where('status','=',1)
             ->whereNotNull('end_date')
-            ->get();
-
-        foreach($user_goals as $user_goal) {
-            $user_goal->status = 2;
-            $user_goal->save();
-        }
+            ->update(['status'=>2]);
 
         // 修改开始目标的状态
-        $user_goals = UserGoal::where('start_date','=',date('Y-m-d'))
-            ->get();
-
-        foreach($user_goals as $user_goal) {
-            $user_goal->status = 1;
-            $user_goal->save();
-        }
+        UserGoal::where('start_date','=',date('Y-m-d'))
+            ->where('status','=',0)
+            ->update(['status'=>1]);
 
         // TODO 关闭30天未打卡的目标
-//        $user_goals = UserGoal::where('end_date','<=',$yesterday)
-//            ->whereNotNull('end_date')
-//            ->get();
-        // 给7天，14天，30天未打卡的用户发送推送
+//        UserGoal::whereDate('last_checkin_at','<',date('Y-m-d',strtotime('-1 month')))
+//            ->where('status','=',1)
+//            ->whereNotNull('last_checkin_at')
+//            ->update(['status'=>2]);
 
+//        UserGoal::where('start_date','<',date('Y-m-d',strtotime('-1 month')))
+//            ->where('status','=',1)
+//            ->whereNull('last_checkin_at')
+//            ->update(['status'=>2]);
+
+        // 给7天，14天，21天未打卡的用户发送推送
+//        $user_goals = UserGoal::whereDate('last_checkin_at','=',date('Y-m-d',strtotime('-14 days')))
+//            ->where('status','=',1)
+//            ->whereNotNull('last_checkin_at')
+//            ->get();
+//
+//        foreach ($user_goals as $user_goal) {
+//            $this->_send_messages($user_goal,'目标打卡提醒','目标 '.$user_goal->goal_name.' 已经7天没有打卡了。');
+//        }
+//
+//        $user_goals = UserGoal::where('start_date','<',date('Y-m-d',strtotime('-1 month')))
+//            ->where('status','=',1)
+//            ->whereNull('last_checkin_at')
+//            ->get();
+
+        // 给结束日期只有7天，3天，1天提醒
     }
 
-    private function _send_messages()
+    private function _send_messages($user_goal)
     {
-        //        foreach($user_goals as $user_goal) {
-//            $user_goal->status = 1;
-//            $user_goal->end_date = date('Y-m-d');
-//            $user_goal->save();
-//
+
 //            $goal = Goal::find($user_goal->goal_id);
 //
 //            // 给用户发送message
