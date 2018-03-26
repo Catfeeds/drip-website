@@ -6,11 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class UserFollow extends Model
 {
-//    protected $table = 'topic';
-    protected $primaryKey = 'user_id';
-
-    public function events()
+    /**
+     * 获取关注的用户对象
+     */
+    public function follow_user()
     {
-        return $this->hasMany('App\Models\Event','user_id','follow_user_id');
+        return $this->belongsTo('App\User','follow_user_id');
+    }
+
+    /**
+     * 获取用户对象
+     */
+    public function user()
+    {
+        return $this->belongsTo('App\User');
     }
 }

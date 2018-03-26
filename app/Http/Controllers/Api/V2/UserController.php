@@ -16,17 +16,17 @@ use GuzzleHttp\Client;
 
 use App\User;
 use App\Checkin;
-use App\Models\Message as Message;
+use App\Models\Message;
 use App\Goal;
-use App\Models\Attach as Attach;
-use App\Models\Report as Report;
+use App\Models\Attach;
+use App\Models\Report;
 use App\Models\Topic;
 use App\Models\UserGoal;
 use App\Models\Event;
+use App\Models\UserFollow;
 use App\Like;
 use App\Models\Comment;
 use App\Models\Energy;
-
 
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
@@ -1104,7 +1104,7 @@ class UserController extends BaseController
 
     }
 
-
+    // TODO 删除
     public function getFans($user_id, Request $request)
     {
         // 关注时间排序
@@ -1149,50 +1149,89 @@ class UserController extends BaseController
 
     }
 
-    public function getFollowings($user_id, Request $request)
+
+    /**
+     * 获取用户关注列表
+     * @param $user_id
+     * @param Request $request
+     * @return array
+     */
+    public function getFollowers($user_id, Request $request)
     {
-        // 关注时间排序
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
 
-        $page = $request->page;
-        $per_page = $request->per_page;
+        $current_user = $this->auth->user();
 
-
-        $users = DB::table('user_follows')
-            ->join('users', 'users.id', '=', 'user_follow.follow_user_id')
-            ->where('user_follow.user_id', '=', $user_id)
-            ->orderBy('create_time', 'asc')
-            ->skip($page)
+        $user_follows = UserFollow::where('follow_user_id','=',$user_id)
+            ->orderBy('created_at', 'asc')
+            ->skip(($page-1)*$per_page)
             ->limit($per_page)
             ->get();
 
-
         $new_users = [];
 
-        foreach ($users as $k => $user) {
+        foreach ($user_follows as $k => $user_follow) {
 
-//            $new_user = [];
+            $user = $user_follow->user;
 
             $new_users[$k]['id'] = $user->id;
             $new_users[$k]['nickname'] = $user->nickname;
             $new_users[$k]['signature'] = $user->signature;
             $new_users[$k]['avatar_url'] = $user->avatar_url;
 
-            $is_follow = DB::table('user_follows')
-                ->where('user_id', $user_id)
+            $is_follow = UserFollow::where('user_id', $current_user->id)
                 ->where('follow_user_id', $user->id)
                 ->first();
 
             // 判断是否关注该用户
             $new_users[$k]['is_follow'] = $is_follow ? true : false;
-
-//            $new_users[$k]['user'] = $new_user;
-
         }
 
         return $new_users;
 
-//        return API::response()->array(['status' => true, 'message' => '', 'data' => $users]);
+    }
 
+
+    /**
+     * 获取关注用户列表
+     * @param $user_id
+     * @param Request $request
+     * @return array
+     */
+    public function getFollowings($user_id, Request $request)
+    {
+        $page = $request->page;
+        $per_page = $request->per_page;
+
+        $current_user = $this->auth->user();
+
+        $user_follows = UserFollow::where('user_id','=',$user_id)
+            ->orderBy('created_at', 'asc')
+            ->skip(($page-1)*$per_page)
+            ->limit($per_page)
+            ->get();
+
+        $new_users = [];
+
+        foreach ($user_follows as $k => $user_follow) {
+
+            $user = $user_follow->follow_user;
+
+            $new_users[$k]['id'] = $user->id;
+            $new_users[$k]['nickname'] = $user->nickname;
+            $new_users[$k]['signature'] = $user->signature;
+            $new_users[$k]['avatar_url'] = $user->avatar_url;
+
+            // 判断是否关注该用户
+            $is_follow = UserFollow::where('user_id', $current_user->id)
+                ->where('follow_user_id', $user->id)
+                ->first();
+
+            $new_users[$k]['is_follow'] = $is_follow ? true : false;
+        }
+
+        return $new_users;
     }
 
     public function energy(Request $request)

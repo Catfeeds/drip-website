@@ -3,15 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
 {
-    protected $table = 'events';
+    use SoftDeletes;
+
     protected $primaryKey = 'event_id';
+    protected $dates = ['deleted_at'];
+
+    protected $fillable = [
+        'is_public'
+        ];
 
     public function checkin()
     {
         return $this->hasOne('App\Checkin','id','event_value');
+    }
+
+    public function eventable()
+    {
+        return $this->morphTo();
     }
 
     public function user()

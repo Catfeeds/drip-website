@@ -186,7 +186,6 @@ class EventController extends BaseController {
 		return $result;
 	}
 
-
 	public function getEventLikes($event_id,Request $request) {
 
 		$messages = [
@@ -212,7 +211,7 @@ class EventController extends BaseController {
 
 			$user = [];
 
-			$user['id'] = $like->user->user_id;
+			$user['id'] = $like->user->id;
 			$user['nickname'] = $like->user->nickname;
 			$user['signature'] = $like->user->signature;
 			$user['avatar_url'] = $like->user->avatar_url;
@@ -222,11 +221,8 @@ class EventController extends BaseController {
 				->where('follow_user_id',$like->user->user_id)
 				->first();
 
-
 			// 判断是否关注该用户
 			$user['is_follow'] = $is_follow?true:false;
-
-
 			$new_likes[$k]['user'] = $user;
 		}
 
@@ -371,8 +367,7 @@ class EventController extends BaseController {
 		}
 	}
 
-
-	// 更新点赞信息
+    // 更新点赞信息
 	private function _update_like_count($event,$like_id=0,$action='save') {
 
 		$user = User::find($event->user_id);
@@ -437,31 +432,6 @@ class EventController extends BaseController {
 		}
 	}
 
-	/**
-	 * 获取点赞列表
-	 */
-	public function likes()
-	{
-		$messages = [
-			'required' => '缺少参数 :attribute',
-		];
-
-		$validation = Validator::make(Input::all(), [
-			'event_id'		=> 	'required',		// 动态id
-		],$messages);
-
-		if($validation->fails()){
-			return API::response()->array(['status' => false, 'message' => $validation->errors()])->statusCode(200);
-		}
-
-		$event_id = Input::get('event_id');
-
-		$users = Like::with('user')->where('event_id',$event_id)->take(20)->get();
-
-		return API::response()->array(['status' => true, 'message' =>'','data'=>$users])->statusCode(200);
-
-	}
-
 	// 发表评论
 	public function comment($event_id,Request $request)
 	{
@@ -487,7 +457,7 @@ class EventController extends BaseController {
 		$event = Event::find($event_id);
 
 		if(!$event) {
-			return API::response()->array(['status' => false, 'message' =>'动态不存在'])->statusCode(200);
+            $this->response->error('动态信息不存在',500);
 		}
 
 		$comment = new Comment();
@@ -548,4 +518,53 @@ class EventController extends BaseController {
 
         return $new_comment;
 	}
+
+	/**
+     * 删除动态信息
+     */
+	public function deleteEvent($event_id,Request $request)
+    {
+        $event = Event::find($event_id);
+
+        if(!$event) {
+            $this->response->error('动态信息不存在',500);
+        }
+
+        $user_id = $this->auth->user()->id;
+
+        // 判断是否有权限
+        if($event->user_id != $user_id) {
+            $this->response->error('没有权限删除',500);
+        }
+
+
+        $event->delete();
+
+        $this->response->noContent();
+    }
+
+    /**
+     * 更新动态信息
+     * @param $event_id
+     * @param Request $request
+     */
+    public function updateEvent($event_id,Request $request)
+    {
+        $event = Event::find($event_id);
+
+        if(!$event) {
+            $this->response->error('动态信息不存在',500);
+        }
+
+        $user_id = $this->auth->user()->id;
+
+        // 判断是否有权限
+        if($event->user_id != $user_id) {
+            $this->response->error('没有权限操作',500);
+        }
+
+        $event->update($request->all());
+
+        $this->response->noContent();
+    }
 }

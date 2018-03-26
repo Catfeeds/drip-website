@@ -98,6 +98,7 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
     $api->patch('user/{id}', 'App\Http\Controllers\Api\V2\UserController@updateUser');
     $api->get('user/{id}/fans', 'App\Http\Controllers\Api\V2\UserController@getFans');
+    $api->get('user/{id}/followers', 'App\Http\Controllers\Api\V2\UserController@getFollowers');
     $api->get('user/{id}/followings', 'App\Http\Controllers\Api\V2\UserController@getFollowings');
     $api->get('user/{id}/events', 'App\Http\Controllers\Api\V2\UserController@getUserEvents');
 	$api->get('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@getGoal');
@@ -118,7 +119,9 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('event/hot', 'App\Http\Controllers\Api\V2\EventController@getHotEvents');
 	$api->get('event/follow', 'App\Http\Controllers\Api\V2\EventController@getFollowEvents');
 	$api->get('event/{id}', 'App\Http\Controllers\Api\V2\EventController@getEventDetail');
-	$api->get('event/{id}/likes', 'App\Http\Controllers\Api\V2\EventController@getEventLikes');
+    $api->patch('event/{id}', 'App\Http\Controllers\Api\V2\EventController@updateEvent');
+    $api->delete('event/{id}', 'App\Http\Controllers\Api\V2\EventController@deleteEvent');
+    $api->get('event/{id}/likes', 'App\Http\Controllers\Api\V2\EventController@getEventLikes');
 	$api->post('comment/{id}/reply', 'App\Http\Controllers\Api\V2\CommentController@reply');
 	$api->put('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@like');
     $api->delete('comment/{id}/like', 'App\Http\Controllers\Api\V2\CommentController@unLike');
