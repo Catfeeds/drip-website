@@ -111,7 +111,11 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->patch('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@updateGoal');
 	$api->delete('user/goal/{id}', 'App\Http\Controllers\Api\V2\GoalController@delete');
 	$api->post('goal/create', 'App\Http\Controllers\Api\V2\GoalController@create');
-	$api->put('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@follow');
+    $api->get('goal/{id}', 'App\Http\Controllers\Api\V2\GoalController@getGoalDetail');
+    $api->get('goal/{id}/events', 'App\Http\Controllers\Api\V2\GoalController@getGoalEvents');
+    $api->get('goal/{id}/top', 'App\Http\Controllers\Api\V2\GoalController@getGoalTop');
+    $api->put('goal/{id}/follow', 'App\Http\Controllers\Api\V2\GoalController@doFollow');
+    $api->put('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@follow');
 	$api->delete('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@unFollow');
 	$api->put('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@like');
 	$api->delete('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@unLike');

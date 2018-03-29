@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Api\V2;
 
+use App\Http\Controllers\Api\V2\Transformers\UserTransformer;
+use App\Http\Controllers\Api\V2\Transformers\EventTransformer;
+use App\Http\Controllers\Api\V2\Transformers\UserGoalTransformer;
 use Auth;
 use Validator;
 
@@ -21,50 +24,79 @@ use Log;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
-use App\Http\Controllers\Api\V2\Transformers\UserGoalTransformer;
 use League\Fractal\Serializer\ArraySerializer;
 
 class GoalController extends BaseController
 {
 
-
-    public function info(Request $request)
+    // 获取目标详情
+    public function getGoalDetail($goal_id,Request $request)
     {
-        $messages = [
-            'goal_id.required' => '请输入目标名称',
-        ];
-
-        $validation = Validator::make(Input::all(), [
-            'goal_id' => 'required|',     // 名称
-        ], $messages);
-
-        if ($validation->fails()) {
-            return API::response()->array(['status' => false, 'message' => $validation->errors()->all('</br>:message')])->statusCode(200);
-        }
-
         $user_id = $this->auth->user()->id;
 
-        $goal = Goal::find($request->goal_id);
+        $goal = Goal::find($goal_id);
 
-        $is_follow = false;
-
-        // 判断是否已经指定了该目标
-        $user_goal = DB::table('user_goals')
-            ->where('goal_id', '=', $request->goal_id)
-            ->where('user_id', '=', $user_id)
-            ->where('is_del', '=', 0)
-            ->first();
-
-        if ($user_goal) {
-            $is_follow = true;
+        if(!$goal) {
+            $this->response->error("未查找到目标",500);
         }
 
-        $goal->create_user = User::find($goal->create_user);
+        // 判断是否已经指定了该目标
+        $user_goal = UserGoal::where('goal_id','=',$goal_id)
+            ->where('user_id','=',$user_id)
+            ->first();
 
-        $goal->is_follow = $is_follow;
+        $new_goal = [];
 
+        $new_goal['id'] = $goal->id;
+        $new_goal['name'] = $goal->name;
+        $new_goal['is_follow'] = $user_goal?true:false;
+        $new_goal['follow_nums'] = $goal->follow_nums;
+        $new_goal['checkin_count'] =  Checkin::where('goal_id','=',$goal_id)->count();
 
-        return API::response()->array(['status' => true, 'message' => '', 'data' => $goal])->statusCode(200);
+        return $new_goal;
+    }
+
+    // 获取目标动态
+    public function getGoalEvents($goal_id,Request $request){
+        $user_id = $this->auth->user()->id;
+
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
+
+        $events = Event::where('goal_id','=',$goal_id)
+            ->orderBy('created_at','desc')
+            ->skip(($page-1)*$per_page)
+            ->limit($per_page)
+            ->get();
+
+        return $this->response->collection($events, new EventTransformer(),[],function($resource, $fractal){
+            $fractal->setSerializer(new ArraySerializer());
+        });
+    }
+
+    // 获取目标排行
+    public function getGoalTop($goal_id,Request $request){
+        $user_id = $this->auth->user()->id;
+
+        $page = $request->input('page', 1);
+        $per_page = $request->input('per_page', 20);
+
+        $user_goals = UserGoal::where('goal_id','=',$goal_id)
+            ->orderBy('total_days','desc')
+            ->limit(10)
+            ->get();
+
+        $new_users = [];
+
+        foreach ($user_goals as $k=>$user_goal) {
+            $new_users[$k]['id'] = $k+1;
+            $new_users[$k]['total_days'] = $user_goal->total_days;
+            $new_users[$k]['user_id'] = $user_goal->user_id;
+            $new_users[$k]['nickname'] = $user_goal->user->nickname;
+            $new_users[$k]['avatar_url'] = $user_goal->user->avatar_url;
+        }
+
+        return $new_users;
 
     }
 
@@ -148,38 +180,32 @@ class GoalController extends BaseController
         return API::response()->array(['status' => true, 'message' => '', 'data' => $users])->statusCode(200);
     }
 
-    public function follow(Request $request)
+    // 制定一个目标
+    public function doFollow($goal_id,Request $request)
     {
-        $goal_id = $request->goal_id;
-        $days = $request->days;
         $user_id = $this->auth->user()->id;
 
         // 查询是否已经制定
-        $user_goal = DB::table('user_goals')
-            ->where('goal_id', '=', $goal_id)
+        $is_follow = UserGoal::where('goal_id', '=', $goal_id)
             ->where('user_id', '=', $user_id)
-            ->where('is_del', '=', 0)
             ->first();
 
-        $user = User::find($user_id);
-
-        if ($user_goal) {
-            return API::response()->array(['status' => false, 'message' => '你已经制定该目标了'])->statusCode(200);
-        } else {
-            $user->goals()->attach($goal_id, [
-                'goal_desc' => trim(Input::get('name')),
-                // TODO 删除start_time字段
-                'start_time' => time(),
-                'start_date' => date('Y-m-d'),
-                'end_date' => $days > 0 ? date('Y-m-d', strtotime('+' . ($days - 1) . ' days')) : '',
-                'expect_days' => $days,
-            ]);
-            User::find($user_id)->increment('goal_count', 1);
-            Goal::find($goal_id)->increment('follow_nums', 1);
+        if ($is_follow) {
+            return $this->response->error('你已经制定该目标了',500);
         }
 
-        return API::response()->array(['status' => true, 'message' => '制定成功'])->statusCode(200);
+        $goal = Goal::find($goal_id);
 
+        $user_goal = new UserGoal();
+        $user_goal->user_id = $user_id;
+        $user_goal->goal_id = $goal_id;
+        $user_goal->name = $goal->name;
+        $user_goal->save();
+
+        User::find($user_id)->increment('goal_count', 1);
+        Goal::find($goal_id)->increment('follow_nums', 1);
+
+        return $this->response->noContent();
     }
 
     /**

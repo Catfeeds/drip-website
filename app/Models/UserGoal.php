@@ -43,4 +43,12 @@ class UserGoal extends Model
         'order',
         'status'
     ];
+
+    /**
+     * 获取用户对象
+     */
+    public function user()
+    {
+        return $this->belongsTo('App\User');
+    }
 }
