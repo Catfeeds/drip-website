@@ -43,16 +43,19 @@ class UserGoalTransformer extends TransformerAbstract
         $result = [];
         $result['id'] = $user_goal->goal_id;
         $result['name'] = $user_goal->name;
+        $result['desc'] = $user_goal->desc;
         //TODO 删除is_checkin
         $result['is_checkin'] = date('Y-m-d',strtotime($user_goal->last_checkin_at)) >= date('Y-m-d') ? true : false;
         $result['is_today_checkin'] = date('Y-m-d',strtotime($user_goal->last_checkin_at)) >= date('Y-m-d') ? true : false;
         $result['max_daily_count'] = $user_goal->max_daily_count;
-        $result['remind_time'] = $user_goal->remind_time ? substr($user_goal->remind_time, 0, 5) : null;
+        $result['remind_time'] = $user_goal->remind_time;
+        $result['remind_sound'] = $user_goal->remind_sound;
+        $result['remind_vibration'] = $user_goal->remind_vibration;
         $result['is_remind'] = $user_goal->remind_time ?true:false;
 //        $result['expect_days'] =  $user_goal->expect_days>0?$user_goal->expect_days:ceil((time() -strtotime($user_goal->start_date)) / 86400);
         $result['expect_days'] =  $user_goal->expect_days;
 
-        $result['total_days'] = $user_goal->total_days;
+        $result['total_days'] = $user_goal->total_days; 
         $result['series_days'] = $user_goal->series_days;
         $result['date_type'] = $user_goal->date_type;
         $result['start_date'] = $user_goal->start_date;

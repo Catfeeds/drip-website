@@ -836,6 +836,10 @@ a.round-btn:hover{
     background-color: #f8f9fb;
 }
 
+.bg-color4 {
+    background-color: #eee;
+}
+
 .cover-bg,
 .fixed-bg,
 .pattern-bg,
@@ -3374,8 +3378,9 @@ aside.blog-sidebar .recent-posts .post-info > * {
 }
 
 .post .post-content {
-    padding: 50px;
+    padding: 10px;
     position: relative;
+    text-align: left;
 }
 
 .post .post-content .title {

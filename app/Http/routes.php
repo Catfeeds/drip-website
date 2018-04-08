@@ -52,8 +52,12 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
     Route::get('admin/blog/article/lists', 'ArticleController@lists')->name('admin.blog.article.lists');
     Route::post('admin/blog/article/store', 'ArticleController@store')->name('admin.blog.article.store');
     Route::get('admin/mall/ajax_feedbacks', 'MallController@ajax_goods')->name('admin.mall.ajax_goods');
-
 });
+
+Route::group(['namespace' => 'Mobile','middleware' => ['web']], function () {
+    Route::get('event/{id}', 'EventController@getEventDetail');
+});
+
 
 $api = app('Dingo\Api\Routing\Router');
 

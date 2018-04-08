@@ -1,13 +1,12 @@
 <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>一款习惯养成和目标管理工具 - @yield('title')</title>
+        <title> @yield('title') - 水滴打卡</title>
         @section('css')
             <link rel="stylesheet" href="{{asset('plugins/bootstrap/dist/css/bootstrap.min.css')}}">
             {{--<link rel="stylesheet" href="{{asset('plugins/font-awesome/css/font-awesome.min.css')}}">--}}
             <link rel="stylesheet" href="{{asset('css/style.css')}}">
             <link rel="stylesheet" href="{{asset('css/iconfont.css')}}">
-
         @show
     </head>
     <body>
@@ -20,19 +19,19 @@
                 <nav class="navbar bg-color3">
                     <div class="container">
                         <a class="navbar-brand goto" href="#"><img src="{{asset('img/logo.png')}}" height="" alt="水滴打卡"></a>
-                        {{--<button class="round-toggle navbar-toggle menu-collapse-btn collapsed" data-toggle="collapse" data-target=".navMenuCollapse"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>--}}
-                        {{--<div class="collapse navbar-collapse navMenuCollapse">--}}
-                            {{--<ul class="nav">--}}
-                                {{--<li><a href="#">关于</a></li>--}}
-                                {{--<li><a href="#">下载</a></li>--}}
-                                {{--<li><a href="#">帮助</a></li>--}}
-                            {{--</ul>--}}
-                        {{--</div>--}}
+                        <button class="round-toggle navbar-toggle menu-collapse-btn collapsed" data-toggle="collapse" data-target=".navMenuCollapse"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
+                        <div class="collapse navbar-collapse navMenuCollapse">
+                            <ul class="nav">
+                                <li><a href="#">关于</a></li>
+                                <li><a href="#">下载</a></li>
+                                <li><a href="#">帮助</a></li>
+                            </ul>
+                        </div>
                     </div>
                 </nav>
               @show
 
-          <div>
+          <div class="bg-color4" style="padding-top:20px;padding-bottom: 20px;">
             @yield('content')
           </div>
           @section('footer')

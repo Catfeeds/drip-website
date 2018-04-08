@@ -33,6 +33,8 @@ class UserGoal extends Model
         'end_date',
         'is_remind',
         'remind_time',
+        'remind_sound',
+        'remind_vibration',
         'is_public',
         'weekday',
         'checkin_model',

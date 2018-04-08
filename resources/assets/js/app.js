@@ -20,4 +20,39 @@ $(function () {
             // Time depends on your settings
         }, 350);
     } );
+
+    var downUrl="";
+
+    if (window.navigator.userAgent.match(/MicroMessenger/i)) {
+        landing.style.display = "block";
+    } else if (navigator.userAgent.match(/(iPhone|iPod|iPad);?/i)) {
+        var loadDateTime = new Date();
+        window.setTimeout(function() {
+                var timeOutDateTime = new Date();
+                if (timeOutDateTime - loadDateTime < 5000) {
+                    if(downUrl) {
+//                        alert(downUrl);
+                        window.open(downUrl,"_blank");
+                    }
+                } else {
+//                    window.close();
+                }
+            },
+            25);
+
+        var url = "<?php echo $channel['url_schema'];?>www.tuo3.com?roomId=<?php echo $_GET['roomId'];?>";
+        window.location.href = url
+
+    } else if (navigator.userAgent.match(/android/i)) {
+
+        window.location.href = "drip://";
+        window.setTimeout(function () {
+            if(downUrl) {
+                window.open(downUrl,"_blank");
+            }
+        }, 2000);
+    }
+
+
+
 });

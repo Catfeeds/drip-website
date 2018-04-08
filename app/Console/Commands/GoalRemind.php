@@ -46,8 +46,7 @@ class GoalRemind extends Command
     {
          DB::connection()->enableQueryLog();
 
-
-         $user_goals = UserGoal::where('remind_time','=',date('H:i').':00')
+         $user_goals = UserGoal::whereRaw('FIND_IN_SET(?,remind_time)', [date('H:m')])
                         ->get();
 
         $bar = $this->output->createProgressBar(count($user_goals));

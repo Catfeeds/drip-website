@@ -409,9 +409,9 @@ class UserController extends BaseController
                 }
             }
 
-            if(!$input['is_remind']) {
-                $input['remind_time'] = null;
-            }
+//            if(!$input['is_remind']) {
+//                $input['remind_time'] = null;
+//            }
 
             unset($input['is_remind']);
 

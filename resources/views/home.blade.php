@@ -1,6 +1,6 @@
 @extends('layouts/master')
  
-@section('title', '水滴打卡')
+@section('title', '一款习惯养成和目标管理工具')
 
 @section('css')
 	@parent
