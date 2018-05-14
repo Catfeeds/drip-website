@@ -725,7 +725,7 @@ class AuthController extends BaseController
         $new_password = md5($request->password . $user->salt);
 
         DB::table('users')
-            ->where('user_id', $user->id)
+            ->where('id','=', $user->id)
             ->update(['passwd' => $new_password]);
 
         // 修改验证码状态

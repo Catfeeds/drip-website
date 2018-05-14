@@ -97,6 +97,9 @@ class UserController extends BaseController
 
         $input = $request->all();
 
+        $user = $this->auth->user();
+
+
         //TODO 兼容老版本
         if(isset($input['user_avatar'])) {
             $input['avatar_url'] = $input['user_avatar'];
@@ -104,10 +107,8 @@ class UserController extends BaseController
         }
 
         if ($input) {
-            User::find($user_id)->update($input);
+            $user->update($input);
         }
-
-        $user = User::find($user_id);
 
         $new_user = [];
         $new_user['id'] = $user->id;
@@ -2022,6 +2023,32 @@ class UserController extends BaseController
         return $this->response->item($user, new UserTransformer(), [], function ($resource, $fractal) {
             $fractal->setSerializer(new ArraySerializer());
         });
+    }
+
+    public function getSearchUsers(Request $request) {
+        $text = $request->text;
+
+        $users = User::where('nickname','like','%'.$text.'%')
+            ->limit(20)
+            ->get();
+
+        $new_users = [];
+
+        foreach($users as $k=>$user) {
+            $new_users[$k]['id'] = $user->id;
+            $new_users[$k]['nickname'] = $user->nickname;
+            $new_users[$k]['avatar_url'] = $user->avatar_url;
+
+            $is_follow = DB::table('user_follows')
+                ->where('user_id', $this->auth->user()->id)
+                ->where('follow_user_id', $user->id)
+                ->first();
+
+            $new_users[$k]['is_follow'] = $is_follow?true:false;
+
+        }
+
+        return $new_users;
 
     }
 }

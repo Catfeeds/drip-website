@@ -21,3 +21,10 @@
 
 .icon-qq:before { content: "\e7ac"; }
 
+.icon-apple:before {
+  content: "\e614";
+}
+.icon-android:before {
+  content: "\e615";
+}
+

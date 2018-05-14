@@ -141,10 +141,10 @@
                     success: function (response) {
                         if (response.status) {
                             toastr.success("处理成功");
-                            if (table) {
-                                table.clear();
-                                table.draw();
-                            }
+//                            if (table) {
+//                                table.clear();
+//                                table.draw();
+//                            }
                         } else {
                             toastr.error(response.message);
                         }

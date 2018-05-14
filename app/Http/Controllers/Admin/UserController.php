@@ -457,7 +457,7 @@ class UserController extends Controller
             })
             ->addColumn('attach', function ($event) {
                 if($event->id) {
-                    return '<img src="http://drip.growu.me/uploads/images/'.$event->path.'/'.$event->name.'" class="" width="200" height="200">';
+                    return '<img src="http://file.growu.me/'.$event->name.'?imageslim"  width="200" height="200">';
                }
                 return '无';
             })

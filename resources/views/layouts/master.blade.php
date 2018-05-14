@@ -1,6 +1,6 @@
 <html>
     <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
         <title> @yield('title') - 水滴打卡</title>
         @section('css')
             <link rel="stylesheet" href="{{asset('plugins/bootstrap/dist/css/bootstrap.min.css')}}">
@@ -18,7 +18,7 @@
           @section('header')
                 <nav class="navbar bg-color3">
                     <div class="container">
-                        <a class="navbar-brand goto" href="#"><img src="{{asset('img/logo.png')}}" height="" alt="水滴打卡"></a>
+                        <a class="navbar-brand goto" href="{{url('/')}}"><img src="{{asset('img/logo.png')}}" height="" alt="水滴打卡"></a>
                         <button class="round-toggle navbar-toggle menu-collapse-btn collapsed" data-toggle="collapse" data-target=".navMenuCollapse"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button>
                         <div class="collapse navbar-collapse navMenuCollapse">
                             <ul class="nav">
@@ -62,12 +62,13 @@
                       var _hmt = _hmt || [];
                       (function() {
                           var hm = document.createElement("script");
-                          hm.src = "https://hm.baidu.com/hm.js?2eddaff584dff6d6ddd51602807fc4d7";
+                          hm.src = "https://hm.baidu.com/hm.js?04e0f7526f0276c084db5a813a710408";
                           var s = document.getElementsByTagName("script")[0];
                           s.parentNode.insertBefore(hm, s);
                       })();
 
-                      $(document).ready(function(){
+
+                  $(document).ready(function(){
                           $('#wechat').popover({
                               trigger : 'hover',//鼠标以上时触发弹出提示框
                               html:true,//开启html 为true的话，data-content里就能放html代码了

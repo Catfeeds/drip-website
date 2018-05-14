@@ -12,6 +12,7 @@
 */
 
 Route::get('/', 'HomeController@index');
+Route::get('/image', 'HomeController@image');
 
 Route::get('blog/', 'ArticleController@index');
 
@@ -22,6 +23,7 @@ Route::get('account/forget', 'AccountController@forget');
 Route::get('account/reset', 'AccountController@reset');
 Route::get('goal/view/{id}','GoalController@view');
 Route::get('article/{id}','ArticleController@view');
+Route::post('wechat/notify', 'WechatController@notify');
 
 Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 //	Route::controller('user', 'UserController', [
@@ -77,6 +79,7 @@ $api->version('v2',['middleware'=>'cors'],function ($api) {
 	$api->post('auth/code', 'App\Http\Controllers\Api\V2\AuthController@getCode');
 	$api->post('auth/find', 'App\Http\Controllers\Api\V2\AuthController@find');
 	$api->post('auth/third', 'App\Http\Controllers\Api\V2\AuthController@thirdLogin');
+//    $api->post('wechat/notify', 'App\Http\Controllers\Api\V2\WechatController@notify');
 
 //	$api->post('auth/oauth', 'App\Http\Controllers\Api\V2\AuthController@oauth');
 //	$api->post('auth/bind', 'App\Http\Controllers\Api\V2\AuthController@bind');
@@ -99,7 +102,8 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('user/messages/notice', 'App\Http\Controllers\Api\V2\UserController@getNoticeMessages');
     $api->post('user/feedback', 'App\Http\Controllers\Api\V2\UserController@feedback');
     $api->get('user/coin/logs', 'App\Http\Controllers\Api\V2\UserController@getCoinLog');
-    $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser');
+    $api->get('user/{id}', 'App\Http\Controllers\Api\V2\UserController@getUser')->where('id', '[0-9]+');
+    $api->get('user/search', 'App\Http\Controllers\Api\V2\UserController@getSearchUsers');
     $api->patch('user/{id}', 'App\Http\Controllers\Api\V2\UserController@updateUser');
     $api->get('user/{id}/fans', 'App\Http\Controllers\Api\V2\UserController@getFans');
     $api->get('user/{id}/followers', 'App\Http\Controllers\Api\V2\UserController@getFollowers');
@@ -146,6 +150,14 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('top/all', 'App\Http\Controllers\Api\V2\TopController@all');
     $api->get('topic/{name}', 'App\Http\Controllers\Api\V2\TopicController@getTopic');
     $api->get('topic/{name}/events', 'App\Http\Controllers\Api\V2\TopicController@getTopicEvents');
+    $api->get('update/check', 'App\Http\Controllers\Api\V2\UpdateController@check');
+    $api->get('mall/goods', 'App\Http\Controllers\Api\V2\MallController@getGoods');
+    $api->get('mall/exchanges', 'App\Http\Controllers\Api\V2\MallController@getExchanges');
+    $api->get('mall/good/{id}', 'App\Http\Controllers\Api\V2\MallController@getGoodDetail');
+    $api->post('mall/good/{id}/exchange', 'App\Http\Controllers\Api\V2\MallController@doExchangeGood');
+    $api->post('wechat/pay', 'App\Http\Controllers\Api\V2\WechatController@pay');
+    $api->get('wechat/recharges', 'App\Http\Controllers\Api\V2\WechatController@recharges');
+    $api->get('update/audit', 'App\Http\Controllers\Api\V2\UpdateController@audit');
 });
 
 // $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {

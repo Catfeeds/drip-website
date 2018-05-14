@@ -8,7 +8,7 @@
 @stop
 
 @section('content')
-    <div class="" style="width: 768px;margin:0 auto;">
+    <div class="" style="max-width: 768px;margin:0 auto;">
     <section class="zero-padding" style="background-color:#fff;padding-left: 10px;
     padding-right: 10px;">
             <div class="row">
@@ -46,7 +46,8 @@
                         <div class="post-content">
                             <h4 style="margin:0;"><img class="media-object" src="{{$event['user']['avatar_url']}}" style="width: 32px;height: 32px;display: inline-block; border-radius: 50%;" alt="...">
                                 {{$event['user']['nickname']}}</h4>
-                            <p class="editContent">{{$event['content']}}</p>
+                            <p class="editContent" style= "height: 50px;overflow: hidden;
+">{{$event['content']}}</p>
                         </div>
                     </div>
                 </div>
