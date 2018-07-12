@@ -7,7 +7,7 @@
  * @date: 2018/2/24
  */
 
-namespace  App\Http\Controllers\Api\V2\Transformers;
+namespace  App\Http\Controllers\Api\V3\Transformers;
 
 use League\Fractal\TransformerAbstract;
 use App\Models\UserGoal;

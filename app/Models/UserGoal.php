@@ -37,13 +37,16 @@ class UserGoal extends Model
         'remind_vibration',
         'is_public',
         'weekday',
+        'last_checkin_at',
         'checkin_model',
         'max_daily_count',
         'time_type',
         'start_time',
         'end_time',
         'order',
-        'status'
+        'status',
+        'icon',
+        'color'
     ];
 
     /**

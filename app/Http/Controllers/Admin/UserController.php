@@ -6,6 +6,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\UserGoalItem;
 use Illuminate\Http\Request;
 use DB;
 
@@ -17,6 +18,7 @@ use App\Libs\MyJpush as MyJpush;
 use App\Libs\MyEmail as MyEmail;
 
 use App\Models\Event;
+use App\Models\UserGoal;
 
 use Yajra\Datatables\Datatables;
 
@@ -472,6 +474,35 @@ class UserController extends Controller
             })
 //            ->editColumn('avatar_url', '<img src="{{avatar_url}}" class="img-circle" width="48" height="48">')
             ->make(true);
+    }
+
+    public function test()
+    {
+        $user_goals = UserGoal::Skip(0)->limit(10000);
+
+        echo "等待处理目标个数".count($user_goals).PHP_EOL;
+
+        foreach($user_goals as $k=>$user_goal) {
+
+            echo "序号：".$k.PHP_EOL;
+
+            // 查找是否有对应ITEM
+            $user_goal_item = UserGoalItem::Where('user_id','=',$user_goal->user_id)
+                ->where('goal_id','=',$user_goal->goal_id)
+                ->get();
+
+            if(!$user_goal_item) {
+                $user_goal_item = new UserGoalItem();
+                $user_goal_item->goal_id = $user_goal->goal_id;
+                $user_goal_item->user_id =  $user_goal->user_id;
+                $user_goal_item->item_name = '打卡次数';
+                $user_goal_item->item_unit = '次';
+                $user_goal_item->item_expect = 1;
+                $user_goal_item->save();
+            } else {
+                echo "已存在统计";
+            }
+        }
     }
 
 }

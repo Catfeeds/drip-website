@@ -9,11 +9,11 @@
     <div class="container-fluid">
         <div class="row page-title-row">
             <div class="col-md-6">
-                <h3>版本管理 <small>» 版本列表</small></h3>
+                <h3>应用管理 <small>» 渠道列表</small></h3>
             </div>
             <div class="col-md-6 text-right">
-                <a href="#version-add-modal" data-toggle="modal" class="btn btn-success btn-md">
-                    <i class="fa fa-plus-circle"></i> 新增版本
+                <a href="#channel-add-modal" data-toggle="modal" class="btn btn-success btn-md">
+                    <i class="fa fa-plus-circle"></i> 新增渠道
                 </a>
             </div>
         </div>
@@ -23,16 +23,14 @@
 
                 {{--@include('admin.partials.errors')--}}
 
-                <table id="versions-table" class="table table-striped table-bordered">
+                <table id="channles-table" class="table table-striped table-bordered">
                     <thead>
                     <tr>
                         <th>#ID</th>
-                        <th>app版本号</th>
-                        <th>web版本号</th>
-                        <th>更新类型</th>
-                        <th>更新内容</th>
-                        <th>是否推送</th>
-                        <th>发布时间</th>
+                        <th>名称</th>
+                        <th>主页地址</th>
+                        <th>平台</th>
+                        <th>审核版本号</th>
                         <th data-sortable="false">操作</th>
                     </tr>
                     </thead>
@@ -42,55 +40,43 @@
     </div>
 
     <!-- Modal -->
-    <div class="modal fade" id="version-add-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+    <div class="modal fade" id="channel-add-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
          aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"><span
                                 aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                    <h4 class="modal-title">新增版本</h4>
+                    <h4 class="modal-title">新增渠道</h4>
                 </div>
                 <div class="modal-body">
                     <form class="form-horizontal" role="form">
-                        <input type="hidden" name="id" value="" id="input-id">
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">更新类型:</label>
-                            <div class="col-sm-9">
-                                <label class="radio-inline">
-                                    <input type="radio" name="status" value="1" class="form_type" checked> 资源更新
-                                </label>
-                                <label class="radio-inline">
-                                    <input type="radio" name="status" value="2" class="form_type"> 整包更新
-                                </label>
-                            </div>
-                        </div>
 
                         <div class="form-group">
-                            <label class="col-sm-3 control-label">APP版本号:</label>
+                            <label class="col-sm-3 control-label">名称:</label>
                             <div class="col-sm-2">
-                                <input type="text" class="form-control" value="" name="app_version" id="form_app_version"/>
+                                <input type="text" class="form-control" value="" name="name" id="form_name"/>
                             </div>
                         </div>
 
+
                         <div class="form-group">
-                            <label class="col-sm-3 control-label">WEB版本号:</label>
+                            <label class="col-sm-3 control-label">主页:</label>
                             <div class="col-sm-4">
-                                <input type="text" class="form-control" value="" name="web_version" id="form_web_version"/>
+                                <input type="text" class="form-control" value="" name="homepage" id="form_homepage"/>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="col-sm-3 control-label">更新内容:</label>
-                            <div class="col-sm-6">
-                                <textarea class="form-control" rows="3" name="content"  id="form_content"></textarea>
-                            </div>
-                        </div>
 
                         <div class="form-group">
-                            <label class="col-sm-3 control-label">是否推送</label>
+                            <label class="col-sm-3 control-label">平台类型:</label>
                             <div class="col-sm-9">
-                                <input type="checkbox" class="form-control" value="" name="is_push" id="form_is_push"/>
+                                <label class="radio-inline">
+                                    <input type="radio" name="status" value="android" class="form_platform" checked> Android
+                                </label>
+                                <label class="radio-inline">
+                                    <input type="radio" name="status" value="ios" class="form_platform"> IOS
+                                </label>
                             </div>
                         </div>
 
@@ -114,28 +100,26 @@
 
     <script>
         $(function() {
-            var table = $('#versions-table').DataTable({
+            var table = $('#channles-table').DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: '{!! route('admin.app.get_versions') !!}',
+                ajax: '{!! route('admin.app.get_channels') !!}',
                 type:'POST',
                 columns: [
                     { data: 'id', name: 'id' },
-                    { data: 'app_version', name: 'app_version' },
-                    { data: 'web_version', name: 'web_version' },
-                    { data: 'type', name: 'type' },
-                    { data: 'content', name: 'content' },
-                    { data: 'is_push', name: 'is_push' },
-                    { data: 'created_at', name: 'created_at' },
+                    { data: 'name', name: 'name' },
+                    { data: 'homepage', name: 'homepage' },
+                    { data: 'platform', name: 'platform' },
+                    { data: 'audit_version', name: 'audit_version' },
                     { data: 'action', name: 'action' }
                 ]
             });
 
             // 版本提交
-            $(document).on('click','#btn_version_submit',function(){
+            $(document).on('click','#btn_channel_submit',function(){
                 $.ajax({
                     type: "POST",
-                    url: '{!! route('admin.app.create_version') !!}',
+                    url: '{!! route('admin.app.create_channel') !!}',
                     data: {
                         type:$(".form_type:checked").val(),
                         content:$("#form_content").val(),

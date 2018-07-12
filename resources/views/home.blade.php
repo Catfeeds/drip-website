@@ -24,8 +24,8 @@
 						{{--<div class="">--}}
 							{{--<img src="{{asset('img/qrcode.png')}}" alt="水滴打卡" height="120" data-selector="img">--}}
 						{{--</div>--}}
-						<a class="download-btn" href="https://itunes.apple.com/cn/app/id1255579223" data-selector="a.btn, a.download-btn, button.btn, a.goto"> <i class="icon icon-apple" data-selector=".icon"></i><b>App Store</b>下载</a>
-						<a class="download-btn" href="#" data-selector="a.btn, a.download-btn, button.btn, a.goto"><i class="icon icon-android" data-selector=".icon"></i><b>Android市场</b>下载</a>
+						<a class="download-btn" href="https://itunes.apple.com/cn/app/id1255579223" target="_blank" data-selector="a.btn, a.download-btn, button.btn, a.goto" alt="水滴打卡苹果下载地址"> <i class="icon icon-apple" data-selector=".icon"></i><b>AppStore</b>下载</a>
+						<a class="download-btn" href="http://a.app.qq.com/o/simple.jsp?pkgname=me.growu.drip" target="_blank" data-selector="a.btn, a.download-btn, button.btn, a.goto"  alt="水滴打卡安卓下载地址"><i class="icon icon-msnui-logo-android" data-selector=".icon"></i><b>Android</b>下载</a>
 					</div>
 					<div class="col-md-4 col-md-pull-6">
 						<img src="{{asset('img/screen-3.png')}}" class="screen" alt="" data-selector="img">
@@ -35,27 +35,27 @@
 		</header>
 
 		<!-- COUNTER 4 COL BLOCK -->
-		{{--<section class="facts-block bg-color2 dark-bg text-center">--}}
-			{{--<div class="container">--}}
-				{{--<div class="row">--}}
-					{{--<div class="col-md-4">--}}
-						{{--<i class="icon icon-download"></i>--}}
-						{{--<h3 class="timer text-xxl">11,470</h3>--}}
-						{{--<h4>成员</h4>--}}
-					{{--</div>--}}
-					{{--<div class="col-md-4">--}}
-						{{--<i class="icon icon-wallet2"></i>--}}
-						{{--<h3 class="timer text-xxl">22,443</h3>--}}
-						{{--<h4>目标</h4>--}}
-					{{--</div>--}}
-					{{--<div class="col-md-4">--}}
-						{{--<i class="icon icon-heart2"></i>--}}
-						{{--<h3 class="timer text-xxl">30,759</h3>--}}
-						{{--<h4>打卡</h4>--}}
-					{{--</div>--}}
-				{{--</div>--}}
-			{{--</div>--}}
-		{{--</section>--}}
+		<section class="facts-block bg-color2 dark-bg text-center">
+			<div class="container">
+				<div class="row">
+					<div class="col-md-4">
+						<i class="icon icon-download"></i>
+						<h3 class="timer text-xxl">{{number_format($count->all_reg_num)}}</h3>
+						<h4>梦想家</h4>
+					</div>
+					<div class="col-md-4">
+						<i class="icon icon-wallet2"></i>
+						<h3 class="timer text-xxl">{{number_format($count->all_goal_num)}}</h3>
+						<h4>目标</h4>
+					</div>
+					<div class="col-md-4">
+						<i class="icon icon-heart2"></i>
+						<h3 class="timer text-xxl">{{number_format($count->all_checkin_count)}}</h3>
+						<h4>打卡</h4>
+					</div>
+				</div>
+			</div>
+		</section>
 @stop
 
 @section('js')

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Api\V2;
+namespace App\Http\Controllers\Api\V3;
 
-use App\Http\Controllers\Api\V2\Transformers\UserTransformer;
-use App\Http\Controllers\Api\V2\Transformers\EventTransformer;
-use App\Http\Controllers\Api\V2\Transformers\UserGoalTransformer;
+use App\Http\Controllers\Api\V3\Transformers\UserTransformer;
+use App\Http\Controllers\Api\V3\Transformers\EventTransformer;
+use App\Http\Controllers\Api\V3\Transformers\UserGoalTransformer;
 use Auth;
 use Validator;
 
@@ -247,19 +247,19 @@ class GoalController extends BaseController
         $messages = [
             'name.required' => '请输入名称',
             'name.max' => '名称不得超过30个字符',
-            'days.numeric' => '天数需为正整数',
-            'days.min' => '天数不能为负',
-            'days.max' => '超过最大设定天数',
+//            'days.numeric' => '天数需为正整数',
+//            'days.min' => '天数不能为负',
+//            'days.max' => '超过最大设定天数',
             'start_date.date_format' => '开始日期格式错误',
             'end_date.date_format' => '结束日期格式错误',
             'start_date.after' => '开始日期不得小于今天',
             'end_date.after' => '结束日期不得小于今天',
-            'desc.max' => '描述内容不得超过250个字符',
+//            'desc.max' => '描述内容不得超过250个字符',
         ];
 
         $validation = Validator::make(Input::all(), [
             'name' => 'required|max:30',     // 名称
-            'days' => 'numeric|min:0|max:9999',  // 天数
+//            'days' => 'numeric|min:0|max:9999',  // 天数
             'start_date' => 'date|date_format:Y-m-d|after:today',    //开始日期
             'end_date' => 'date|date_format:Y-m-d|after:today',      //结束日期
             'desc' => 'max:255',             // 描述
@@ -273,35 +273,50 @@ class GoalController extends BaseController
 
         $user_id = $this->auth->user()->id;
 
-        $start_date = $request->input('start_date', date('Y-m-d'));
-
-        if(!$start_date) {
-            $start_date = date('Y-m-d');
-        }
-
+        $start_date = $request->input('start_date');
         $end_date = $request->input('end_date');
         $date_type =  $request->input('date_type',1);
-        $days =  $request->input('days',0);
         $type =  $request->input('type',1);
+        $time_type =  $request->input('type',1);
+        $start_time = $request->input('start_time');
+        $end_time = $request->input('end_time');
+        $items = $request->input('items');
 
-        // 检查目标天数和日期范围
+        $days = 0;
+
+        // 如果是短期目标，检查日期范围
         if($date_type == 2) {
+
+            if(!$start_date || !$end_date) {
+                return $this->response->error("开始或结束日期不得为空", 500);
+            }
+
             if ($end_date < $start_date) {
                 return $this->response->error("结束日期不得小于开始日期", 500);
             }
 
             $start_dt = Carbon::parse($start_date);
             $end_dt = Carbon::parse($end_date);
-            $max_days = $start_dt->diffInDays($end_dt);
 
-            if($days > $max_days) {
-                return $this->response->error("目标天数大于日期范围", 500);
+            $days = $start_dt->diffInDays($end_dt);
+        }
+
+        // 如果是指定时间，检查时间范围
+        if($time_type == 2) {
+
+            if(!$start_time || !$start_time) {
+                return $this->response->error("开始或结束时间不得为空", 500);
+            }
+
+            if ($end_time < $start_time) {
+                return $this->response->error("结束时间不得小于开始时间", 500);
             }
         }
 
-
         $goal_name = trim($request->input('name'));
         $goal_desc = trim($request->input('desc'));
+        $icon  = $request->input('icon','shuidi');
+        $color = $request->input('color','primary');
 
         // 判断目标是否存在
         $goal = Goal::where('name', '=', $goal_name)->first();
@@ -311,8 +326,9 @@ class GoalController extends BaseController
             $goal = new Goal();
             $goal->name = $goal_name;
             $goal->create_user = $user_id;
-            $goal->follow_nums = 1;
             $goal->type = $type;
+            $goal->icon = $icon;
+            $goal->color = $color;
             $goal->save();
         }
 
@@ -333,30 +349,44 @@ class GoalController extends BaseController
         $user_goal->date_type = $date_type;
         $user_goal->start_date = $start_date;
         $user_goal->end_date = $end_date;
+        $user_goal->time_type = $date_type;
+        $user_goal->start_time = $start_time;
+        $user_goal->end_time = $end_time;
         $user_goal->expect_days = $days;
-        $user_goal->status = ($start_date > date('Y-m-d')) ? 0:1;
+        $user_goal->icon = $icon;
+        $user_goal->color = $color;
+        $user_goal->remind_sound = $request->input('remind_sound');
+        $user_goal->remind_vibration = $request->input('remind_vibration');
+        $user_goal->remind_time = $request->input('remind_time');
+        $user_goal->status = ($date_type==2 && ($start_date > date('Y-m-d'))) ? 0:1;
+        $user_goal->is_public = $request->input('is_public')?1:0;
+        $user_goal->weekday = implode(';',$request->input('weeks'));
         $user_goal->save();
+
+        // 插入用户项目
+        foreach($items as $item) {
+            $user_goal_item = new UserGoalItem();
+            $user_goal_item->goal_id = $goal->id;
+            $user_goal_item->user_id = $user_id;
+            $user_goal_item->item_name =$item['name'];
+            $user_goal_item->item_unit =$item['unit'];
+            $user_goal_item->item_expect =$item['value'];
+            $user_goal_item->save();
+        }
 
         // 更新用户信息
         User::find($user_id)->increment('goal_count', 1);
         // 更新目标信息
         Goal::find($goal->id)->increment('follow_nums', 1);
 
-        // 更新ITEMS
-        if(!$request->input['items']) {
-            $user_goal_item = new UserGoalItem();
-            $user_goal_item->goal_id = $goal->id;
-            $user_goal_item->user_id = $user_id;
-            $user_goal_item->item_name = '打卡次数';
-            $user_goal_item->item_unit = '次';
-            $user_goal_item->item_expect = 1;
-            $user_goal_item->save();
-        }
-
         $new_goal = [];
         $new_goal['id'] = $goal->id;
 
         return $new_goal;
+    }
+
+    public function update(Request $request){
+
     }
 
     /**
@@ -448,9 +478,9 @@ class GoalController extends BaseController
             ->where('checkin_day', '=', $day)
             ->count();
 
-        if ($today_checkin_count >= $user_goal->max_daily_count) {
-            return $this->response->error('超过当日打卡最大次数', 500);
-        }
+//        if ($today_checkin_count >= $user_goal->max_daily_count) {
+//            return $this->response->error('超过当日打卡最大次数', 500);
+//        }
 
         // 保存打卡记录
         $checkin = new Checkin();

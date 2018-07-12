@@ -44,11 +44,21 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
     Route::post('admin/user/add_coin', 'UserController@add_coin')->name('admin.user.add_coin');
     Route::get('admin/user/events', 'UserController@events');
 	Route::get('admin/user/ajax_events', 'UserController@ajax_events')->name('admin.user.ajax_events');
-	Route::post('admin/user/hot_event', 'UserController@hot_event')->name('admin.user.hot_event');
-	Route::get('admin/version', 'VersionController@index');
-	Route::get('admin/version/ajax_versions', 'VersionController@ajax_versions')->name('admin.version.ajax_versions');
-	Route::post('admin/version/create', 'VersionController@create')->name('admin.version.create');
-	Route::get('admin/mall', 'MallController@index');
+    Route::get('admin/user/test', 'UserController@test');
+    Route::post('admin/version/delete', 'VersionController@delete')->name('admin.version.delete');
+
+    Route::post('admin/user/hot_event', 'UserController@hot_event')->name('admin.user.hot_event');
+
+    Route::get('admin/app/versions', 'VersionController@index');
+	Route::get('admin/app/get_versions', 'VersionController@get_versions')->name('admin.app.get_versions');
+	Route::post('admin/app/create_version', 'VersionController@create')->name('admin.app.create_version');
+
+    Route::get('admin/app/channels', 'ChannelController@index');
+    Route::get('admin/app/get_channels', 'ChannelController@get_channels')->name('admin.app.get_channels');
+    Route::post('admin/app/create_channel', 'VersionController@create')->name('admin.app.create_channel');
+
+
+    Route::get('admin/mall', 'MallController@index');
     Route::get('admin/blog/articles', 'ArticleController@index');
     Route::get('admin/blog/article/create', 'ArticleController@create');
     Route::get('admin/blog/article/lists', 'ArticleController@lists')->name('admin.blog.article.lists');
@@ -119,10 +129,13 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
 	$api->patch('user/goal/{id}', 'App\Http\Controllers\Api\V2\UserController@updateGoal');
 	$api->delete('user/goal/{id}', 'App\Http\Controllers\Api\V2\GoalController@delete');
 	$api->post('goal/create', 'App\Http\Controllers\Api\V2\GoalController@create');
+    $api->get('goal/search', 'App\Http\Controllers\Api\V2\GoalController@search');
     $api->get('goal/{id}', 'App\Http\Controllers\Api\V2\GoalController@getGoalDetail');
     $api->get('goal/{id}/events', 'App\Http\Controllers\Api\V2\GoalController@getGoalEvents');
+    $api->get('goal/{id}/member', 'App\Http\Controllers\Api\V2\GoalController@getGoalMembers');
     $api->get('goal/{id}/top', 'App\Http\Controllers\Api\V2\GoalController@getGoalTop');
     $api->put('goal/{id}/follow', 'App\Http\Controllers\Api\V2\GoalController@doFollow');
+    $api->patch('goal/{id}/audit', 'App\Http\Controllers\Api\V2\GoalController@doAudit');
     $api->put('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@follow');
 	$api->delete('user/follow/{id}', 'App\Http\Controllers\Api\V2\UserController@unFollow');
 	$api->put('event/{id}/like', 'App\Http\Controllers\Api\V2\EventController@like');
@@ -159,6 +172,103 @@ $api->version('v2',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('wechat/recharges', 'App\Http\Controllers\Api\V2\WechatController@recharges');
     $api->get('update/audit', 'App\Http\Controllers\Api\V2\UpdateController@audit');
 });
+
+
+$api->version('v3',['middleware'=>'cors'],function ($api) {
+    $api->post('auth/login', 'App\Http\Controllers\Api\V3\AuthController@login');
+    $api->post('auth/register', 'App\Http\Controllers\Api\V3\AuthController@register');
+    $api->post('auth/code', 'App\Http\Controllers\Api\V3\AuthController@getCode');
+    $api->post('auth/find', 'App\Http\Controllers\Api\V3\AuthController@find');
+    $api->post('auth/third', 'App\Http\Controllers\Api\V3\AuthController@thirdLogin');
+//    $api->post('wechat/notify', 'App\Http\Controllers\Api\V2\WechatController@notify');
+
+//	$api->post('auth/oauth', 'App\Http\Controllers\Api\V2\AuthController@oauth');
+//	$api->post('auth/bind', 'App\Http\Controllers\Api\V2\AuthController@bind');
+//	$api->post('auth/get_verify_code', 'App\Http\Controllers\Api\V2\AuthController@get_verify_code');
+//	$api->post('auth/find', 'App\Http\Controllers\Api\V2\AuthController@find');
+});
+
+
+$api->version('v3',['middleware' => ['cors','jwt.auth']],function ($api) {
+    $api->post('user/password/change', 'App\Http\Controllers\Api\V3\UserController@changePassword');
+    $api->get('user/goals', 'App\Http\Controllers\Api\V3\UserController@getGoals');
+    $api->get('user/info', 'App\Http\Controllers\Api\V3\UserController@getUserInfo');
+    $api->get('user/{id}/goals', 'App\Http\Controllers\Api\V3\GoalController@getUserGoals');
+    $api->get('user/{id}/photos', 'App\Http\Controllers\Api\V3\UserController@getPhotos');
+    $api->get('user/goals/calendar', 'App\Http\Controllers\Api\V3\UserController@getGoalsCalendar');
+    $api->get('message/{id}', 'App\Http\Controllers\Api\V3\UserController@getMessageDetail');
+    $api->get('user/messages/fan', 'App\Http\Controllers\Api\V3\UserController@getFanMessages');
+    $api->get('user/messages/comment', 'App\Http\Controllers\Api\V3\UserController@getCommentMessages');
+    $api->get('user/messages/like', 'App\Http\Controllers\Api\V3\UserController@getLikeMessages');
+    $api->get('user/messages/new', 'App\Http\Controllers\Api\V3\UserController@getNewMessages');
+    $api->get('user/messages/notice', 'App\Http\Controllers\Api\V3\UserController@getNoticeMessages');
+    $api->post('user/feedback', 'App\Http\Controllers\Api\V3\UserController@feedback');
+    $api->get('user/coin/logs', 'App\Http\Controllers\Api\V3\UserController@getCoinLog');
+    $api->get('user/{id}', 'App\Http\Controllers\Api\V3\UserController@getUser')->where('id', '[0-9]+');
+    $api->get('user/search', 'App\Http\Controllers\Api\V3\UserController@getSearchUsers');
+    $api->patch('user/{id}', 'App\Http\Controllers\Api\V3\UserController@updateUser');
+    $api->get('user/{id}/fans', 'App\Http\Controllers\Api\V3\UserController@getFans');
+    $api->get('user/{id}/followers', 'App\Http\Controllers\Api\V3\UserController@getFollowers');
+    $api->get('user/{id}/followings', 'App\Http\Controllers\Api\V3\UserController@getFollowings');
+    $api->get('user/{id}/events', 'App\Http\Controllers\Api\V3\UserController@getUserEvents');
+    $api->get('user/goal/{id}', 'App\Http\Controllers\Api\V3\UserController@getGoal');
+    $api->get('user/goal/{id}/events', 'App\Http\Controllers\Api\V3\UserController@getGoalEvents');
+    $api->get('user/goal/{id}/chart', 'App\Http\Controllers\Api\V3\UserController@getGoalChart');
+    $api->get('user/goal/{id}/day', 'App\Http\Controllers\Api\V3\UserController@getGoalDay');
+    $api->get('user/goal/{id}/days', 'App\Http\Controllers\Api\V3\UserController@getGoalDays');
+    $api->get('user/goal/{id}/week', 'App\Http\Controllers\Api\V3\UserController@getGoalWeek');
+    $api->get('user/goal/{id}/calendar', 'App\Http\Controllers\Api\V3\UserController@getGoalCalendar');
+    $api->post('user/goal/{id}/checkin', 'App\Http\Controllers\Api\V3\GoalController@checkin');
+    $api->patch('user/goal/{id}', 'App\Http\Controllers\Api\V3\UserController@updateGoal');
+    $api->delete('user/goal/{id}', 'App\Http\Controllers\Api\V3\GoalController@delete');
+    $api->post('goal/create', 'App\Http\Controllers\Api\V3\GoalController@create');
+    $api->get('goal/search', 'App\Http\Controllers\Api\V3\GoalController@search');
+    $api->get('goal/{id}', 'App\Http\Controllers\Api\V3\GoalController@getGoalDetail');
+    $api->get('goal/{id}/events', 'App\Http\Controllers\Api\V3\GoalController@getGoalEvents');
+    $api->get('goal/{id}/member', 'App\Http\Controllers\Api\V3\GoalController@getGoalMembers');
+    $api->get('goal/{id}/top', 'App\Http\Controllers\Api\V3\GoalController@getGoalTop');
+    $api->put('goal/{id}/follow', 'App\Http\Controllers\Api\V3\GoalController@doFollow');
+    $api->patch('goal/{id}/audit', 'App\Http\Controllers\Api\V3\GoalController@doAudit');
+    $api->put('user/follow/{id}', 'App\Http\Controllers\Api\V3\UserController@follow');
+    $api->delete('user/follow/{id}', 'App\Http\Controllers\Api\V3\UserController@unFollow');
+    $api->put('event/{id}/like', 'App\Http\Controllers\Api\V3\EventController@like');
+    $api->delete('event/{id}/like', 'App\Http\Controllers\Api\V3\EventController@unLike');
+    $api->post('event/{id}/comment', 'App\Http\Controllers\Api\V3\EventController@comment');
+    $api->get('event/hot', 'App\Http\Controllers\Api\V3\EventController@getHotEvents');
+    $api->get('event/follow', 'App\Http\Controllers\Api\V3\EventController@getFollowEvents');
+    $api->get('event/{id}', 'App\Http\Controllers\Api\V3\EventController@getEventDetail');
+    $api->patch('event/{id}', 'App\Http\Controllers\Api\V3\EventController@updateEvent');
+    $api->delete('event/{id}', 'App\Http\Controllers\Api\V3\EventController@deleteEvent');
+    $api->get('event/{id}/likes', 'App\Http\Controllers\Api\V3\EventController@getEventLikes');
+    $api->post('comment/{id}/reply', 'App\Http\Controllers\Api\V3\CommentController@reply');
+    $api->put('comment/{id}/like', 'App\Http\Controllers\Api\V3\CommentController@like');
+    $api->delete('comment/{id}/like', 'App\Http\Controllers\Api\V3\CommentController@unLike');
+    $api->post('user/bind/phone', 'App\Http\Controllers\Api\V3\UserController@bindPhone');
+    $api->post('user/bind/email', 'App\Http\Controllers\Api\V3\UserController@bindEmail');
+    $api->post('user/bind/wechat', 'App\Http\Controllers\Api\V3\UserController@bindWechat');
+    $api->post('user/bind/weibo', 'App\Http\Controllers\Api\V3\UserController@bindWeibo');
+    $api->post('user/bind/qq', 'App\Http\Controllers\Api\V3\UserController@bindQQ');
+    $api->post('vip/buy', 'App\Http\Controllers\Api\V3\UserController@buyVip');
+    $api->post('upload/image', 'App\Http\Controllers\Api\V3\UploadController@image');
+    $api->get('top/week', 'App\Http\Controllers\Api\V3\TopController@week');
+    $api->get('top/month', 'App\Http\Controllers\Api\V3\TopController@month');
+    $api->get('top/year', 'App\Http\Controllers\Api\V3\TopController@year');
+    $api->get('top/all', 'App\Http\Controllers\Api\V3\TopController@all');
+    $api->get('topic/{name}', 'App\Http\Controllers\Api\V3\TopicController@getTopic');
+    $api->get('topic/{name}/events', 'App\Http\Controllers\Api\V3\TopicController@getTopicEvents');
+    $api->get('update/check', 'App\Http\Controllers\Api\V3\UpdateController@check');
+    $api->get('mall/goods', 'App\Http\Controllers\Api\V3\MallController@getGoods');
+    $api->get('mall/exchanges', 'App\Http\Controllers\Api\V3\MallController@getExchanges');
+    $api->get('mall/good/{id}', 'App\Http\Controllers\Api\V3\MallController@getGoodDetail');
+    $api->post('mall/good/{id}/exchange', 'App\Http\Controllers\Api\V3\MallController@doExchangeGood');
+    $api->post('wechat/pay', 'App\Http\Controllers\Api\V3\WechatController@pay');
+    $api->get('wechat/recharges', 'App\Http\Controllers\Api\V3\WechatController@recharges');
+    $api->get('update/audit', 'App\Http\Controllers\Api\V3\UpdateController@audit');
+    $api->get('article/{id}', 'App\Http\Controllers\Api\V3\ArticleController@getDetail')->where('id', '[0-9]+');
+    $api->get('article/top', 'App\Http\Controllers\Api\V3\ArticleController@getTop');
+
+});
+
 
 // $api->version('v1',['middleware' => ['cors','jwt.auth']],function ($api) {
 

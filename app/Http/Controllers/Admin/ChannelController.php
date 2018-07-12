@@ -1,10 +1,12 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: Jason.z
- * Date: 2016/11/9
- * Time: 上午9:37
+ * @author: Jason.z
+ * @email: ccnuzxg@163.com
+ * @website: http://www.jason-z.com
+ * @version: 1.0
+ * @date: 2018/7/4
  */
+
 
 namespace App\Http\Controllers\Admin;
 
@@ -18,11 +20,11 @@ use Yajra\Datatables\Datatables;
 use App\Http\Requests;
 use App\Http\Controllers\Controller;
 
-class VersionController extends Controller
+class ChannelController extends Controller
 {
     //
     public function index() {
-        return view('admin.version.index');
+        return view('admin.channel.index');
     }
 
     public function create(Request $request) {
@@ -40,24 +42,11 @@ class VersionController extends Controller
 
     }
 
-    public function get_versions()
+    public function get_channels()
     {
-        return Datatables::of(Version::query())
-            ->addColumn('action', function ($version) {
-                return '<button data-id="'.$version->id.'" class="btn btn-xs btn-danger btn-version-del"><i class="glyphicon glyphicon-delete"></i> 删除</a>';
-            })
-            ->editColumn('type', function ($version) {
-                switch ($version->type) {
-                    case 1:
-                        return '<span class="label label-success">资源更新</span>';
-                        break;
-                    case 2:
-                        return '<span class="label label-warning">整包更新</span>';
-                        break;
-                    default;
-                        return '<span class="label">未知</span>';
-                        break;
-                }
+        return Datatables::of(Channel::query())
+            ->addColumn('action', function ($channel) {
+                return '<button data-id="'.$channel->id.'" class="btn btn-xs btn-danger btn-channel-del"><i class="glyphicon glyphicon-delete"></i> 删除</a>';
             })
             ->make(true);
     }

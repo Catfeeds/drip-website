@@ -30,9 +30,9 @@ class UpdateController extends BaseController
         $web_version = $request->input('app_version');
         $platform = $request->input('platform');
 
-        if($app_version == '1.6.0') {
-            return $this->response->array(['is_audit'=>true]);
-        }
+//        if($app_version == '1.6.0') {
+//            return $this->response->array(['is_audit'=>true]);
+//        }
 
         return $this->response->array(['is_audit'=>false]);
     }

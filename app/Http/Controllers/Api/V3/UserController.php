@@ -3,7 +3,7 @@
  * 用户控制器
  */
 
-namespace App\Http\Controllers\Api\V2;
+namespace App\Http\Controllers\Api\V3;
 
 use Auth;
 use Carbon\Carbon;
@@ -22,6 +22,8 @@ use App\Models\Attach;
 use App\Models\Report;
 use App\Models\Topic;
 use App\Models\UserGoal;
+use App\Models\UserGoalItem;
+use App\Models\CheckinItem;
 use App\Models\Event;
 use App\Models\UserFollow;
 use App\Like;
@@ -31,8 +33,8 @@ use App\Models\Energy;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BaseController;
-use App\Http\Controllers\Api\V2\Transformers\UserTransformer;
-use App\Http\Controllers\Api\V2\Transformers\UserGoalTransformer;
+use App\Http\Controllers\Api\V3\Transformers\UserTransformer;
+use App\Http\Controllers\Api\V3\Transformers\UserGoalTransformer;
 use League\Fractal\Serializer\ArraySerializer;
 
 
@@ -380,10 +382,15 @@ class UserController extends BaseController
             return $this->response->error("未制定该目标", 500);
         }
 
-        $date_type = $request->input('date_type',1);
-        $start_date = $request->input('start_date',date('Y-m-d'));
+        $start_date = $request->input('start_date');
         $end_date = $request->input('end_date');
-        $days = $request->input('expect_days',0);
+        $date_type =  $request->input('date_type',1);
+        $type =  $request->input('type',1);
+        $time_type =  $request->input('type',1);
+        $start_time = $request->input('start_time');
+        $end_time = $request->input('end_time');
+        $items = $request->input('items');
+        $days = 0;
 
         $input = $request->all();
 
@@ -394,12 +401,20 @@ class UserController extends BaseController
 
             $start_dt = Carbon::parse($start_date);
             $end_dt = Carbon::parse($end_date);
-            $max_days = $start_dt->diffInDays($end_dt);
+            $input['days'] = $start_dt->diffInDays($end_dt);
+        }
 
-            if($days > $max_days) {
-                return $this->response->error("目标天数大于日期范围", 500);
+        if($time_type == 2) {
+
+            if(!$start_time || !$start_time) {
+                return $this->response->error("开始或结束时间不得为空", 500);
+            }
+
+            if ($end_time < $start_time) {
+                return $this->response->error("结束时间不得小于开始时间", 500);
             }
         }
+
 
         if ($input) {
 
@@ -413,7 +428,6 @@ class UserController extends BaseController
             // 修改目标状态
             if($date_type == 1) {
                 $input['status'] = 1;
-                $input['start_date'] = date('Y-m-d');
             } else {
                 if($start_date <= date('Y-m-d')) {
                     $input['status'] = 1;
@@ -422,46 +436,49 @@ class UserController extends BaseController
                 }
             }
 
-//            if(!$input['is_remind']) {
-//                $input['remind_time'] = null;
-//            }
-
-            unset($input['is_remind']);
-
             $user_goal->update($input);
 
-            $this->_insert_items($user_id, $goal_id, $request->input('items'));
+            $this->_update_items($user_id, $goal_id, $items);
 
         }
-
 
         return $goal;
     }
 
-    private function _insert_items($user_id, $goal_id, $items)
+    private function _update_items($user_id, $goal_id, $items)
     {
         if (!$items) return;
 
-        DB::table('user_goal_item')
-            ->where('user_id', $user_id)
-            ->where('goal_id', $goal_id)
-            ->where('is_del', 0)
-            ->delete();
+        $ids = [];
 
         foreach ($items as $item) {
 
-            DB::table('user_goal_item')->insert(
-                [
-                    'item_name' => $item['name'],
-                    'item_unit' => $item['unit'],
-                    'item_expect' => $item['expect'],
-                    'type' => $item['type'],
-                    'create_time' => time(),
-                    'goal_id' => $goal_id,
-                    'user_id' => $user_id
-                ]
-            );
+            if(isset($item['id'])) {
+                UserGoalItem::Where('item_id','=',$item['id'])
+                    ->update([
+                       'item_name'=>$item['name'],
+                        'item_expect'=>$item['expect'],
+                        'item_unit'=>$item['unit']
+                    ]);
 
+                array_push($ids,$item['id']);
+            } else {
+                $user_goal_item = new UserGoalItem();
+                $user_goal_item->item_name = $item['name'];
+                $user_goal_item->item_unit = $item['unit'];
+                $user_goal_item->item_expect = $item['expect'];
+                $user_goal_item->goal_id =  $goal_id;
+                $user_goal_item->user_id = $user_id;
+                $user_goal_item->save();
+                array_push($ids,$user_goal_item->item_id);
+            }
+
+        }
+
+        // 删除旧的item
+        if(count($ids)>0) {
+            UserGoalItem::whereIn('item_id',$ids)
+            ->delete();
         }
     }
 
@@ -498,9 +515,8 @@ class UserController extends BaseController
     // 根据日期获取打卡
     public function getGoalDay($goal_id, Request $request)
     {
-
         $messages = [
-            'day.required' => '缺少目标ID参数',
+            'day.required' => '缺少日期参数',
         ];
 
         $validation = Validator::make(Input::all(), [
@@ -522,12 +538,11 @@ class UserController extends BaseController
             ->orderBy('created_at','desc')
             ->get();
 
-        $result = [];
+        $new_checkins = [];
 
         foreach ($checkins as $k=>$checkin) {
-            $result[$k]['id'] = $checkin->id;
-            $result[$k]['content'] = $checkin->content;
-            $result[$k]['created_at']  = Carbon::parse($checkin->created_at)->toDateTimeString();
+            $new_checkins[$k]['id'] = $checkin->id;
+            $new_checkins[$k]['created_at']  = Carbon::parse($checkin->created_at)->toDateTimeString();
 
             // 获取EVENT
             $event = Event::where('eventable_id',$checkin->id)
@@ -535,9 +550,133 @@ class UserController extends BaseController
                 ->first();
 
             $result[$k]['event_id'] = is_null($event)?null:$event->event_id;
+
+            // 获取ITEMS
+            $checkin_items = CheckinItem::where('checkin_id','=',$checkin->id)
+                ->get();
+
+            $new_items = [];
+
+            foreach ($checkin_items as $k2=>$checkin_item) {
+
+                $item = UserGoalItem::Where('item_id','=',$checkin_item->item_id)
+                        ->first();
+
+                if($item) {
+                    $new_items[$k2]['id'] = $item['item_id'];
+                    $new_items[$k2]['name'] = $item['item_name'];
+                    $new_items[$k2]['value'] = $checkin_item['item_value'];
+                    $new_items[$k2]['unit'] = $item['item_unit'];
+                }
+            }
+
+            $new_checkins[$k]['items'] = $new_items;
+
         }
 
-        return $result;
+        // 获取目标统计项目
+        $items = UserGoalItem::Where('user_id','=',$user_id)
+            ->where('goal_id','=',$goal_id)
+            ->get();
+
+        $new_items = [];
+
+        foreach ($items as $k=>$item) {
+            $current = 0;
+
+            $new_items[$k]['id'] = $item->item_id;
+            $new_items[$k]['name'] = $item->item_name;
+            $new_items[$k]['expect'] = $item->item_expect;
+            $new_items[$k]['unit'] = $item->item_unit;
+
+            foreach ($checkins as $checkin) {
+                $checkin_item = CheckinItem::where('checkin_id','=',$checkin->id)
+                    ->where('item_id','=',$item->item_id)
+                    ->first();
+
+                if($checkin_item) {
+                    $current += $checkin_item['item_value'];
+                }
+            }
+
+            $new_items[$k]['current'] = $current;
+        }
+
+        return ['items'=>$new_items,'checkins'=>$new_checkins];
+    }
+
+    public function getGoalDays($goal_id, Request $request)
+    {
+        $page = $request->input('page',1);
+        $per_page = $request->input('per_page',10);
+
+        $user_id = $this->auth->user()->id;
+
+        $dt = new Carbon();
+
+        $dt->addDays(($page-1)*$per_page);
+
+        $result = [];
+
+        // 获取当日打卡
+        $days = Checkin::Where('user_id', $user_id)
+            ->where('goal_id', $goal_id)
+            ->groupBy('checkin_day')
+            ->orderBy('checkin_day','desc')
+            ->skip(($page-1)*$per_page)
+            ->limit($per_page)
+            ->get();
+
+        $result = [];
+
+        foreach ($days as $i=>$day) {
+            $checkins = Checkin::Where('user_id', $user_id)
+                ->where('goal_id', $goal_id)
+                ->where('checkin_day',$day->checkin_day)
+                ->orderBy('created_at','desc')
+                ->get();
+
+            $new_checkins = [];
+
+            foreach($checkins as $k=>$checkin) {
+                $new_checkins[$k]['id'] = $checkin->id;
+                $new_checkins[$k]['created_at']  = Carbon::parse($checkin->created_at)->toDateTimeString();
+
+                // 获取EVENT
+                $event = Event::where('eventable_id',$checkin->id)
+                    ->where('eventable_type','checkin')
+                    ->first();
+
+                $new_checkins[$k]['event'] = $event;
+
+                // 获取ITEMS
+                $checkin_items = CheckinItem::where('checkin_id','=',$checkin->id)
+                    ->get();
+
+                $new_items = [];
+
+                foreach ($checkin_items as $k2=>$checkin_item) {
+
+                    $item = UserGoalItem::Where('item_id','=',$checkin_item->item_id)
+                        ->first();
+
+                    if($item) {
+                        $new_items[$k2]['id'] = $item['item_id'];
+                        $new_items[$k2]['name'] = $item['item_name'];
+                        $new_items[$k2]['value'] = $checkin_item['item_value'];
+                        $new_items[$k2]['unit'] = $item['item_unit'];
+                    }
+                }
+
+                $new_checkins[$k]['items'] = $new_items;
+            }
+
+            $result[$i]['day'] = $day->checkin_day;
+            $result[$i]['checkins'] = $new_checkins;
+        }
+
+        return response()->json($result);
+
     }
 
     public function getGoalCalendar($goal_id, Request $request)
@@ -550,6 +689,7 @@ class UserController extends BaseController
         $days = DB::table('checkins')
             ->where('goal_id', $goal_id)
             ->where('user_id', $user_id)
+            ->groupBy('checkin_day')
             ->select('checkin_day')
             ->get();
 

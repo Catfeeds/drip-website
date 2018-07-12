@@ -1,6 +1,7 @@
 <?php namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use DB;
 
 class HomeController extends Controller {
 
@@ -12,7 +13,11 @@ class HomeController extends Controller {
      */
     public function index()
     {
-        return view('home');
+        $count = DB::table('daily_stat')
+            ->where('day','=',date('Y-m-d',strtotime('-1 day')))
+            ->first();
+
+        return view('home',compact('count'));
     }
 
     public function image()

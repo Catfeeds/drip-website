@@ -16,6 +16,19 @@
 
             <li class="treeview">
                 <a href="#">
+                    <i class="fa fa-user"></i> <span>应用管理</span>
+                    <span class="pull-right-container">
+                      <i class="fa fa-angle-left pull-right"></i>
+                    </span>
+                </a>
+                <ul class="treeview-menu">
+                    <li><a href="{{url('admin/app/channels')}}"><i class="fa fa-users"></i>渠道管理</a></li>
+                    <li><a href="{{url('admin/app/channels')}}"><i class="fa fa-circle-o"></i>版本管理</a></li>
+                </ul>
+            </li>
+
+            <li class="treeview">
+                <a href="#">
                     <i class="fa fa-user"></i> <span>用户管理</span>
                     <span class="pull-right-container">
                       <i class="fa fa-angle-left pull-right"></i>
@@ -28,6 +41,19 @@
                     <li><a href=""><i class="fa fa-circle-o"></i>反馈列表</a></li>
                 </ul>
             </li>
+
+            <li class="treeview">
+                <a href="#">
+                    <i class="fa fa-user"></i> <span>数据统计</span>
+                    <span class="pull-right-container">
+                      <i class="fa fa-angle-left pull-right"></i>
+                    </span>
+                </a>
+                <ul class="treeview-menu">
+                    <li><a href=""><i class="fa fa-users"></i>数据汇总</a></li>
+                </ul>
+            </li>
+
             <li class="treeview">
                 <a href="#">
                     <i class="fa fa-user"></i> <span>系统管理</span>

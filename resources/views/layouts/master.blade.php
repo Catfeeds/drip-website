@@ -41,14 +41,15 @@
                           <div class="row">
                               <div class="col-md-6 col-md-push-6 text-right">
                                   <ul class="soc-list">
-                                      <li><a href="https://www.weibo.com/growu" target="_blank"><i class="icon icon-weibo"></i></a></li>
-                                      <li><a  target="_blank" id="wechat" style="background-image:url({{asset('img/wechat.jpg')}})" class="btn" data-toggle="popover" data-placement="top" ><i class="icon icon-weixin"></i></a></li>
-                                      {{--<li><a href="#" target="_blank"><i class="icon icon-qq"></i></a></li>--}}
+                                      <li><a href="https://www.weibo.com/growu" alt="「水滴打卡」微博" target="_blank"><i class="icon icon-weibo"></i></a></li>
+                                      <li><a id="wechat" alt="「水滴打卡」公众号" class="btn" data-toggle="popover" data-placement="top" ><i class="icon icon-weixin"></i></a></li>
+                                      {{--<li><a href="#" target="_blank"><i class="icon icon-qq-copy"></i></a></li>--}}
+                                      <li><a target="_blank" href="//shang.qq.com/wpa/qunwpa?idkey=20bd602a5096038da61ace5eca3b0009c22952206fb85979014374e6ccdc3135"><img border="0" src="//pub.idqqimg.com/wpa/images/group.png" alt="「水滴打卡」交流群" title="「水滴打卡」交流群"></a></li>
                                   </ul>
                               </div>
                               <div class="col-md-6 col-md-pull-6">
                                   <img class="logo" src="img/icon.png" alt="">
-                                  <span class="editContent">© 2015 格吾社区<br>浙ICP备 1234567</span>
+                                  <span class="editContent">© 2015 <a href="http://www.growu.me" target="_blank">格吾社区</a><br> 浙ICP备13035086号-2</span>
                               </div>
                           </div>
                       </div>
