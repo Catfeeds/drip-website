@@ -5,6 +5,7 @@
 namespace App\Http\Controllers\Api\V3;
 
 use App\Like;
+use App\Models\UserGoal;
 use Auth;
 use Validator;
 use API;
@@ -23,6 +24,9 @@ use App\Models\Message as Message;
 use App\Models\Comment as Comment;
 use App\Models\Energy as Energy;
 use App\Libs\MyJpush as MyJpush;
+
+use Qiniu\Auth as QiniuAuth;
+use Qiniu\Storage\UploadManager;
 
 use Illuminate\Support\Facades\Input;
 use Illuminate\Http\Request;
@@ -566,5 +570,207 @@ class EventController extends BaseController {
         $event->update($request->all());
 
         $this->response->noContent();
+    }
+
+
+    public function share($event_id,Request $request) {
+
+        $event = Event::find($event_id);
+
+        $user = User::find($event->user_id);
+
+        $user_goal = UserGoal::Where('user_id','=',$user->id)
+                        ->where('goal_id','=',$event->goal_id)
+            ->first();
+
+        $width = 600;
+        $height = 1000;
+
+        //创建画布
+        $im = imagecreatetruecolor($width, $height);
+
+        //填充画布背景色
+        $color = imagecolorallocate($im, 255, 255, 255);
+        imagefill($im, 0, 0, $color);
+
+        // 分享图
+        $checkin = Checkin::find($event->event_value);
+
+        if($checkin->attaches&&count($checkin->attaches)>0) {
+
+            $attach = $checkin->attaches[0];
+            $img_path = public_path('uploads/images/'.$attach->path.'/'.$attach->name);
+
+        } else {
+            $img_arr = [
+                '804X5loicV0.jpg',
+                'dch7r8qAzpg.jpg',
+                'CWRxBIFRgH4.jpg',
+                'dKJXkKCF2D8.jpg',
+                'DMkRMy8GEZ8.jpg',
+            ];
+
+            $img_name = $img_arr[array_rand($img_arr,1)];
+            $img_path = public_path('unsplash/'.$img_name);
+        }
+
+        list($g_w,$g_h) = getimagesize($img_path);
+        $bgImg = $this->_createImageFromFile($img_path);
+        imagecopyresized($im, $bgImg, 0, 0, 0, 0, $width, 400, $g_w, $g_h);
+
+        //字体文件
+        $font_file = public_path('fonts/yahei.ttf');
+        $font_file2 = public_path('fonts/Oswald-Regular.ttf');
+
+        //设定字体的颜色
+        $font_color_1 = ImageColorAllocate ($im, 140, 140, 140);
+        $font_color_2 = ImageColorAllocate ($im, 28, 28, 28);
+        $font_color_white = ImageColorAllocate ($im, 255, 255, 255);
+
+        // 天数
+        $day_text = date('d');
+        imagettftext($im, 100,0, 20, 250, $font_color_white ,$font_file2, $day_text);
+
+        // 月份
+        $month_text = gmstrftime("%B",time());
+        imagettftext($im, 60,0, 20, 350, $font_color_white ,$font_file, $month_text);
+
+        // 用户
+        $text2 = $user->nickname;
+        imagettftext($im, 20,0, $this->_getFontCenterX($text2,$font_file,20,$width), 480, $font_color_2 ,$font_file, $text2);
+
+        // 动态
+        $text1 = '『 '.$user_goal->name.'』';
+        imagettftext($im, 22,0, $this->_getFontCenterX($text1,$font_file,22,$width), 550, $font_color_2 ,$font_file, $text1);
+
+        // 数据
+        imagettftext($im, 14,0, $this->_getFontCenterX('打卡天数',$font_file,14,$width/2), 650, $font_color_2 ,$font_file, '打卡天数');
+
+        $checkin_days = $user_goal->total_days;
+        imagettftext($im, 60,0, $this->_getFontCenterX($checkin_days,$font_file2,60,$width/2), 750, $font_color_2 ,$font_file2, $checkin_days);
+
+        imageline($im,309,650,309,750,$font_color_1);
+        imagettftext($im, 14,0, $this->_getFontCenterX('打卡次数',$font_file,14,$width/2)+$width/2, 650, $font_color_2 ,$font_file, '打卡次数');
+
+        $checkin_count = $user_goal->total_count;
+        imagettftext($im, 60,0, $this->_getFontCenterX($checkin_count,$font_file2,60,$width/2)+$width/2, 750, $font_color_2 ,$font_file2, $checkin_count);
+
+        // 宣传
+        imageline($im,30,850,570,850,$font_color_1);
+        imagettftext($im, 16,0, 50, 900, $font_color_2 ,$font_file, '水滴打卡');
+        imagettftext($im, 14,0, 50, 950, $font_color_1 ,$font_file, '见证持之以恒的力量');
+
+        //二维码
+        list($l_w,$l_h) = getimagesize(public_path('img/qrcode.png'));
+        $logoImg = @imagecreatefrompng(public_path('img/qrcode.png'));
+        imagecopyresized($im, $logoImg, 450, 880, 0, 0, 100, 100, $l_w, $l_h);
+
+
+        Header("Content-Type: image/jpg");
+        $file_name = time().'.jpg';
+//
+        imagejpeg($im,public_path('share/'.$file_name));
+
+        //释放空间
+        imagedestroy($im);
+        imagedestroy($bgImg);
+        imagedestroy($logoImg);
+
+
+        $accessKey = 'Gp_kwMCtSa1jdalGbgv4h8Xk1JMA2vDqPyVIVVu5';
+        $secretKey = 'DmjVDP_FxJuFccMRUpomHou-nmNw6QzDDLmyqC0D';
+        $auth = new QiniuAuth($accessKey, $secretKey);
+        $bucket = 'drip';
+        $token = $auth->uploadToken($bucket);
+
+        $uploadMgr = new UploadManager();
+
+        list($ret, $err) = $uploadMgr->putFile($token, 'share/'.$file_name, public_path('share/'.$file_name));
+        if ($err !== null) {
+            return $this->response->error('图片类型不合法',500);
+        }
+
+
+//
+        return $this->response->array(['url'=>'http://file.growu.me/'.$ret['key'].'?imageslim']);
+    }
+
+    private function _getFontCenterX($text,$font_file,$font_size,$width)
+    {
+        $result = imagettfbbox($font_size,0,$font_file, $text);
+
+        $textWidth = $result[2]-$result[0];
+
+        $x= ceil(($width - $textWidth) / 2);
+
+        return $x;
+    }
+
+    /**
+     * 从图片文件创建Image资源
+     * @param $file 图片文件，支持url
+     * @return bool|resource    成功返回图片image资源，失败返回false
+     */
+    private function _createImageFromFile($file){
+        if(preg_match('/http(s)?:\/\//',$file)){
+            $fileSuffix = $this->_getNetworkImgType($file);
+            echo $fileSuffix;
+        }else{
+            $fileSuffix = pathinfo($file, PATHINFO_EXTENSION);
+        }
+
+        if(!$fileSuffix) return false;
+
+        switch ($fileSuffix){
+            case 'jpeg':
+                $theImage = @imagecreatefromjpeg($file);
+                break;
+            case 'jpg':
+                $theImage = @imagecreatefromjpeg($file);
+                break;
+            case 'png':
+                $theImage = @imagecreatefrompng($file);
+                break;
+            case 'gif':
+                $theImage = @imagecreatefromgif($file);
+                break;
+            default:
+                $theImage = @imagecreatefromstring(file_get_contents($file));
+                break;
+        }
+
+
+        return $theImage;
+    }
+
+    /**
+     * 获取网络图片类型
+     * @param $url  网络图片url,支持不带后缀名url
+     * @return bool
+     */
+    private function _getNetworkImgType($url){
+        $ch = curl_init(); //初始化curl
+        curl_setopt($ch, CURLOPT_URL, $url); //设置需要获取的URL
+        curl_setopt($ch, CURLOPT_NOBODY, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);//设置超时
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); //支持https
+        curl_exec($ch);//执行curl会话
+        $http_code = curl_getinfo($ch);//获取curl连接资源句柄信息
+        curl_close($ch);//关闭资源连接
+        var_dump($http_code);
+
+        if ($http_code['http_code'] == 200) {
+            $theImgType = explode('/',$http_code['content_type']);
+
+            if($theImgType[0] == 'image'){
+                return $theImgType[1];
+            }else{
+                return false;
+            }
+        }else{
+            return false;
+        }
     }
 }

@@ -30,7 +30,8 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
 //		'ajax_users'  => 'user.ajax_users',
 //		'index' => 'user',
 //	]);
-	Route::get('admin/auth/login', 'AuthController@getLogin');
+    Route::get('admin', 'IndexController@index');
+    Route::get('admin/auth/login', 'AuthController@getLogin');
 	Route::post('admin/auth/login', 'AuthController@postLogin');
 	Route::get('admin/user/users', 'UserController@users');
 	Route::get('admin/user/user_view/{id}', 'UserController@user_view');
@@ -56,7 +57,6 @@ Route::group(['namespace' => 'Admin','middleware' => ['web']], function () {
     Route::get('admin/app/channels', 'ChannelController@index');
     Route::get('admin/app/get_channels', 'ChannelController@get_channels')->name('admin.app.get_channels');
     Route::post('admin/app/create_channel', 'VersionController@create')->name('admin.app.create_channel');
-
 
     Route::get('admin/mall', 'MallController@index');
     Route::get('admin/blog/articles', 'ArticleController@index');
@@ -234,6 +234,7 @@ $api->version('v3',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->put('event/{id}/like', 'App\Http\Controllers\Api\V3\EventController@like');
     $api->delete('event/{id}/like', 'App\Http\Controllers\Api\V3\EventController@unLike');
     $api->post('event/{id}/comment', 'App\Http\Controllers\Api\V3\EventController@comment');
+    $api->post('event/{id}/share', 'App\Http\Controllers\Api\V3\EventController@share');
     $api->get('event/hot', 'App\Http\Controllers\Api\V3\EventController@getHotEvents');
     $api->get('event/follow', 'App\Http\Controllers\Api\V3\EventController@getFollowEvents');
     $api->get('event/{id}', 'App\Http\Controllers\Api\V3\EventController@getEventDetail');

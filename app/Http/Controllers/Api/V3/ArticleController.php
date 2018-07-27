@@ -39,12 +39,14 @@ use League\Fractal\Serializer\ArraySerializer;
 class ArticleController extends BaseController {
 
     public function getTop(Request $request) {
-        $articles = Article::OrderBy('is_top','desc')
-        ->orderBy('created_at','desc')
-//        ->limit(10)
+        $articles = Article::Where('is_top',1)
+            ->orderBy('order','desc')
+            ->orderBy('created_at','desc')
+        ->limit(5)
         ->get();
 
-        return $articles;
+        return response()->json($articles);
+
     }
 
     public function getDetail($article_id,Request $request) {

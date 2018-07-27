@@ -26,8 +26,13 @@ class HomeController extends Controller {
         $im = imagecreatetruecolor(618, 1000);
 
         //填充画布背景色
-        $color = imagecolorallocate($im, 0, 0, 0);
+        $color = imagecolorallocate($im, 255, 255, 255);
         imagefill($im, 0, 0, $color);
+
+        //商品图片
+        list($g_w,$g_h) = getimagesize(public_path('unsplash/804X5loicV0.jpg'));
+        $goodImg = $this->_createImageFromFile(public_path('unsplash/804X5loicV0.jpg'));
+        imagecopyresized($im, $goodImg, 0, 0, 0, 0, 618, 400, $g_w, $g_h);
 
         //字体文件
         $font_file = public_path('fonts/yahei.ttf');
@@ -44,56 +49,69 @@ class HomeController extends Controller {
         //Logo
         list($l_w,$l_h) = getimagesize(public_path('img/qrcode.png'));
         $logoImg = @imagecreatefrompng(public_path('img/qrcode.png'));
-        imagecopyresized($im, $logoImg, 274, 28, 0, 0, 70, 70, $l_w, $l_h);
+
+        imagecopyresized($im, $logoImg, 480, 850, 0, 0, 100, 100, $l_w, $l_h);
+
+        list($l_w,$l_h) = getimagesize(public_path('img/avatar5.png'));
+        $avatarImg = @imagecreatefrompng(public_path('img/avatar5.png'));
+
+//        imagecopyresized($im, $avatarImg, (618-40)/2, 450, 0, 0, 80, 80, $l_w, $l_h);
+
+
+        $text2 = "Jason.z";
+
+        imagettftext($im, 20,0, $this->_getFontCenterX($text2,$font_file_bold,20,618), 450, $font_color_2 ,$font_file_bold, $text2);
+
+        $text1 = "坚持每天读一本书";
+
+        imagettftext($im, 20,0, $this->_getFontCenterX($text1,$font_file_bold,20,618), 500, $font_color_2 ,$font_file_bold, $text1);
+
+        imagettftext($im, 14,0, $this->_getFontCenterX('打卡天数',$font_file_bold,14,618/2), 600, $font_color_2 ,$font_file_bold, '打卡天数');
+
+        imagettftext($im, 60,0, $this->_getFontCenterX('23',$font_file_bold,60,618/2), 700, $font_color_2 ,$font_file_bold, '23');
+
+
+        imageline($im,309,600,309,700,$font_color_1);
+
+
+        imagettftext($im, 14,0, $this->_getFontCenterX('打卡次数',$font_file_bold,14,618/2)+618/2, 600, $font_color_2 ,$font_file_bold, '打卡次数');
+
+        imagettftext($im, 60,0, $this->_getFontCenterX('543',$font_file_bold,60,618/2)+618/2, 700, $font_color_2 ,$font_file_bold, '543');
+
+
+        imageline($im,50,820,550,820,$font_color_1);
+
 
         //温馨提示
-        imagettftext($im, 14,0, 100, 130, $font_color_1 ,$font_file, '温馨提示：喜欢长按图片识别二维码即可前往购买');
+        imagettftext($im, 16,0, 80, 870, $font_color_2 ,$font_file_bold, '水滴打卡');
 
-        //商品图片
-        list($g_w,$g_h) = getimagesize('https://source.unsplash.com/random/400x300');
-        $goodImg = $this->_createImageFromFile('https://source.unsplash.com/random/400x300');
-        imagecopyresized($im, $goodImg, 0, 185, 0, 0, 618, 618, $g_w, $g_h);
-
-        //二维码
-        list($code_w,$code_h) = getimagesize(asset('img/qrcode.png'));
-        $codeImg = $this->_createImageFromFile(asset('img/qrcode.png'));
-        imagecopyresized($im, $codeImg, 440, 820, 0, 0, 170, 170, $code_w, $code_h);
-
-        //商品描述
-        $theTitle = $this->_cn_row_substr('发水电费点撒放翁惹我惹我热',2,19);
-        imagettftext($im, 14,0, 8, 845, $font_color_2 ,$font_file, $theTitle[1]);
-        imagettftext($im, 14,0, 8, 875, $font_color_2 ,$font_file, $theTitle[2]);
-
-        imagettftext($im, 14,0, 8, 935, $font_color_2 ,$font_file, "券后价￥");
-        imagettftext($im, 28,0, 80, 935, $font_color_red ,$font_file_bold, "11");
-        imagettftext($im, 14,0, 8,970, $font_color_3 ,$font_file, "现价￥33∂");
-
-        //优惠券
-//        if($gData['coupon_price']){
-//            imagerectangle ($im, 125 , 950 , 160 , 975 , $font_color_3);
-//            imagefilledrectangle ($im, 126 , 951 , 159 , 974 , $fang_bg_color);
-//            imagettftext($im, 14,0, 135,970, $font_color_3 ,$font_file, "券");
-//
-//            $coupon_price = strval($gData['coupon_price']);
-//            imagerectangle ($im, 160 , 950 , 198 + (strlen($coupon_price)* 10), 975 , $font_color_3);
-//            imagettftext($im, 14,0, 170,970, $font_color_3 ,$font_file, $coupon_price."元");
-//        }
-
-        //输出图片
-//        if($fileName){
-//            imagepng ($im,$fileName);
-//        }else{
-//            Header("Content-Type: image/png");
-//            imagepng ($im);
-//        }
+        imagettftext($im, 14,0, 80, 920, $font_color_1 ,$font_file, '见证持之以恒的力量');
 
         Header("Content-Type: image/png");
-        imagepng ($im);
+
+        $file_name = time().'.png';
+
+        imagepng ($im,public_path('share/'.$file_name));
+
+        echo "https://drip.growu.me/share/".$file_name;
+
+
 
         //释放空间
         imagedestroy($im);
         imagedestroy($goodImg);
-        imagedestroy($codeImg);
+        imagedestroy($logoImg);
+    }
+
+    private function _getFontCenterX($text,$font_file,$font_size,$width)
+    {
+        $result = imagettfbbox($font_size,0,$font_file, $text);
+
+        $textWidth = $result[2]-$result[0];
+
+        $x= ceil(($width - $textWidth) / 2);
+
+        return $x;
     }
 
     /**
@@ -102,7 +120,6 @@ class HomeController extends Controller {
      * @return bool|resource    成功返回图片image资源，失败返回false
      */
     private function _createImageFromFile($file){
-        echo $file;
         if(preg_match('/http(s)?:\/\//',$file)){
             $fileSuffix = $this->_getNetworkImgType($file);
             echo $fileSuffix;
@@ -150,7 +167,6 @@ class HomeController extends Controller {
         curl_exec($ch);//执行curl会话
         $http_code = curl_getinfo($ch);//获取curl连接资源句柄信息
         curl_close($ch);//关闭资源连接
-        var_dump($http_code);
 
         if ($http_code['http_code'] == 200) {
             $theImgType = explode('/',$http_code['content_type']);

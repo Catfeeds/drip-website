@@ -648,8 +648,13 @@ class AuthController extends BaseController
                     ],
                 ]);
 
-            } catch (Exception $e) {
-                Log::debug($e->result);
+            } catch (\Overtrue\EasySms\Exceptions\NoGatewayAvailableException $e) {
+                foreach($e->results as $result) {
+                    if ($result['status'] != 'success') {
+                        return $result['exception']->raw['Message'];
+                    }
+                }
+                return $e->raw['Message'];
             }
 
 

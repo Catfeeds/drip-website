@@ -12,6 +12,11 @@
         <h1>
             博客管理
             <small>文章列表</small>
+            <div class="col-md-6 text-right">
+                <a href="#channel-add-modal" data-toggle="modal" class="btn btn-success btn-md">
+                    <i class="fa fa-plus-circle"></i> 创建文章
+                </a>
+            </div>
         </h1>
         <ol class="breadcrumb">
             <li><a href="#"><i class="fa fa-dashboard"></i> 首页</a></li>

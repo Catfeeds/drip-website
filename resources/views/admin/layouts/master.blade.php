@@ -9,7 +9,7 @@
         <link rel="stylesheet" href="{{asset('plugins/AdminLTE/dist/css/AdminLTE.min.css')}}">
         <link rel="stylesheet" href="{{asset('plugins/datatables/media/css/dataTables.bootstrap.min.css')}}">
         <link rel="stylesheet" href="{{asset('plugins/AdminLTE/dist/css/skins/_all-skins.min.css')}}">
-        <link rel="stylesheet" href="{{asset('plugins/AdminLTE/dist/css/skins/skin-blue.min.css')}}">
+        <link rel="stylesheet" href="{{asset('plugins/AdminLTE/ dist/css/skins/skin-blue.min.css')}}">
         {{--<link rel="stylesheet" href="{{asset('css/app.css')}}">--}}
         @show
     <!--[if lt IE 9]>

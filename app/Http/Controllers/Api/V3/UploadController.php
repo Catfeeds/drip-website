@@ -85,8 +85,6 @@ class UploadController extends BaseController
                     return $this->response->error('图片类型不合法',500);
                 }
 
-//                $data = ['url'=> url('/'.$destinationPath).'/'.$fileName,'id'=>$attach->id];
-
                 $data = ['url'=> 'http://file.growu.me/'.$ret['key'],'id'=>$attach->id];
 
                 return $data;

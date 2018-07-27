@@ -477,7 +477,7 @@ class UserController extends BaseController
 
         // 删除旧的item
         if(count($ids)>0) {
-            UserGoalItem::whereIn('item_id',$ids)
+            UserGoalItem::whereNotIn('item_id',$ids)
             ->delete();
         }
     }
@@ -655,16 +655,20 @@ class UserController extends BaseController
 
                 $new_items = [];
 
-                foreach ($checkin_items as $k2=>$checkin_item) {
+                foreach ($checkin_items as $checkin_item) {
 
                     $item = UserGoalItem::Where('item_id','=',$checkin_item->item_id)
                         ->first();
 
                     if($item) {
-                        $new_items[$k2]['id'] = $item['item_id'];
-                        $new_items[$k2]['name'] = $item['item_name'];
-                        $new_items[$k2]['value'] = $checkin_item['item_value'];
-                        $new_items[$k2]['unit'] = $item['item_unit'];
+                        $new_item = [];
+
+                        $new_item['id'] = $item['item_id'];
+                        $new_item['name'] = $item['item_name'];
+                        $new_item['value'] = $checkin_item['item_value'];
+                        $new_item['unit'] = $item['item_unit'];
+
+                        $new_items[] = $new_item;
                     }
                 }
 
@@ -996,7 +1000,7 @@ class UserController extends BaseController
         $result['at_count'] = $at_count;
         $result['fan_count'] = $fan_count;
         $result['notice_count'] = $notice_count;
-        $result['notice'] = $notice_count;
+//        $result['notice'] = $notice_count;
 
         return $result;
     }

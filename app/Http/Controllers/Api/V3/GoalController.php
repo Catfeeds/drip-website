@@ -370,7 +370,7 @@ class GoalController extends BaseController
             $user_goal_item->user_id = $user_id;
             $user_goal_item->item_name =$item['name'];
             $user_goal_item->item_unit =$item['unit'];
-            $user_goal_item->item_expect =$item['value'];
+            $user_goal_item->item_expect =$item['expect'];
             $user_goal_item->save();
         }
 
@@ -540,14 +540,18 @@ class GoalController extends BaseController
 
         // 计算连续打卡天数
         if (date('Y-m-d', strtotime($user_goal->last_checkin_at)) == date("Y-m-d", strtotime("-1 day", strtotime($day)))) {
-            $series_days += 1;
+            if($today_checkin_count == 0) {
+                $series_days += 1;
+            }
         } else {
             $series_days = 1;
         }
 
         $total_days = $user_goal->total_days;
 
-        $total_days++;
+        if($today_checkin_count == 0) {
+            $total_days++;
+        }
 
         $checkin->total_days = $total_days;
         $checkin->series_days = $series_days;
@@ -556,6 +560,9 @@ class GoalController extends BaseController
 
         $user_goal->total_days = $total_days;
         $user_goal->series_days = $series_days;
+
+        $user_goal->total_count += 1;
+
         $user_goal->last_checkin_at = $day < date('Y-m-d') ? $day.' 23:59:59' : date('Y-m-d H:i:s');
         $user_goal->save();
 
@@ -599,7 +606,8 @@ class GoalController extends BaseController
         if ($content) {
             $this->_parse_content($content, $user_id, $event->event_id);
         }
-        return compact('series_add_coin','single_add_coin','total_days');
+
+        return compact('series_add_coin','single_add_coin','total_days','event');
     }
 
     private function _parse_content($content, $user_id, $event_id)
@@ -629,8 +637,6 @@ class GoalController extends BaseController
         }
 
     }
-
-
 
 
     public function setting(Request $request)

@@ -633,7 +633,7 @@ class AuthController extends BaseController
                         'file' => '/tmp/easy-sms.log',
                     ],
                     'aliyun' => [
-                        'access_key_id' => 'LTAI6heBxZmwiSKp',
+                            'access_key_id' => 'LTAI6heBxZmwiSKp',
                         'access_key_secret' => 'YPYhxaddcNCNAWiyKsF57J78N5GqG3',
                         'sign_name' => '水滴打卡',
                     ],
