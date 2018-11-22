@@ -60,10 +60,70 @@ class ArticleController extends BaseController {
 
            $new_article['id'] = $article->id;
            $new_article['title'] = $article->title;
-
+            $new_article['like_count'] = $article->like_count;
            $new_article['content'] = $article->content;
+
+        // 获取评论
+        $comments = Comment::with('user')
+            ->where('commentable_id',$article_id)
+            ->where('commentable_type',"articles")
+            ->orderBy('like_count','desc')
+            ->take(10)
+            ->get();
+
+        $new_comments = [];
+
+        foreach($comments as $k=>$comment) {
+
+            $new_comments[$k]['id'] = $comment['comment_id'];
+            $new_comments[$k]['content'] = $comment['content'];
+            $new_comments[$k]['like_count'] = $comment['like_count'];
+
+            $user = [];
+
+            $user['id'] = $comment->user->user_id;
+            $user['nickname'] = $comment->user->nickname;
+            $user['avatar_url'] = $comment->user->avatar_url;
+
+            $new_comments[$k]['user'] = $user;
+
+            $new_comments[$k]['reply'] = null;
+
+            $new_comments[$k]['created_at'] = date('Y-m-d H:i:s',$comment->create_time);
+        }
+
+        $new_article['comments'] = $new_comments;
 
 
         return $new_article;
+    }
+
+    public function doComment($article_id,Request $request) {
+        $reply_id  = $request->input('reply_id');
+        $content  = $request->input('content');
+
+        $user = $this->auth->user();
+
+        $comment = new Comment();
+        $comment->content = trim($content);
+        $comment->parent_id = $reply_id;
+        $comment->reply_id = $reply_id;
+        $comment->user_id = $user->id;
+        $comment->commentable_id = $article_id;
+        $comment->commentable_type = 'articles';
+        $comment->save();
+
+        $comment =  Comment::with('user')->find($comment->comment_id);
+
+        return response()->json($comment);
+    }
+
+    public function doLike($article_id,Request $request) {
+        $article = Article::find($article_id);
+
+        if($article) {
+            $article->like_count += 1;
+            $article->save();
+        }
     }
 }

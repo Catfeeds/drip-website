@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V3;
 use App\Http\Controllers\Api\V3\Transformers\UserTransformer;
 use App\Http\Controllers\Api\V3\Transformers\EventTransformer;
 use App\Http\Controllers\Api\V3\Transformers\UserGoalTransformer;
+use App\Models\CheckinItem;
 use Auth;
 use Validator;
 
@@ -271,7 +272,8 @@ class GoalController extends BaseController
             return $this->response->error(implode(',', $validation->errors()->all()), 500);
         }
 
-        $user_id = $this->auth->user()->id;
+        $user = $this->auth->user();
+        $user_id = $user->id;
 
         $start_date = $request->input('start_date');
         $end_date = $request->input('end_date');
@@ -283,6 +285,21 @@ class GoalController extends BaseController
         $items = $request->input('items');
 
         $days = 0;
+
+        // 判断用户创建目标个数
+        $count = UserGoal::Where('user_id','=',$user_id)
+            ->where('is_archive','=','0')
+            ->count();
+
+        $max_count = 5;
+
+        if($user['vip_type']>0) {
+            $max_count = 10;
+        }
+
+        if($count > $max_count) {
+            return $this->response->error("已达到创建目标个数上限", 500);
+        }
 
         // 如果是短期目标，检查日期范围
         if($date_type == 2) {
@@ -610,6 +627,188 @@ class GoalController extends BaseController
         return compact('series_add_coin','single_add_coin','total_days','event');
     }
 
+
+    public function getCheckin($checkin_id,Request $request)
+    {
+        $checkin = Checkin::find($checkin_id);
+
+        $user = $this->auth->user();
+
+        $new_checkin = [];
+
+        $new_checkin['id'] = $checkin->id;
+        $new_checkin['day'] = $checkin->checkin_day;
+        $new_checkin['content'] = $checkin->content;
+
+        // 获取items
+
+        $checkin_items = DB::table('checkin_item')
+            ->where('checkin_id', $checkin_id)
+            ->get();
+
+        $goal_items = DB::table('user_goal_item')
+            ->where('user_id', $user->id)
+            ->where('goal_id', $checkin->goal_id)
+            ->get();
+
+        $new_items = [];
+
+        foreach($goal_items as $k=>$item) {
+
+            $new_items[$k]['id'] = $item->item_id;
+            $new_items[$k]['name'] = $item->item_name;
+            $new_items[$k]['value'] = 0;
+            $new_items[$k]['unit'] = $item->item_unit;
+
+            foreach($checkin_items as $k2=>$v) {
+                if($item->item_id == $v->item_id) {
+                    $new_items[$k]['value'] = $v->item_value;
+                }
+            }
+        }
+
+        $new_checkin['items'] = $new_items;
+
+        $new_attachs = [];
+
+        foreach($checkin->attaches as $k=>$attach) {
+            $new_attachs[$k]['id'] = $attach->id;
+            $new_attachs[$k]['name'] = $attach->name;
+//				$new_attachs[$k]['url'] = "http://drip.growu.me/uploads/images/".$attach->path.'/'.$attach->name;
+            $new_attachs[$k]['url'] = "http://file.growu.me/".$attach->name."?imageslim";
+        }
+
+        $new_checkin['attachs'] = $new_attachs;
+
+        return $new_checkin;
+    }
+
+    public function deleteCheckin($checkin_id,Request $request) {
+        $checkin = Checkin::find($checkin_id);
+
+        // 删除动态
+        Event::Where('event_value','=',$checkin_id)
+            ->delete();
+
+        // 删除打卡项目
+        CheckinItem::Where('checkin_id','=',$checkin_id)
+            ->delete();
+
+        // 删除打卡
+        $checkin->delete();
+
+        return $this->response->noContent();
+    }
+
+    public function updateCheckin($checkin_id,Request $request)
+    {
+        $validation = Validator::make(Input::all(), [
+            'content' => '',    // 备注
+            'is_public' => '',          // 是否公开
+            'day' => 'date',        // 打卡类型
+            'items' => '',          // 项目
+            'attaches' => '',
+        ]);
+
+        if ($validation->fails()) {
+            return $this->response->error(implode(',', $validation->errors()), 500);
+        }
+
+        $isReCheckin = false;
+        $day = $request->input('day', date('Y-m-d'));
+
+        if($day<date('Y-m-d')) {
+            $isReCheckin = true;
+        }
+
+        $content = trim($request->input('content'));
+
+        $user_id = $this->auth->user()->id;
+
+        $checkin = Checkin::find($checkin_id);
+
+        if (empty($checkin)) {
+            return $this->response->error('打卡记录不存在', 500);
+        }
+
+        $user_goal = UserGoal::where('user_id','=',$user_id)
+            ->where('goal_id', '=', $checkin->goal_id)
+            ->first();
+
+        if (empty($user_goal)) {
+            return $this->response->error('未设定该目标', 500);
+        }
+
+        if($user_goal->start_date > date('Y-m-d')) {
+            return $this->response->error('目标还未开始', 500);
+        }
+
+        if($user_goal->date_type == 2) {
+            if($user_goal->end_date < date('Y-m-d')) {
+                return $this->response->error('目标已结束', 500);
+            }
+        }
+
+        // TODO
+        // 判断是否在打卡周期内
+        if($user_goal->weekday) {
+            $weekdays = explode(';',$user_goal->weekday);
+            if(!in_array(date('w'),$weekdays)) {
+                return $this->response->error('不在打卡周期内', 500);
+            }
+        }
+
+        $series_days = $user_goal->series_days;
+
+        // 获取当天的打卡次数
+        $today_checkin_count = Checkin::where('user_id', '=', $user_id)
+            ->where('goal_id', '=', $user_goal->goal_id)
+            ->where('checkin_day', '=', $day)
+            ->count();
+
+//        if ($today_checkin_count >= $user_goal->max_daily_count) {
+//            return $this->response->error('超过当日打卡最大次数', 500);
+//        }
+
+        // 保存打卡记录
+        $checkin->content = nl2br($content);
+        $checkin->checkin_day = $day;
+        $checkin->is_public = $request->is_public?(int)$request->is_public:$user_goal->is_public;
+        $checkin->save();
+
+        // 插入items
+        $items = Input::get('items');
+        if (!empty($items)) {
+            CheckinItem::Where('checkin_id','=',$checkin_id)
+                ->delete();
+
+            foreach ($items as $item) {
+
+                DB::table('checkin_item')
+                    ->insert([
+                        'checkin_id' => $checkin->id,
+                        'item_id' => $item['id'],
+                        'item_value' => $item['value']
+                    ]);
+            }
+        }
+
+        // 更新附件
+        if ($attachs = $request->input('attachs')) {
+            Attach::Where('attachable_type','=','checkin')
+                ->Where('attachable_id','=',$checkin_id)
+                ->delete();
+
+            foreach ($attachs as $attach) {
+                $attach = Attach::find($attach['id']);
+                $attach->attachabAOle_id = $checkin->id;
+                $attach->attachable_type = 'checkin';
+                $attach->save();
+            }
+        }
+    }
+
+
     private function _parse_content($content, $user_id, $event_id)
     {
         $topic_pattern = "/\#([^\#|.]+)\#/";
@@ -637,7 +836,6 @@ class GoalController extends BaseController
         }
 
     }
-
 
     public function setting(Request $request)
     {

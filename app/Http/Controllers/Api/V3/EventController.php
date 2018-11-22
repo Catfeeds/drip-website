@@ -72,10 +72,20 @@ class EventController extends BaseController {
             $new_checkin['total_days'] = $checkin->total_days;
 
 //			// 获取项目
-//			$event->checkin->items = DB::table('checkin_item')
-//				->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
-//				->where('checkin_id', $event->event_value)
-//				->get();
+			$items = DB::table('checkin_item')
+				->join('user_goal_item','user_goal_item.item_id','=','checkin_item.item_id')
+				->where('checkin_id', $event->event_value)
+				->get();
+
+			$new_items = [];
+
+            foreach($items as $k=>$item) {
+                $new_items[$k]['name'] = $item->item_name;
+                $new_items[$k]['value'] = $item->item_value;
+                $new_items[$k]['unit'] = $item->item_unit;
+            }
+
+            $new_checkin['items'] = $new_items;
 
 			$new_attachs = [];
 
@@ -99,8 +109,9 @@ class EventController extends BaseController {
 
 		// 获取评论
 		$comments = Comment::with('user')
-			->where('event_id',$event_id)
-			->orderBy('create_time','desc')
+			->where('commentable_id',$event_id)
+            ->where('commentable_type',"events")
+            ->orderBy('created_at','desc')
 			->take(10)
 			->get();
 
@@ -572,7 +583,11 @@ class EventController extends BaseController {
         $this->response->noContent();
     }
 
-
+    /**
+     * 动态图片分享功能
+     * @param $event_id
+     * @param Request $request
+     */
     public function share($event_id,Request $request) {
 
         $event = Event::find($event_id);
@@ -644,16 +659,31 @@ class EventController extends BaseController {
         imagettftext($im, 22,0, $this->_getFontCenterX($text1,$font_file,22,$width), 550, $font_color_2 ,$font_file, $text1);
 
         // 数据
-        imagettftext($im, 14,0, $this->_getFontCenterX('打卡天数',$font_file,14,$width/2), 650, $font_color_2 ,$font_file, '打卡天数');
+        imagettftext($im, 14,0, $this->_getFontCenterX('打卡(天数)',$font_file,14,$width/2), 650, $font_color_2 ,$font_file, '打卡(天数)');
 
         $checkin_days = $user_goal->total_days;
         imagettftext($im, 60,0, $this->_getFontCenterX($checkin_days,$font_file2,60,$width/2), 750, $font_color_2 ,$font_file2, $checkin_days);
 
-        imageline($im,309,650,309,750,$font_color_1);
-        imagettftext($im, 14,0, $this->_getFontCenterX('打卡次数',$font_file,14,$width/2)+$width/2, 650, $font_color_2 ,$font_file, '打卡次数');
+        // 获取统计项
+        $items = DB::table('user_goal_item')
+            ->where('goal_id', $user_goal->goal_id)
+            ->where('user_id', $user_goal->user_id)
+            ->get();
 
-        $checkin_count = $user_goal->total_count;
-        imagettftext($im, 60,0, $this->_getFontCenterX($checkin_count,$font_file2,60,$width/2)+$width/2, 750, $font_color_2 ,$font_file2, $checkin_count);
+        if(count($items)>0) {
+            $item_name = $items[0]->item_name.'('.$items[0]->item_unit.')';
+            $item_value = DB::table('checkin_item')
+                ->where('item_id', $items[0]->item_id)
+                ->sum('item_value');
+        } else {
+            $item_name = '打卡次数';
+            $item_value = $checkin_days;
+        }
+
+        imageline($im,309,650,309,750,$font_color_1);
+        imagettftext($im, 14,0, $this->_getFontCenterX($item_name,$font_file,14,$width/2)+$width/2, 650, $font_color_2 ,$font_file, $item_name);
+
+        imagettftext($im, 60,0, $this->_getFontCenterX($item_value,$font_file2,60,$width/2)+$width/2, 750, $font_color_2 ,$font_file2, $item_value  );
 
         // 宣传
         imageline($im,30,850,570,850,$font_color_1);

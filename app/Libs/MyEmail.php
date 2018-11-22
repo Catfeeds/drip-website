@@ -23,8 +23,8 @@ use AWS;
 class MyEmail
 {
     private $API_URL = 'http://api.sendcloud.net/apiv2/mail/sendtemplate';
-    private $API_USER = 'keepdays';
-    private $API_KEY = 'zDIdjyKEUSqdyESA';
+    private $API_USER = 'growuu';
+    private $API_KEY = 'KvQkknDKC47TyEVG';
     private $SEND_TYPE = 'sendcloud';
 
     public function __construct($send_type='sendcloud')

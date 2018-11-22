@@ -256,6 +256,9 @@ class UserController extends BaseController
 
         $date = $request->input("day");
 
+        $is_archive = $request->input("is_archive",0);
+
+
 //        DB::enableQueryLog();
 
         $user_goals = UserGoal::where('user_id', '=', $user_id)
@@ -266,6 +269,7 @@ class UserController extends BaseController
                         ->orWhere('end_date', '=', NULL);
                 }
             })
+            ->where('is_archive','=',$is_archive)
             ->orderBy('user_goals.status', 'asc')
             ->orderBy('user_goals.order', 'asc')
             ->get();
@@ -442,7 +446,7 @@ class UserController extends BaseController
 
         }
 
-        return $goal;
+        return $user_goal;
     }
 
     private function _update_items($user_id, $goal_id, $items)
@@ -477,8 +481,10 @@ class UserController extends BaseController
 
         // 删除旧的item
         if(count($ids)>0) {
-            UserGoalItem::whereNotIn('item_id',$ids)
-            ->delete();
+            UserGoalItem::Where('user_id','=',$user_id)
+                ->where('goal_id','=',$goal_id)
+                ->whereNotIn('item_id',$ids)
+                ->delete();
         }
     }
 
@@ -668,7 +674,7 @@ class UserController extends BaseController
                         $new_item['value'] = $checkin_item['item_value'];
                         $new_item['unit'] = $item['item_unit'];
 
-                        $new_items[] = $new_item;
+                        array_push($new_items,$new_item);
                     }
                 }
 
@@ -713,11 +719,15 @@ class UserController extends BaseController
 //        ], $messages);
 
         $user_id = $this->auth->user()->id;
+        $item_id = $request->input('item_id');
 
 //        $goal = User::find($user_id)->goals()
 //            ->wherePivot('goal_id','=',$goal_id)
 //            ->wherePivot('is_del','=',0)
 //            ->first();
+
+        $item = UserGoalItem::Where('item_id','=',$item_id)
+            ->first();
 
         $mode = $request->input('mode', "week");
 
@@ -728,11 +738,16 @@ class UserController extends BaseController
         $result = [];
         $data = [];
 
-        $total_checkin_days = 0;
-
         $total_days = 0;
 
+        $chart_data = [];
+        $chart_labels= [];
+        $all_data = [];
+
         if ($mode == 'week') {
+
+            $chart_data = [];
+
             for ($i = 5; $i >= 0; $i--) {
                 if ($i < 5) {
                     $end_dt->subWeek();
@@ -744,30 +759,67 @@ class UserController extends BaseController
                 $start_day = $end_dt->startOfWeek()->toDateString();
                 $end_day = $end_dt->endOfWeek()->toDateString();
 
-                $data[$i]['start_date'] = $start_day;
-                $data[$i]['end_date'] = $end_day;
-
                 // 获取日期范围内的打卡次数
-                $count = DB::table('checkins')
-                    ->where('goal_id', $goal_id)
-                    ->where('user_id', $user_id)
+                $checkin_count = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
                     ->whereYear('checkin_day','=',$year)
-                    ->whereRaw('WEEK(checkin_day)=' . $week)
+                    ->whereRaw('WEEK(checkin_day)=' . ($week-1))
                     ->count();
 
-                $total_checkin_days += $count;
+//                        DB::enableQueryLog();
 
-                $data[$i]['checkin_count'] = $count;
-                $data[$i]['checkin_rate'] = round($count * 100 / 7);
-                $data[$i]['label'] = '第' . $week . '周';
-                $data[$i]['week'] = $week;
+                $checkin_days = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
+                    ->whereYear('checkin_day','=',$year)
+                    ->whereRaw('WEEK(checkin_day)=' . ($week-1))
+//                    ->groupBy('checkin_day')
+                    ->distinct('checkin_day')
+                    ->count();
+
+//                return DB::getQueryLog();
+
+                $total_value = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
+                    ->whereYear('checkin_day','=',$year)
+                    ->whereRaw('WEEK(checkin_day)=' . ($week-1))
+                    ->sum('item_value');
+
+                $arr = array(
+                    'title'=> $year.'年第'.$week.'周',
+                    'start_date'=>$start_day,
+                    'end_date'=>$end_day,
+                    'checkin_count'=>$checkin_count,
+                    'checkin_rate'=>round($checkin_days * 100 / 7),
+                    'checkin_days'=>$checkin_days,
+                    'total_value'=>$total_value,
+                    'avg_value'=>round($total_value / 7,2),
+                    'item_name'=>$item['item_name'],
+                    'item_unit'=>$item['item_unit'],
+                );
+
+                $all_data[] = $arr;
+                $data[] = $total_value;
+                $chart_labels[] = '第'.$week.'周';
             }
 
-            $total_days = 42;
 
-            $result['title'] = '第' . $data[0]['week'] . '周-第' . $data[5]['week'] . '周';
+           array_push($chart_data,array(
+               'data'=>array_reverse(array_values($data)),
+               'label'=>$item->item_name
+           ));
 
         } else if ($mode == 'month') {
+            $chart_data = [];
+
             for ($i = 5; $i >= 0; $i--) {
                 if ($i < 5) {
                     $end_dt->subMonth();
@@ -776,31 +828,61 @@ class UserController extends BaseController
                 $month = $end_dt->month;
                 $year = $end_dt->year;
 
-                $total_days += $end_dt->daysInMonth;
+                $total_days = $end_dt->daysInMonth;
 
                 $start_day = $end_dt->startOfMonth()->toDateString();
                 $end_day = $end_dt->startOfMonth()->toDateString();
 
-                $data[$i]['start_date'] = $start_day;
-                $data[$i]['end_date'] = $end_day;
-
-                // 获取日期范围内的打卡次数
-                $count = DB::table('checkins')
-                    ->where('goal_id', $goal_id)
-                    ->where('user_id', $user_id)
+                $checkin_count = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
                     ->whereYear('checkin_day','=',$year)
-                    ->whereMonth('checkin_day','=',$month)
+                    ->whereRaw('MONTH(checkin_day)=' . $month)
                     ->count();
 
-                $total_checkin_days += $count;
+                $checkin_days = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
+                    ->whereYear('checkin_day','=',$year)
+                    ->whereRaw('MONTH(checkin_day)=' . $month)
+                    ->distinct('checkin_day')
+                    ->count();
 
-                $data[$i]['checkin_count'] = $count;
-                $data[$i]['checkin_rate'] = round($count * 100 / $end_dt->daysInMonth);
-                $data[$i]['label'] = $month . '月';
-                $data[$i]['month'] = $month;
+                $total_value = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
+                    ->whereYear('checkin_day','=',$year)
+                    ->whereRaw('MONTH(checkin_day)=' . $month)
+                    ->sum('item_value');
+
+                $arr = array(
+                    'title'=> $year.'年'.$month.'月',
+                    'start_date'=>$start_day,
+                    'end_date'=>$end_day,
+                    'checkin_count'=>$checkin_count,
+                    'checkin_rate'=>round($checkin_days * 100 / $total_days),
+                    'checkin_days'=>$checkin_days,
+                    'total_value'=>$total_value,
+                    'avg_value'=>round($total_value/$total_days,2),
+                );
+
+                $all_data[] = $arr;
+                $data[] = $total_value;
+                $chart_labels[] = $month.'月';
+
             }
 
-            $result['title'] = $data[0]['month'] . '月 - ' . $data[5]['month'] . '月';
+            array_push($chart_data,array(
+                'data'=>array_reverse(array_values($data)),
+                'label'=>$item->item_name
+            ));
+
         } else if ($mode == 'year') {
             for ($i = 5; $i >= 0; $i--) {
                 if ($i < 5) {
@@ -811,30 +893,56 @@ class UserController extends BaseController
 
                 $year_days = $end_dt->isLeapYear() ? 366 : 365;
 
-                $total_days += $year_days;
+                $total_days = $year_days;
 
                 $start_day = $end_dt->startOfYear()->toDateString();
                 $end_day = $end_dt->endOfYear()->toDateString();
 
-                $data[$i]['start_date'] = $start_day;
-                $data[$i]['end_date'] = $end_day;
-
-                // 获取日期范围内的打卡次数
-                $count = DB::table('checkins')
-                    ->where('goal_id', $goal_id)
-                    ->where('user_id', $user_id)
+                $checkin_count = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
                     ->whereYear('checkin_day','=',$year)
                     ->count();
 
-                $total_checkin_days += $count;
+                $checkin_days = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
+                    ->whereYear('checkin_day','=',$year)
+                    ->distinct('checkin_day')
+                    ->count();
 
-                $data[$i]['checkin_count'] = $count;
-                $data[$i]['checkin_rate'] = round($count * 100 / $year_days);
-                $data[$i]['label'] = $year . '年';
-                $data[$i]['year'] = $year;
+                $total_value = DB::table('checkins')
+                    ->join('checkin_item','checkin_item.checkin_id','=','checkins.id')
+                    ->where('checkins.goal_id', $goal_id)
+                    ->where('checkins.user_id', $user_id)
+                    ->where('checkin_item.item_id',$item_id)
+                    ->whereYear('checkin_day','=',$year)
+                    ->sum('item_value');
+
+                $arr = array(
+                    'title'=> $year.'年',
+                    'start_date'=>$start_day,
+                    'end_date'=>$end_day,
+                    'checkin_count'=>$checkin_count,
+                    'checkin_rate'=>round($checkin_days * 100 / $year_days),
+                    'checkin_days'=>$checkin_days,
+                    'total_value'=>$total_value,
+                    'avg_value'=>round($total_value/ $year_days,2),
+                );
+
+                $all_data[] = $arr;
+                $data[] = $total_value;
+                $chart_labels[] = $year.'年';
             }
 
-            $result['title'] = $data[0]['year'] . '年 - ' . $data[5]['year'] . '年';
+            array_push($chart_data,array(
+                'data'=>array_reverse(array_values($data)),
+                'label'=>$item->item_name
+            ));
         }
 
         if ($end_date == date('Y-m-d')) {
@@ -844,16 +952,13 @@ class UserController extends BaseController
             $result['next'] = $next_dt->addDay()->toDateString();
         }
 
-        $prev_dt = new Carbon($data[0]['start_date']);
+        $prev_dt = new Carbon($start_day);
 
         $result['prev'] = $prev_dt->subDay()->toDateString();
-
-        $result['data'] = array_values($data);
-
-        $result ['total_days'] = $total_days;
-        $result ['checkin_count'] = $total_checkin_days;
-        $result ['checkin_rate'] = round($total_checkin_days * 100 / $total_days);
-
+        $result['all_data'] = array_reverse(array_values($all_data));
+        $result['chart_title'] = $chart_labels[5].'-'.$chart_labels[0];
+        $result['chart_data'] = $chart_data;
+        $result['chart_labels'] = array_reverse(array_values($chart_labels));
         return $result;
     }
 
@@ -2205,6 +2310,5 @@ class UserController extends BaseController
         }
 
         return $new_users;
-
     }
 }

@@ -25,11 +25,11 @@ class TopController extends BaseController {
 		$user_id  = $this->auth->user()->id;
 
 		$users = User::join("checkins",'checkins.user_id','=','users.id')
-				->select('users.*',DB::raw('count(1) as count'))
+				->select('users.*',DB::raw('count(1) as checkin_count'))
 				->where(DB::raw('YEAR(checkin_day)'),date('Y'))
 				->where(DB::raw('MONTH(checkin_day)'),date('m'))
 				->groupBy('users.id')
-				->orderBy('count','DESC')
+				->orderBy('checkin_count','DESC')
 				->take(10)
 				->get();
 
@@ -43,7 +43,8 @@ class TopController extends BaseController {
 
 		$rank_users = DB::table('checkins')
 					->select(DB::raw('count(*) as count'))
-					->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
+                    ->select(DB::raw('count(DISTINCT goal_id) as goal_count'))
+                    ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
 					->where(DB::raw('MONTH(checkin_day)'),'=',date('m'))
 					->groupBy('user_id')
 					->having('count', '>', $count)
@@ -62,12 +63,12 @@ class TopController extends BaseController {
         $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkins",'checkins.user_id','=','users.id')
-            ->select('users.*',DB::raw('count(1) as count'))
+            ->select('users.*',DB::raw('count(1) as checkin_count'),DB::raw('count(DISTINCT goal_id) as goal_count'))
             ->where(DB::raw('YEAR(checkin_day)'),date('Y'))
-            ->where(DB::raw('WEEK(checkin_day,1)'),date('w'))
+            ->where(DB::raw('WEEK(checkin_day,1)'),date('W'))
             ->groupBy('users.id')
-            ->orderBy('count','DESC')
-            ->take(10)
+            ->orderBy('checkin_count','DESC')
+            ->take(20)
             ->get();
 
         $users = [];
@@ -76,42 +77,58 @@ class TopController extends BaseController {
             $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
-            $users[$k]['checkin_count'] = $user->count;
+            $users[$k]['checkin_count'] = $user->checkin_count;
+            $users[$k]['goal_count'] = $user->goal_count;
         }
 
+        $my = [];
+
         // 查询当前用户本月打卡的次数
-        $count = DB::table('checkins')
+        $checkin_count = DB::table('checkins')
             ->where('user_id',$user_id)
             ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
-            ->where(DB::raw('WEEK(checkin_day,1)'),date('w'))
+            ->where(DB::raw('WEEK(checkin_day,1)'),date('W'))
             ->groupBy('user_id')
+            ->count();
+
+        $goal_count = DB::table('checkins')
+            ->where('user_id',$user_id)
+            ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
+            ->where(DB::raw('WEEK(checkin_day,1)'),date('W'))
+            ->groupBy('user_id','goal_id')
             ->count();
 
         $rank_users = DB::table('checkins')
             ->select(DB::raw('count(*) as count'))
             ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
-            ->where(DB::raw('WEEK(checkin_day,1)'),date('w'))
+            ->where(DB::raw('WEEK(checkin_day,1)'),date('W'))
             ->groupBy('user_id')
-            ->having('count', '>', $count)
+            ->having('count', '>', $checkin_count)
             ->get();
 
         $rank = count($rank_users)+1;
 
-        $week = date('w');
+        $week = date('W');
 
-        return compact('week','users','count','rank');
+        $my = [
+            'checkin_count'=>$checkin_count,
+            'goal_count'=>$goal_count,
+            'rank'=>$rank
+        ];
+
+        return compact('week','users','my');
     }
 
     public function month() {
         $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkins",'checkins.user_id','=','users.id')
-            ->select('users.*',DB::raw('count(1) as count'))
+            ->select('users.*',DB::raw('count(1) as checkin_count'),DB::raw('count(DISTINCT goal_id) as goal_count'))
             ->where(DB::raw('YEAR(checkin_day)'),date('Y'))
             ->where(DB::raw('MONTH(checkin_day)'),date('m'))
             ->groupBy('users.id')
-            ->orderBy('count','DESC')
-            ->take(10)
+            ->orderBy('checkin_count','DESC')
+            ->take(20)
             ->get();
 
         $users = [];
@@ -120,15 +137,25 @@ class TopController extends BaseController {
             $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
-            $users[$k]['checkin_count'] = $user->count;
+            $users[$k]['checkin_count'] = $user->checkin_count;
+            $users[$k]['goal_count'] = $user->goal_count;
         }
 
+        $my = [];
+
         // 查询当前用户本月打卡的次数
-        $count = DB::table('checkins')
+        $checkin_count = DB::table('checkins')
             ->where('user_id',$user_id)
             ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
             ->where(DB::raw('MONTH(checkin_day)'),'=',date('m'))
             ->groupBy('user_id')
+            ->count();
+
+        $goal_count = DB::table('checkins')
+            ->where('user_id',$user_id)
+            ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
+            ->where(DB::raw('MONTH(checkin_day)'),'=',date('m'))
+            ->groupBy('user_id','goal_id')
             ->count();
 
         $rank_users = DB::table('checkins')
@@ -136,27 +163,31 @@ class TopController extends BaseController {
             ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
             ->where(DB::raw('MONTH(checkin_day)'),'=',date('m'))
             ->groupBy('user_id')
-            ->having('count', '>', $count)
+            ->having('count', '>', $checkin_count)
             ->get();
 
         $rank = count($rank_users)+1;
 
-        // User::find(8)->checkins;
+        $my = [
+            'checkin_count'=>$checkin_count,
+            'goal_count'=>$goal_count,
+            'rank'=>$rank
+        ];
 
         $month = date('m');
 
-        return compact('month','users','count','rank');
+        return compact('month','users','my');
     }
 
     public function year(){
         $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkins",'checkins.user_id','=','users.id')
-            ->select('users.*',DB::raw('count(1) as count'))
+            ->select('users.*',DB::raw('count(1) as checkin_count'),DB::raw('count(DISTINCT goal_id) as goal_count'))
             ->where(DB::raw('YEAR(checkin_day)'),date('Y'))
             ->groupBy('users.id')
-            ->orderBy('count','DESC')
-            ->take(10)
+            ->orderBy('checkin_count','DESC')
+            ->take(20)
             ->get();
 
         $users = [];
@@ -165,30 +196,43 @@ class TopController extends BaseController {
             $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
-            $users[$k]['checkin_count'] = $user->count;
+            $users[$k]['checkin_count'] = $user->checkin_count;
+            $users[$k]['goal_count'] = $user->goal_count;
         }
 
+        $my = [];
+
         // 查询当前用户本月打卡的次数
-        $count = DB::table('checkins')
+        $checkin_count = DB::table('checkins')
             ->where('user_id',$user_id)
             ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
             ->groupBy('user_id')
+            ->count();
+
+        $goal_count = DB::table('checkins')
+            ->where('user_id',$user_id)
+            ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
+            ->groupBy('user_id','goal_id')
             ->count();
 
         $rank_users = DB::table('checkins')
             ->select(DB::raw('count(*) as count'))
             ->where(DB::raw('YEAR(checkin_day)'),'=',date('Y'))
             ->groupBy('user_id')
-            ->having('count', '>', $count)
+            ->having('count', '>', $checkin_count)
             ->get();
 
         $rank = count($rank_users)+1;
 
-        // User::find(8)->checkins;
+        $my = [
+            'checkin_count'=>$checkin_count,
+            'goal_count'=>$goal_count,
+            'rank'=>$rank
+        ];
 
         $year = date('Y');
 
-        return compact('year','users','count','rank');
+        return compact('year','users','my');
     }
 
 
@@ -196,10 +240,10 @@ class TopController extends BaseController {
         $user_id  = $this->auth->user()->id;
 
         $pre_users = User::join("checkins",'checkins.user_id','=','users.id')
-            ->select('users.*',DB::raw('count(1) as count'))
+            ->select('users.*',DB::raw('count(1) as checkin_count'),DB::raw('count(DISTINCT goal_id) as goal_count'))
             ->groupBy('users.id')
-            ->orderBy('count','DESC')
-            ->take(10)
+            ->orderBy('checkin_count','DESC')
+            ->take(20)
             ->get();
 
         $users = [];
@@ -208,28 +252,38 @@ class TopController extends BaseController {
             $users[$k]['id'] = $user->id;
             $users[$k]['nickname'] = $user->nickname;
             $users[$k]['avatar_url'] = str_replace('https://www.keepdays.com',"http://www.keepdays.com",$user->avatar_url);
-            $users[$k]['checkin_count'] = $user->count;
+            $users[$k]['checkin_count'] = $user->checkin_count;
+            $users[$k]['goal_count'] = $user->goal_count;
         }
 
-        // 查询当前用户本月打卡的次数
-        $count = DB::table('checkins')
+        $my = [];
+
+        // 查询当前用户总打卡的次数
+        $checkin_count = DB::table('checkins')
             ->where('user_id',$user_id)
             ->groupBy('user_id')
+            ->count();
+
+        $goal_count = DB::table('checkins')
+            ->where('user_id',$user_id)
+            ->groupBy('user_id','goal_id')
             ->count();
 
         $rank_users = DB::table('checkins')
             ->select(DB::raw('count(*) as count'))
             ->groupBy('user_id')
-            ->having('count', '>', $count)
+            ->having('count', '>', $checkin_count)
             ->get();
 
         $rank = count($rank_users)+1;
 
-        // User::find(8)->checkins;
+        $my = [
+            'checkin_count'=>$checkin_count,
+            'goal_count'=>$goal_count,
+            'rank'=>$rank
+        ];
 
-        $month = date('m');
-
-        return compact('users','count','rank');
+        return compact('users','my');
     }
 
 

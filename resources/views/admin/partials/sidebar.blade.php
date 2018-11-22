@@ -23,7 +23,7 @@
                 </a>
                 <ul class="treeview-menu">
                     <li><a href="{{url('admin/app/channels')}}"><i class="fa fa-users"></i>渠道管理</a></li>
-                    <li><a href="{{url('admin/app/channels')}}"><i class="fa fa-circle-o"></i>版本管理</a></li>
+                    <li><a href="{{url('admin/app/versions')}}"><i class="fa fa-circle-o"></i>版本管理</a></li>
                 </ul>
             </li>
 

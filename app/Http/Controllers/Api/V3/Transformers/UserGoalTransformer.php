@@ -60,7 +60,8 @@ class UserGoalTransformer extends TransformerAbstract
 //        $result['expect_days'] =  $user_goal->expect_days>0?$user_goal->expect_days:ceil((time() -strtotime($user_goal->start_date)) / 86400);
         $result['expect_days'] =  $user_goal->expect_days;
         $result['last_checkin_at'] =  $user_goal->last_checkin_at;
-        $result['total_days'] = $user_goal->total_days; 
+        $result['total_days'] = $user_goal->total_days;
+        $result['is_archive'] = $user_goal->is_archive==1?true:false;
         $result['series_days'] = $user_goal->series_days;
         $result['date_type'] = $user_goal->date_type;
         $result['start_date'] = $user_goal->start_date;

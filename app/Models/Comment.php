@@ -14,7 +14,6 @@ class Comment extends Model
 {
     protected $table = 'event_comment';
     protected $primaryKey = 'comment_id';
-    public $timestamps = false;
 
     public function user()
     {

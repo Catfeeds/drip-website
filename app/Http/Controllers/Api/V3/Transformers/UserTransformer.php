@@ -32,6 +32,7 @@ class UserTransformer extends TransformerAbstract
         $new_user['email'] = $user->email;
         $new_user['phone'] = $user->phone;
         $new_user['is_vip'] = $user->is_vip == 1 ? true : false;
+        $new_user['vip_type'] = $user->vip_type;
         $new_user['vip_begin_date'] = $user->vip_begin_date;
         $new_user['vip_end_date'] = $user->vip_end_date;
         $new_user['created_at'] = Carbon::parse($user->created_at)->toDateTimeString();

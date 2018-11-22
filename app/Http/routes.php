@@ -221,6 +221,9 @@ $api->version('v3',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->post('user/goal/{id}/checkin', 'App\Http\Controllers\Api\V3\GoalController@checkin');
     $api->patch('user/goal/{id}', 'App\Http\Controllers\Api\V3\UserController@updateGoal');
     $api->delete('user/goal/{id}', 'App\Http\Controllers\Api\V3\GoalController@delete');
+    $api->get('user/checkin/{id}', 'App\Http\Controllers\Api\V3\GoalController@getCheckin');
+    $api->delete('user/checkin/{id}', 'App\Http\Controllers\Api\V3\GoalController@deleteCheckin');
+    $api->patch('user/checkin/{id}', 'App\Http\Controllers\Api\V3\GoalController@updateCheckin');
     $api->post('goal/create', 'App\Http\Controllers\Api\V3\GoalController@create');
     $api->get('goal/search', 'App\Http\Controllers\Api\V3\GoalController@search');
     $api->get('goal/{id}', 'App\Http\Controllers\Api\V3\GoalController@getGoalDetail');
@@ -267,7 +270,8 @@ $api->version('v3',['middleware' => ['cors','jwt.auth']],function ($api) {
     $api->get('update/audit', 'App\Http\Controllers\Api\V3\UpdateController@audit');
     $api->get('article/{id}', 'App\Http\Controllers\Api\V3\ArticleController@getDetail')->where('id', '[0-9]+');
     $api->get('article/top', 'App\Http\Controllers\Api\V3\ArticleController@getTop');
-
+    $api->post('article/{id}/comment', 'App\Http\Controllers\Api\V3\ArticleController@doComment')->where('id', '[0-9]+');
+    $api->post('article/{id}/like', 'App\Http\Controllers\Api\V3\ArticleController@doLike')->where('id', '[0-9]+');
 });
 
 
